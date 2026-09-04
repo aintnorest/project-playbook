@@ -1,0 +1,5 @@
+.DS_Store
+.mise.local.toml
+mise.local.lock
+.project-playbook/
+__pycache__/
