@@ -2,55 +2,22 @@
 
 A versioned source of truth for reusable project workflows, documentation guidance, and prompts.
 
+This repository contains documentation only. It has no runtime, package-manager, or development-tool dependency.
+
 ## Contents
 
 - `guides/` contains active working agreements.
 - `prompts/` contains reusable prompts and communication rules.
 - `decisions/` preserves the reasoning behind important playbook choices.
-- `scripts/` contains dependency-free maintenance commands.
+- `integrations/` explains how other repositories consume the playbook.
 
 The initial material comes from workflows already used in production projects. Project-specific rules stay in each project rather than being copied back into this repository.
 
-## Use with mise
+## Distribution
 
-[mise](https://mise.jdx.dev/) supplies the development toolchain and repository-wide tasks. It should coordinate language-native package managers rather than replace `Cargo.toml`, `package.json`, `go.mod`, or `pyproject.toml`.
+Edit shared guidance here and tag stable releases. Each consuming repository owns the automation that fetches its selected release.
 
-```sh
-mise install
-mise run check
-```
-
-Available tasks:
-
-```sh
-mise run check                         # validate repository structure and local links
-mise run sync -- /path/to/project      # install the current playbook snapshot
-mise run sync:check -- /path/to/project # detect whether an installed snapshot is stale
-```
-
-`[settings] lockfile = true` makes `mise install` create or update `mise.lock`. Commit that file so every contributor resolves the same tool version.
-
-## Install into a project
-
-The sync task writes the distributable material to `.project-playbook/` in the target project:
-
-```text
-.project-playbook/
-  VERSION
-  manifest.json
-  guides/
-  prompts/
-```
-
-Clone or update this repository, then run:
-
-```sh
-mise run sync -- ../my-project
-```
-
-Commit `.project-playbook/` in the target project when contributors, continuous integration, or coding agents need the guidance without access to this repository. Keep project-specific overrides outside `.project-playbook/`; every sync replaces that directory completely.
-
-After updating this repository, tag a release and sync the new version into each consumer through a reviewed pull request. This keeps updates explicit and lets different projects upgrade on their own schedule.
+[The mise integration](integrations/mise.md) shows how a consuming repository can expose `mise run playbook:update`. Mise belongs in the repositories that already use it for toolchains and tasks; this documentation repository does not need a `mise.toml`.
 
 ## Source-of-truth rules
 
