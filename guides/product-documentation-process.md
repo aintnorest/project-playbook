@@ -2,9 +2,15 @@
 
 This process keeps product intent, system architecture, technical design, and implementation work separate while preserving a traceable path from vision to verified code.
 
+It governs document roles, hierarchy, and workflow. General developer-facing output follows [the communication policy](communication-policy.md); confidence labels and the rules for expressing mechanisms, interfaces, failures, non-goals, and tradeoffs follow [the technical-writing standards](technical-writing-standards.md). Those shared guides are authoritative for their subjects. Project-specific facts remain in the document that owns them; any deviation from shared guidance must name the affected rule, scope, reason, and replacement.
+
+This is the full-feature workflow for material product work. The [lightweight path](#lightweight-path-for-minor-changes) applies to a minor fix or change that does not introduce a material product decision, cross-boundary technical contract, or independently planned delivery.
+
 ## Status
 
 Active working agreement for new or revised product documentation.
+
+Use the [document convergence workflow](document-convergence.md) to draft, comment on, independently review, revise, and approve these documents. This process owns document contents and sequencing; that workflow owns the repeated human/model interaction.
 
 ## Governing principles
 
@@ -12,8 +18,6 @@ Active working agreement for new or revised product documentation.
 2. **Use the smallest document hierarchy that keeps boundaries clear.** Do not create slices, diagrams, or templates merely because the process permits them.
 3. **Split work at independently testable handoffs.** A slice ends with observable or persisted state that the next slice can consume.
 4. **Design precedes task decomposition.** An implementation plan divides decided work; it does not silently make product or architecture decisions.
-5. **Write for the reader.** Prefer plain, stable names over acronyms and internal shorthand.
-6. **State mechanisms, failures, and tradeoffs.** Do not substitute architectural vocabulary for a concrete contract.
 
 ## Documentation hierarchy
 
@@ -21,11 +25,14 @@ Active working agreement for new or revised product documentation.
 Product vision
   └── Feature
       ├── Product requirements document
-      ├── Technical design                         # small feature
-      └── System design                            # large feature
-          └── Slices
-              ├── Technical design
-              └── Implementation plan
+      ├── Small feature
+      │   ├── Technical design
+      │   └── Implementation plan
+      └── Large feature
+          └── System design
+              └── Slices
+                  ├── Technical design
+                  └── Implementation plan
 ```
 
 ### Product level
@@ -34,11 +41,13 @@ Product vision
 
 ### Feature level
 
-Every material feature lives under `docs/features/<feature-name>/` and starts with `prd.md`, the Product Requirements Document. A small feature may add one `tdd.md` and one `implementation-plan.md` at the feature root.
+Every full feature lives under `docs/features/<feature-name>/` and starts with `prd.md`, the Product Requirements Document. A small feature uses one `tdd.md` and one `implementation-plan.md` at the feature root. A feature that meets the slice criteria adds `system-design.md` at the feature root and numbered slice directories; each slice owns a `tdd.md`. Create an implementation plan only when its technical design is approved and ready to build.
 
-### Large-feature level
+### Lightweight path for minor changes
 
-A feature that needs slices adds `system-design.md` at the feature root and a numbered directory for each slice. Each slice owns a `tdd.md` and receives an `implementation-plan.md` only when its technical design is approved and ready to build.
+For a minor fix or change, update the existing document that owns the changed product fact or technical contract, if one exists, and verify the actual changed behavior. Do not create a Product Requirements Document, technical design, system design, or implementation plan merely to satisfy this process.
+
+Use the full-feature workflow instead when the change introduces a material requirement or non-goal, a new or changed cross-boundary interface, an unresolved product or architecture decision, a separately reviewable delivery, or work that needs ordered task decomposition. Record a concise decision in the owning document when the boundary is not obvious.
 
 ## When a feature needs slices
 
@@ -140,7 +149,7 @@ Do not add `.md` to directory names. The directory supplies context; stable file
 - trust and security boundaries shared by slices;
 - feature-wide error, schema, event, and compatibility rules;
 - feature-wide concurrency, locking, and recovery rules;
-- actions that automated workers may never perform for the developer;
+- automated-worker authority boundaries, only when the feature includes automated workers;
 - slice dependency graph and persisted handoff states;
 - mapping from requirement IDs to owning slices.
 
@@ -172,7 +181,7 @@ A rule belongs here only when multiple slices must obey it or when it defines th
 - state transitions and transaction boundaries;
 - security and operational assumptions;
 - explicit tradeoff decisions;
-- normative Gherkin scenarios for observable behavior;
+- observable acceptance in the notation selected under [behavioral acceptance](#behavioral-acceptance);
 - technical contracts and verification criteria;
 - handoff state for the next slice.
 
@@ -187,19 +196,19 @@ A rule belongs here only when multiple slices must obey it or when it defines th
 
 **File:** `implementation-plan.md`
 
-**Purpose:** Divide an approved technical design into dependency-ordered, independently verifiable tasks.
+**Purpose:** Divide an approved technical design into bounded, independently verifiable implementation tasks.
 
 **Contains:**
 
-- a directed acyclic dependency graph;
-- stable task identifiers;
-- dependency edges;
-- exact file and symbol targets;
-- the contract each task implements;
-- observable acceptance for each task;
-- narrow verification commands;
-- parallel execution waves and shared merge boundaries;
-- explicit decision gates for any approved conditional choice.
+- stable task identifiers and deliverable-oriented titles;
+- direct prerequisite IDs, each with its required output or hard ordering constraint; these define the directed acyclic graph (DAG);
+- exact file and symbol targets, distinguishing existing edits from approved planned creations;
+- the bounded change and referenced TDD requirement, scenario, or technical contract;
+- observable acceptance and a narrow verification command or concrete exercise with its expected result;
+- verification prerequisites available within the task, the existing repository, or predecessor tasks;
+- explicit ownership or ordered handoffs for shared files and contracts;
+- integrated feature acceptance and the repository's required final verification;
+- explicit decision gates only for already approved conditional choices.
 
 **Excludes:**
 
@@ -208,7 +217,9 @@ A rule belongs here only when multiple slices must obey it or when it defines th
 - copied requirements or technical design sections;
 - placeholders that appear complete but leave behavior unimplemented.
 
-If task decomposition reveals an unresolved design choice, stop and update the owning Product Requirements Document, system design, or technical design before continuing. Do not bury a design decision inside a task.
+List tasks in topological order. A task is ready when its prerequisites finish, not when an arbitrary phase ends. Dependency IDs are the authoritative graph; diagrams and parallel-wave tables are optional derived views, not additional sources of truth.
+
+If decomposition reveals an unresolved design choice, return the precise question to the owning document instead of hiding it inside a task. Planning does not authorize changing the design.
 
 ### Code tests
 
@@ -217,6 +228,31 @@ Code tests provide executable proof for behavior and technical contracts. They r
 ### Learning log
 
 `docs/learning-log.md` records durable lessons and decisions worth carrying across features. Do not copy feature-local design details into it; reference the owning document and record only the reusable lesson.
+
+Include the observation, its supporting source or actual check, the reusable lesson, and the conditions under which it applies. Distinguish an observed result from a hypothesis or a planned experiment; skip an entry when there is no durable lesson.
+
+### Decision record
+
+**File:** Use the project's existing decision-record location and numbering. If none exists, propose `docs/decisions/<number>-<decision-name>.md` before creating it; this playbook itself uses `decisions/`.
+
+**Purpose:** Preserve why a meaningful choice was made without becoming a second definition of the current product or technical contract.
+
+**Contains:**
+
+- status and the actual decision date when known;
+- context and the decision to be made;
+- chosen option, or a proposed option awaiting the developer's decision;
+- rationale, alternatives, and accepted costs;
+- consequences and affected document references;
+- a superseding decision reference when the choice is replaced.
+
+**Excludes:**
+
+- invented historical reasoning or approval;
+- copies of the owning requirements or implementation design;
+- routine changes without a durable tradeoff worth preserving.
+
+The current rule stays in its owning guide, requirements, or design document. A decision record preserves reasoning and links to that authority.
 
 ## Reference over repetition
 
@@ -229,12 +265,14 @@ Use this rule whenever information could appear in more than one document:
 - A Product Requirements Document owns requirement wording.
 - A system design owns feature-wide architecture and shared invariants.
 - A technical design owns slice-local interfaces and technical decisions.
-- Gherkin owns the slice's observable acceptance scenarios.
+- The technical design's [behavioral acceptance](#behavioral-acceptance) owns observable scenarios, whether expressed in Gherkin or a justified alternative.
 - Technical contracts own internal preconditions, postconditions, and invariants.
 - An implementation plan owns task dependencies and work order.
 - Code tests own executable proof.
 
 A short local summary is allowed when a reader cannot understand the current section without it. Label the summary as context, link to the authority, and do not introduce new normative wording.
+
+An explicitly referenced, applicable parent constraint already governs the child document. Do not require a copied child rule or a new child requirement ID solely to repeat that constraint; use a reference for traceability and verification. Add a child-owned requirement only for a distinct feature-specific obligation, interpretation, or exception that the parent does not already define.
 
 When an authoritative fact changes:
 
@@ -245,14 +283,16 @@ When an authoritative fact changes:
 
 ## Requirement identifiers
 
-Each feature defines one short identifier prefix. The PRD convergence workflow uses `PCW`; the full meaning is stated once in that feature's Product Requirements Document.
+Each feature defines one short identifier prefix and states its meaning once in that feature's Product Requirements Document.
+
+The examples below use `EXPORT` for a document-export feature: a signed-in user requests a downloadable copy of a selected document.
 
 Requirement identifiers use an opaque permanent sequence:
 
 ```text
-PCW-001
-PCW-002
-PCW-003
+EXPORT-001
+EXPORT-002
+EXPORT-003
 ```
 
 Rules:
@@ -264,48 +304,48 @@ Rules:
 - A genuinely new requirement receives the next unused number.
 - Other documents reference the identifier rather than copying requirement text.
 
-## Behavioral acceptance with Gherkin
+## Behavioral acceptance
 
-Gherkin is normative in a technical design when it describes behavior observable through that design's boundary.
+For the full-feature workflow, Gherkin is the conscious default and normative home for behavior observable through a technical design's boundary. Choose an alternate notation only when it communicates that behavior more precisely, such as a state-transition table for a stateful protocol. Record why the alternate is clearer and keep all normative observable acceptance for that behavior in that single authoritative home; do not maintain an equivalent acceptance list beside it.
 
 ```gherkin
-@PCW-001
-Scenario: Start a run from a rough idea
-  Given the repository has no existing Orch state
-  When the developer starts the PRD convergence workflow with an idea
-  Then Orch creates one active durable run
-  And the idea is preserved as an immutable input artifact
+@EXPORT-001
+Scenario: Export a selected document
+  Given a signed-in user has selected one document
+  When the user requests an export
+  Then the system creates one downloadable export for that document
+  And the export contains the document's current content
 ```
 
 Use the clauses consistently:
 
 - `Given` states persisted entry state or a user-visible precondition.
-- `When` states one developer or system action.
+- `When` states one developer, user, or system action.
 - `Then` states an observable result, state transition, artifact, or failure.
 
-Do not use Gherkin for private implementation details such as a Rust module name, database index, serializer crate, or helper function. Do not retain an equivalent behavioral acceptance list beside the scenarios; the scenarios replace it.
+Do not use Gherkin for private implementation details such as a module name, database index, serializer library, or helper function.
 
 ## Technical contracts and verification
 
 Use Design by Contract when an interface or state change has meaningful preconditions, postconditions, invariants, or partial-failure behavior. Use the obligation words defined by Request for Comments 2119 (RFC 2119) inside the contract.
 
 ```text
-Contract: Atomic run creation
+Contract: Atomic export creation
 
 Preconditions
-- Every input MUST have passed size, encoding, and schema validation.
+- The selected document MUST pass authorization and content validation.
 
 Postconditions on success
-- One run, its artifact metadata, first event, and first checkpoint MUST be committed.
+- One export record and its durable output artifact MUST be committed.
 
 Postconditions on failure
-- No run metadata MAY be partially committed.
+- No export record MAY reference a missing or partial output artifact.
 
 Invariants
 - A committed artifact reference MUST identify a durable body with the recorded hash.
 
 Verification
-- Inject a failure at every write boundary and assert the applicable postcondition.
+- Inject a failure at each persistence boundary and assert the applicable postcondition.
 ```
 
 Use a concise RFC 2119 statement without a full contract block when no useful precondition/postcondition relationship exists. A fixed file mode, hash format, or immutable identifier rule usually needs one normative statement and one verification criterion.
@@ -318,105 +358,9 @@ Use a concise RFC 2119 statement without a full contract block when no useful pr
 
 Do not capitalize ordinary prose for emphasis. Reserve these words for normative obligations.
 
-## Confidence annotations for specifications written by artificial intelligence
-
-Every concrete interface proposed by a specification written by artificial intelligence carries one of these labels:
-
-| Tag | Meaning |
-| --- | --- |
-| `[EXISTS]` | Verified in the current codebase. |
-| `[PROPOSED]` | New interface introduced by the design. |
-| `[ASSUMED]` | Believed to exist or behave as stated but still needs verification. |
-
-Apply the tag to the interface declaration, schema, command, function signature, or section that introduces it. Do not label general explanation or repeat the same tag on every sentence beneath one clearly labeled contract.
-
-An `[ASSUMED]` interface is an unresolved prerequisite. Verify it before implementation or convert it into an explicit decision; do not build load-bearing behavior on the assumption.
-
-## Communication policy
-
-This policy applies to final messages, explanations, summaries, and standalone documents written for the developer, including Product Requirements Documents, system designs, technical designs, implementation plans, reports, and decision records. It does not apply to code or internal reasoning; reasoning may take as much space as correctness requires, but that does not loosen these output rules.
-
-1. **Open with the outcome.** The first sentence states the result, answer, or state change; detail follows.
-2. **Size the response to the answer, not the question.** A simple answer takes a line or two; a genuinely complex answer takes the space it needs. Padding and restating the request are prohibited, not depth.
-3. **Use at most three sentences per point.** Split larger material into separate labeled points.
-4. **Use plain words and one stable name for each thing.** Expand an acronym the first time it appears, unpack noun phrases longer than three words, and omit cheerleading, hedging, filler, and commentary about the request.
-5. **Point to concrete things and explain non-obvious names.** Use a file and line, exact command, actual error, symbol, flag, or configuration key; add one clause explaining its purpose when the name is not self-explanatory.
-6. **Preserve caveats, tradeoffs, and uncertainty.** Put unresolved items in a final `Caveats / needs your call` line only when that line would be non-empty; state any skipped verification there.
-7. **Match structure to content.** Use prose for one or two items, a list for three or more, and headings only when the response has three or more sections. Do not fill a template for its own sake.
-8. **Locate multi-step work.** State the current stage and next stage; when detail does not fit, give the short form and name the document that owns the rest.
-
-## Rules for clear system and technical designs
-
-Technical specifications fail through abstract architecture language, fake rigor, and hidden assumptions. Apply the following rules to `system-design.md` and every `tdd.md`.
-
-### Replace vague verbs with mechanisms
-
-Do not use these verbs as substitutes for a contract:
-
-```text
-handles
-processes
-manages
-orchestrates
-coordinates
-facilitates
-integrates with
-communicates with
-```
-
-Name the mechanism, protocol, validation, state change, and output instead.
-
-| Vague | Concrete |
-| --- | --- |
-| “The worker service handles incoming webhooks.” | “The worker service parses JavaScript Object Notation (JSON) from `POST /webhooks` and writes valid events to `queue_jobs`.” |
-
-### Define boundaries through failure behavior
-
-Every component, endpoint, command, and interface states:
-
-1. Inputs it rejects and the returned failure.
-2. Behavior when a dependency times out, rejects work, or exits unexpectedly.
-3. State left behind after interruption or partial failure.
-4. Retry, cleanup, or repair ownership.
-
-### Attach concrete interfaces to components
-
-Every named component or service points to the applicable concrete primitive:
-
-- function or trait signature;
-- command and flags;
-- web route or remote-procedure endpoint;
-- JSON or other payload schema;
-- database table definition;
-- primary storage engine and transaction guarantee.
-
-Use `[PROPOSED]` when the primitive does not yet exist and `[ASSUMED]` only until it can be verified. A component without an interface is an unresolved idea, not an implementation-ready design.
-
-### Explain data flow instead of naming hierarchy
-
-Trace one unit of data through the system:
-
-```text
-Input → validation or transformation → state change → output or side effect
-```
-
-Name the concrete representation at every boundary. State where ownership transfers, what becomes durable, and what can still be rolled back.
-
-### State explicit non-goals
-
-Every technical design includes an `Explicit non-goals` section. Name scale targets, edge cases, generalizations, and optimizations intentionally omitted from the slice.
-
-### State tradeoffs rather than declaring a best choice
-
-Use this form for a meaningful design choice:
-
-> We choose Option A over Option B because we prioritize Advantage X at the accepted cost of Disadvantage Y.
-
-Mark the result `[DECIDED]` or `[NEEDS YOUR CALL]`. Do not hide a cost because one option is common or modern.
-
 ## Recommended technical-design order
 
-Use only the sections that apply, but preserve this reasoning order:
+Use only the sections that apply, but preserve this reasoning order. Apply [the technical-writing standards](technical-writing-standards.md) when writing the sections; this guide assigns their place in the design rather than restating their writing rules.
 
 1. **Status and parent contracts** — Name the owning documents and requirement IDs.
 2. **Purpose, entry state, and exit state** — Bound the slice.
@@ -425,11 +369,13 @@ Use only the sections that apply, but preserve this reasoning order:
 5. **Data-flow traces** — Show how concrete data moves and becomes durable.
 6. **Concrete interfaces and data model** — Define signatures, commands, schemas, and guarantees.
 7. **Tradeoff decisions** — Record benefits, accepted costs, and unresolved calls.
-8. **Behavioral acceptance** — Define observable behavior with normative Gherkin.
+8. **Behavioral acceptance** — Define observable behavior in Gherkin by default, or record the justified alternate notation that is its sole authoritative home.
 9. **Technical contracts and verification** — Define internal obligations with Design by Contract and RFC 2119.
 10. **Handoff** — State the exact state available to the next slice.
 
-## End-to-end process
+## Full-feature workflow
+
+The following steps apply to material product work. Use the [lightweight path](#lightweight-path-for-minor-changes) for a qualifying minor change instead.
 
 ### 1. Maintain product direction
 
@@ -453,19 +399,21 @@ Create one `tdd.md` for a small feature or one per slice for a large feature. Re
 
 ### 6. Define acceptance and verification
 
-Replace observable acceptance prose with normative Gherkin. Add technical contracts for internal invariants and identify the verification that will prove each contract.
+Use Gherkin as the default notation for observable acceptance, or justify and name the single authoritative alternate notation. Add technical contracts for internal invariants and identify the verification that will prove each contract.
 
 ### 7. Approve the design
 
-Confirm that every `[ASSUMED]` interface is verified or explicitly accepted, every `[NEEDS YOUR CALL]` decision is resolved, and every requirement has an owner. Do not create an implementation plan before this point.
+Resolve interface confidence according to [the technical-writing standards](technical-writing-standards.md#label-interface-confidence-in-ai-written-specifications) before approving the design. Resolve every `[NEEDS YOUR CALL]` decision and give every requirement an owner before creating the implementation plan; planned work must establish proposed interfaces before dependent tasks use them.
 
 ### 8. Create the implementation plan
 
-Create `implementation-plan.md` from the approved technical design. Every task references the scenario, contract, or technical criterion it implements.
+Create `implementation-plan.md` from the approved technical design using the [implementation plan contract](#implementation-plan). Each task identifies its direct prerequisites and the scenario, contract, or technical criterion it implements.
 
 ### 9. Implement and verify
 
 Build tasks in dependency order, run narrow checks while iterating, and exercise the actual changed surface. Finish with the repository's required verification command.
+
+For subagent execution with an owned integration branch and isolated task worktrees, use [Orchestrate an implementation plan](../prompts/orchestrate-implementation-plan.md). The prompt owns the dispatch, validation, integration, and design-escalation procedure.
 
 ### 10. Close the milestone
 
@@ -484,23 +432,27 @@ Before approving a system design:
 - It contains only feature-wide architecture and cross-slice contracts.
 - Every slice has an independently testable entry and exit state.
 - Every requirement ID maps to an owning slice.
-- Shared security, state, compatibility, and worker-authority rules are explicit.
+- Shared security, state, and compatibility rules are explicit.
+- Automated-worker authority rules are explicit when the feature includes automated workers.
 
 Before approving a technical design:
 
 - Parent contracts are references rather than copied text.
-- Interfaces use `[EXISTS]`, `[PROPOSED]`, or `[ASSUMED]` accurately.
-- Rejected inputs, dependency failures, and partial state are defined.
-- Data flows name concrete representations and state changes.
-- Tradeoffs state both the benefit and accepted cost.
-- Observable behavior appears once as normative Gherkin.
+- It follows [the technical-writing standards](technical-writing-standards.md) for confidence annotations and the expression of mechanisms, interfaces, failures, non-goals, and tradeoffs.
+- Observable behavior has one authoritative acceptance home.
 - Internal invariants have testable technical contracts.
-- Explicit non-goals prevent speculative implementation.
+- Planned work establishes proposed interfaces before dependent tasks use them.
 
 Before approving an implementation plan:
 
 - Every task implements an approved scenario or technical contract.
-- Dependencies form a directed acyclic graph.
-- Parallel tasks have separate file ownership or a named merge boundary.
+- Tasks are ordered by their actual dependencies and independently verifiable.
+- Direct prerequisite IDs form an acyclic graph and account for required outputs and hard ordering constraints.
+- Tasks described as concurrent have compatible file ownership and shared contracts; optional diagrams or waves agree with the task dependencies.
 - No task introduces a new product or architecture decision.
 - Final tasks exercise the actual surface and run required repository verification.
+
+For a minor change using the lightweight path:
+
+- The existing owning document is updated when the changed fact or contract has one.
+- The actual changed behavior is verified.
