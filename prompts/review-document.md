@@ -13,6 +13,7 @@ Assess one exact revision against the contract for its own document role, its go
 - [Independent review context](../guides/document-convergence.md#independent-review-context)
 - [Evidence and authority](../guides/document-convergence.md#evidence-and-authority)
 - [Findings](../guides/document-convergence.md#findings)
+- [Communication rules](../guides/communication-policy.md#rules)
 
 ## Inputs
 

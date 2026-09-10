@@ -13,6 +13,7 @@ Make one exact current draft and the authority needed for its next operation acc
 - [Handoff](../guides/document-convergence.md#handoff)
 - [Independent review context](../guides/document-convergence.md#independent-review-context)
 - [Evidence and authority](../guides/document-convergence.md#evidence-and-authority)
+- [Communication rules](../guides/communication-policy.md#rules)
 
 ## Inputs
 

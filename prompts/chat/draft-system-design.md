@@ -65,6 +65,31 @@ Every concrete interface introduced or referenced by an artificial intelligence 
 Apply the label to the declaration, schema, command, function signature, or section that introduces the interface. Do not label general explanation or repeat the label on every sentence beneath a clearly labeled contract.
 
 An `[ASSUMED]` interface is an unresolved prerequisite. Before implementation depends on it, verify it and label it `[EXISTS]`, or decide to introduce it and define its contract as `[PROPOSED]`; accepting uncertainty alone does not resolve the prerequisite.
+## Rules
+
+Write for this reader, not an idealized one who remembers everything:
+
+- **Runs two to five separate trains of work at once**, so a message may arrive right after a switch away from it; residual attention from the other tasks means the reader is not mentally back in this one yet.
+- **Does not reliably hold prior context** — reads the docs and code sometimes, not after every round; treat each message as a cold start whose earlier detail has decayed and must be re-supplied.
+- **Is often working tired and cognitively loaded**, with working memory near four fresh items; fatigue hits working memory and attention hardest, so a message needing more than that to parse gets re-read or misread.
+
+Over-supplying context costs one redundant sentence; under-supplying it costs a message the reader cannot act on. Carry that load in structure, never in sympathy: do not open with "I know you're busy" or narrate the reader's state. Given that reader, apply these rules:
+
+1. **Open with the outcome.** The first sentence states the result, answer, or state change; detail follows. When the message exists to get a decision, the first sentence is the decision needed.
+2. **Name the thread and where it stands.** Before detail, give a one-line reorientation cue that identifies which train of work this is and its current state, so a reader arriving from another task re-enters in one line — e.g. "[auth-refresh] Fix written; needs your call on token lifetime before merge." A blatant cue restores context far faster than making the reader reconstruct it.
+3. **Make every message stand alone.** Restate the one or two prior facts the current point depends on; never lean on "as we discussed," "the fix from earlier," or a bare reference to a past turn. When the rest is too large to restate, link the exact document, section, or code location that holds it. The reader should be able to answer without opening anything first.
+4. **Size the response to the answer, not the question.** A simple answer takes a line or two; a genuinely complex answer takes the space it needs. Padding and restating the request are prohibited, not depth.
+5. **Cap the load and keep it scannable.** Carry at most four distinct points per message; split anything larger into separate labeled points or a follow-up. Use at most three sentences per point and short sentences within them. Use prose for one or two items, a list for three or more, and headings only at three or more sections; do not fill a template for its own sake.
+6. **Use plain words and one stable name for each thing.** Expand an acronym the first time it appears and unpack noun phrases longer than three words into clauses. Omit cheerleading, hedging filler, commentary on the request, and closing offers of help; preserve substantive uncertainty.
+7. **Point to concrete things and explain them in place.** Use a file and line, exact command, actual error, symbol, flag, or configuration key, and add one clause saying what it is and why it matters. The anchor plus its reason must be enough to act on; do not send the reader into the code to discover what you meant.
+8. **Ask only when you must, and default the rest.** Ask when the choice is consequential or hard to reverse and you cannot settle it from the repository, context, or an established convention. Otherwise choose the most standard, safe option, act, and state the assumption in one line the reader can override. Never ask what you can look up, and never ask a comprehension check such as "does this make sense?"
+9. **Make a question answerable in one read.** Ask one thing; if two or three are genuinely required, number them. Put the context and the concrete options inside the question and recommend one with its reason — e.g. "Token lifetime: 15 min (safer, more refreshes) or 60 min (fewer refreshes, wider exposure if leaked)? I recommend 15 min. Which?" Do not pose an open-ended "what do you want to do?" when you can offer options.
+10. **Preserve caveats, tradeoffs, and uncertainty.** Put unresolved items in a final `Caveats / needs your call` line only when non-empty; state any skipped verification there. If stuck in a debugging loop, name the assumption being questioned and ask one focused question.
+11. **Locate multi-step work.** State the current stage and next stage; when detail does not fit, give the short form and name the document that owns the rest.
+
+### Before you send
+
+Check, in order: outcome first; thread named and self-contained; four points or fewer; every anchor carries its reason; questions cut to the essential, each with options and a recommendation; caveats present only if real.
 ## Task
 
 # Draft a feature system design
@@ -80,7 +105,7 @@ Draft or revise feature-wide architecture at `docs/features/<feature-name>/syste
 ## Inputs
 
 - A large-feature PRD, slice proposal, shared-architecture evidence, or existing system design.
-- Optional repository facts, interface evidence, diagrams, and explicit decisions.
+- Optional repository facts, interface evidence, diagrams, explicit decisions, and the product vision's durable direction.
 - Optional feature name and authorized target path. Default: `docs/features/<feature-name>/system-design.md`.
 
 ## Instructions
@@ -90,7 +115,8 @@ Draft or revise feature-wide architecture at `docs/features/<feature-name>/syste
 3. Ask only questions that affect actors, slice boundaries, shared interfaces or invariants, feature-wide state, trust, compatibility, recovery, concurrency, requirement ownership, or testable handoffs. Do not portray missing decisions, repository facts, or approval as settled.
 4. Define the system context and actors; component responsibilities; one end-to-end control/data flow; and applicable shared state, consistency, trust, failure, schema/event, compatibility, concurrency, recovery, and automated-worker authority rules. Map every requirement ID to an owning slice and show slice dependencies and persisted handoff states.
 5. Make each shared interface and failure boundary concrete enough to constrain its slices. Label introduced or referenced interfaces `[EXISTS]`, `[PROPOSED]`, or `[ASSUMED]`; use `[EXISTS]` only for supplied or inspected source. A rule belongs here only when it crosses slices or defines their boundary.
-6. Reference, rather than duplicate, slice-local columns, payloads, algorithms, commands, prompt text, and implementation work. On revision, preserve unrelated content, stable IDs, and user intent. In an agent, write only the authorized target; in chat, return the complete document.
+6. Protect the durable direction and keep hard-to-reverse contracts open. Trace the shared contracts to the product vision's durable direction, not only the parent PRD, and confirm each serves a stated durable goal rather than only this feature. Name any feature-wide decision that would be costly to reverse later — a persisted schema or format, a cross-slice or external contract, an event or wire shape, or a trust boundary — and either keep it reversible by hiding the likely-to-change choice behind a slice boundary or defer it to the last responsible moment as `[NEEDS YOUR CALL]` with the evidence needed to decide. Preserve this optionality through the boundary itself, never through speculative machinery for unapproved futures.
+7. Reference, rather than duplicate, slice-local columns, payloads, algorithms, commands, prompt text, and implementation work. On revision, preserve unrelated content, stable IDs, and user intent. In an agent, write only the authorized target; in chat, return the complete document.
 
 ## Output
 

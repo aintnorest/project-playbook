@@ -12,6 +12,7 @@ Create or revise a durable decision record that explains why a meaningful produc
 
 - [Decision record contract](../guides/product-documentation-process.md#decision-record)
 - [Evidence and authority](../guides/document-convergence.md#evidence-and-authority)
+- [Communication rules](../guides/communication-policy.md#rules)
 
 ## Inputs
 

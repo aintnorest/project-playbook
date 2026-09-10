@@ -11,6 +11,7 @@ Turn an approved Technical Design Document (TDD) into a concise directed acyclic
 ## Required guidance
 
 - [Implementation plan contract](../guides/product-documentation-process.md#implementation-plan)
+- [Communication rules](../guides/communication-policy.md#rules)
 
 ## Inputs
 

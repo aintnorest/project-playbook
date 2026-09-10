@@ -12,6 +12,7 @@ Add or revise durable cross-feature lessons in the learning log while leaving fe
 
 - [Learning log contract](../guides/product-documentation-process.md#learning-log)
 - [Evidence and authority](../guides/document-convergence.md#evidence-and-authority)
+- [Communication rules](../guides/communication-policy.md#rules)
 
 ## Inputs
 

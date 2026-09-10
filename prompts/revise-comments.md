@@ -13,6 +13,7 @@ Produce a minimally revised, complete raw-Markdown candidate that addresses auth
 - [Evidence and authority](../guides/document-convergence.md#evidence-and-authority)
 - [Revision identity](../guides/document-convergence.md#revision-identity)
 - [Revision discipline](../guides/document-convergence.md#revision-discipline)
+- [Communication rules](../guides/communication-policy.md#rules)
 
 ## Inputs
 

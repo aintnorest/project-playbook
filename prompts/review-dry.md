@@ -13,6 +13,7 @@ Assess one exact target revision and the supplied related documents for duplicat
 - [Evidence and authority](../guides/document-convergence.md#evidence-and-authority)
 - [Findings](../guides/document-convergence.md#findings)
 - [Reference over repetition](../guides/product-documentation-process.md#reference-over-repetition)
+- [Communication rules](../guides/communication-policy.md#rules)
 
 ## Inputs
 

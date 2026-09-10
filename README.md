@@ -19,7 +19,7 @@ The initial material comes from workflows already used in production projects. P
 
 1. Use the [product documentation process](guides/product-documentation-process.md) to choose the smallest applicable workflow and find each document's purpose, contents, and location.
 2. Apply the [communication policy](guides/communication-policy.md) to reader-facing output and the [technical-writing standards](guides/technical-writing-standards.md) to system and technical designs.
-3. Choose an action in the [prompt library](prompts/README.md). It covers document creation, inline-comment revision, independent and DRY review, feedback integration, approval preparation, handoff, and implementation-plan execution through isolated subagents; each task has an agent source and a chat-ready version.
+3. Choose an action in the [prompt library](prompts/README.md). It covers document creation and convergence, targeted TypeScript/Rust/Tauri code reviews, handoff, and implementation-plan execution through isolated subagents; each task has an agent source and a chat-ready version.
 4. Follow the [mise integration and adoption instructions](integrations/mise.md) to install a selected release and make the guidance discoverable in another repository.
 
 The [document convergence workflow](guides/document-convergence.md) explains how these tasks fit your repeated review and revision loop. Start from an idea, upstream documents, or a current draft; your explicit approval, not a model's issue count, ends the document's cycle.
@@ -79,6 +79,7 @@ These changes are not a published release; `VERSION` remains `0.1.0`. At release
 - Replace `prompts/sdd-review.md` with `prompts/review-document.md`. Use `prompts/README.md` to find all authoring and lifecycle tasks, or paste the matching file from `prompts/chat/` without collecting separate guides.
 - Use the product documentation process's lightweight path for qualifying minor changes. Full-feature designs retain Gherkin as the default, with justified alternatives. Implementation plans define a DAG through task prerequisite IDs; diagrams and parallel-wave tables are optional derived views.
 - Use `prompts/orchestrate-implementation-plan.md` to execute an approved plan through isolated subagents. It requires a repository-capable harness with worker stop controls and orchestrator-owned worktree integration; its generated chat copy does not enable execution in a chat-only interface.
+- Use the separate `review-typescript.md`, `review-rust.md`, and `review-tauri.md` prompts under `prompts/` for read-only correctness and maintainability reviews. They share the catalog's code review contract, preserve polyglot scope boundaries, and have generated chat-ready copies; existing document review prompts are unchanged.
 - `playbook:check` retains its reference-only behavior; its documentation now states that it does not verify installed content.
 - Consumer installations include the convergence workflow, catalog, and generated chat prompts, plus the README, decisions, and integration notes needed for local links. Consumers need no Python; maintainers use the publisher and freshness check when changing prompt sources.
 

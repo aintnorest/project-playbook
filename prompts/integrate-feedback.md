@@ -15,6 +15,7 @@ Integrate evidence-supported feedback into a complete candidate without treating
 - [Revision discipline](../guides/document-convergence.md#revision-discipline)
 - [Dispositions](../guides/document-convergence.md#dispositions)
 - [Severity](../guides/document-convergence.md#severity)
+- [Communication rules](../guides/communication-policy.md#rules)
 
 ## Inputs
 

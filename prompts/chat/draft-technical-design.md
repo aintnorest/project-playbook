@@ -123,6 +123,31 @@ Use this form for a meaningful design choice:
 > We choose Option A over Option B because we prioritize Advantage X at the accepted cost of Disadvantage Y.
 
 Use the exact tags `[DECIDED]` for developer-authorized or source-backed governing decisions and `[NEEDS YOUR CALL]` for consequential choices still awaiting a decision. Identify recommendations as proposals, not decided facts; neither tag approves the whole document. Do not hide a cost because one option is common or modern, and do not invent competing options for choices without a meaningful tradeoff.
+## Rules
+
+Write for this reader, not an idealized one who remembers everything:
+
+- **Runs two to five separate trains of work at once**, so a message may arrive right after a switch away from it; residual attention from the other tasks means the reader is not mentally back in this one yet.
+- **Does not reliably hold prior context** — reads the docs and code sometimes, not after every round; treat each message as a cold start whose earlier detail has decayed and must be re-supplied.
+- **Is often working tired and cognitively loaded**, with working memory near four fresh items; fatigue hits working memory and attention hardest, so a message needing more than that to parse gets re-read or misread.
+
+Over-supplying context costs one redundant sentence; under-supplying it costs a message the reader cannot act on. Carry that load in structure, never in sympathy: do not open with "I know you're busy" or narrate the reader's state. Given that reader, apply these rules:
+
+1. **Open with the outcome.** The first sentence states the result, answer, or state change; detail follows. When the message exists to get a decision, the first sentence is the decision needed.
+2. **Name the thread and where it stands.** Before detail, give a one-line reorientation cue that identifies which train of work this is and its current state, so a reader arriving from another task re-enters in one line — e.g. "[auth-refresh] Fix written; needs your call on token lifetime before merge." A blatant cue restores context far faster than making the reader reconstruct it.
+3. **Make every message stand alone.** Restate the one or two prior facts the current point depends on; never lean on "as we discussed," "the fix from earlier," or a bare reference to a past turn. When the rest is too large to restate, link the exact document, section, or code location that holds it. The reader should be able to answer without opening anything first.
+4. **Size the response to the answer, not the question.** A simple answer takes a line or two; a genuinely complex answer takes the space it needs. Padding and restating the request are prohibited, not depth.
+5. **Cap the load and keep it scannable.** Carry at most four distinct points per message; split anything larger into separate labeled points or a follow-up. Use at most three sentences per point and short sentences within them. Use prose for one or two items, a list for three or more, and headings only at three or more sections; do not fill a template for its own sake.
+6. **Use plain words and one stable name for each thing.** Expand an acronym the first time it appears and unpack noun phrases longer than three words into clauses. Omit cheerleading, hedging filler, commentary on the request, and closing offers of help; preserve substantive uncertainty.
+7. **Point to concrete things and explain them in place.** Use a file and line, exact command, actual error, symbol, flag, or configuration key, and add one clause saying what it is and why it matters. The anchor plus its reason must be enough to act on; do not send the reader into the code to discover what you meant.
+8. **Ask only when you must, and default the rest.** Ask when the choice is consequential or hard to reverse and you cannot settle it from the repository, context, or an established convention. Otherwise choose the most standard, safe option, act, and state the assumption in one line the reader can override. Never ask what you can look up, and never ask a comprehension check such as "does this make sense?"
+9. **Make a question answerable in one read.** Ask one thing; if two or three are genuinely required, number them. Put the context and the concrete options inside the question and recommend one with its reason — e.g. "Token lifetime: 15 min (safer, more refreshes) or 60 min (fewer refreshes, wider exposure if leaked)? I recommend 15 min. Which?" Do not pose an open-ended "what do you want to do?" when you can offer options.
+10. **Preserve caveats, tradeoffs, and uncertainty.** Put unresolved items in a final `Caveats / needs your call` line only when non-empty; state any skipped verification there. If stuck in a debugging loop, name the assumption being questioned and ask one focused question.
+11. **Locate multi-step work.** State the current stage and next stage; when detail does not fit, give the short form and name the document that owns the rest.
+
+### Before you send
+
+Check, in order: outcome first; thread named and self-contained; four points or fewer; every anchor carries its reason; questions cut to the essential, each with options and a recommendation; caveats present only if real.
 ## Task
 
 # Draft a Technical Design Document
@@ -138,7 +163,7 @@ Draft or revise a Technical Design Document (TDD) with concrete, testable local 
 ## Inputs
 
 - The parent PRD and, for a slice, applicable system-design rules; a feature or slice proposal; or an existing TDD.
-- Optional source-backed interfaces, operational constraints, diagrams, tests, and explicit decisions.
+- Optional source-backed interfaces, operational constraints, diagrams, tests, explicit decisions, and the product vision's durable direction.
 - Optional authorized target path. Default: `docs/features/<feature-name>/tdd.md` for a small feature, or `docs/features/<feature-name>/slices/<nn>-<slice-name>/tdd.md` for a slice.
 
 ## Instructions
@@ -148,8 +173,9 @@ Draft or revise a Technical Design Document (TDD) with concrete, testable local 
 3. Ask only questions that change the local boundary, entry/exit state, failures, data flow, interface, transition, security or operational assumption, tradeoff, acceptance, verification, or handoff. Mark consequential unknowns `[NEEDS YOUR CALL]` or as unresolved prerequisites; never imply approval.
 4. Reference parent requirement IDs and shared system rules instead of copying them. Define local non-goals, entry and exit state, rejected inputs and failures, concrete data flow, interfaces and schemas, transitions or transaction boundaries, security/operational assumptions, meaningful tradeoffs, observable acceptance, technical contracts and verification, and the next-slice handoff when applicable.
 5. Give real mechanisms, representations, ownership transfer, durability, rollback, and dependency failure, retry, cleanup, or repair ownership where applicable. State meaningful contracts with preconditions, postconditions, invariants, partial-failure behavior, and verification criteria; use concise RFC 2119 obligations where a full contract is not useful.
-6. Label each concrete interface `[EXISTS]`, `[PROPOSED]`, or `[ASSUMED]`; reserve `[EXISTS]` for supplied or inspected source. Put observable boundary behavior in Gherkin by default, or a justified alternative as its sole normative home. Exclude implementation tasks, dependency order, copied requirement text or feature-wide architecture, and speculative future generalization.
-7. On revision, preserve unrelated content, stable identifiers, and user intent. In an agent, write only the authorized target; in chat, return the complete document.
+6. Do not foreclose the project's goals for local fit. Check each local contract against the parent requirements, the shared system rules, and the product vision's durable direction; where a slice-local choice would become costly to reverse or a de facto global constraint — persisted data, an exported or shared interface, a wire or event format, or a name other work will depend on — keep it reversible by hiding the likely-to-change decision behind the local boundary, record it as an explicit tradeoff naming what it forecloses, or defer it to the last responsible moment as `[NEEDS YOUR CALL]` with the evidence needed. Preserve this optionality through the boundary, not through speculative generalization, which remains excluded.
+7. Label each concrete interface `[EXISTS]`, `[PROPOSED]`, or `[ASSUMED]`; reserve `[EXISTS]` for supplied or inspected source. Put observable boundary behavior in Gherkin by default, or a justified alternative as its sole normative home. Exclude implementation tasks, dependency order, copied requirement text or feature-wide architecture, and speculative future generalization.
+8. On revision, preserve unrelated content, stable identifiers, and user intent. In an agent, write only the authorized target; in chat, return the complete document.
 
 ## Output
 

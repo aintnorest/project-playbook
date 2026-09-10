@@ -13,6 +13,7 @@ Assess whether one exact current revision has enough current, role-applicable ev
 - [Evidence and authority](../guides/document-convergence.md#evidence-and-authority)
 - [Severity](../guides/document-convergence.md#severity)
 - [Approval](../guides/document-convergence.md#approval)
+- [Communication rules](../guides/communication-policy.md#rules)
 
 ## Inputs
 

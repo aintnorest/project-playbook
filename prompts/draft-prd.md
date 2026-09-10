@@ -13,6 +13,7 @@ Draft or revise a feature PRD at `docs/features/<feature-name>/prd.md`.
 - [Feature Product Requirements Document contract](../guides/product-documentation-process.md#feature-product-requirements-document)
 - [Requirement identifiers](../guides/product-documentation-process.md#requirement-identifiers)
 - [Lightweight path for minor changes](../guides/product-documentation-process.md#lightweight-path-for-minor-changes)
+- [Communication rules](../guides/communication-policy.md#rules)
 
 ## Inputs
 
