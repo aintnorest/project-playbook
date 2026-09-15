@@ -113,7 +113,7 @@ The publisher freshness check and repository Markdown-link checks passed. These 
 
 ## Targeted polyglot code reviews
 
-On 2026-09-07, the developer requested separate TypeScript, Rust, and Tauri review prompts focused on good, maintainable code in repositories that may contain other technologies. Four read-only research subagents independently covered general review practices and each technology; their recommendations informed [Review TypeScript](../prompts/review-typescript.md), [Review Rust](../prompts/review-rust.md), and [Review Tauri](../prompts/review-tauri.md).
+On 2026-09-07, the developer requested separate TypeScript, Rust, and Tauri review prompts focused on good, maintainable code in repositories that may contain other technologies. Four read-only research subagents independently covered general review practices and each technology; their recommendations informed [Review TypeScript](../prompts/review-code-typescript.md), [Review Rust](../prompts/review-code-rust.md), and [Review Tauri](../prompts/review-code-tauri.md).
 
 The [code review contract](../prompts/README.md#code-review-contract) in the catalog owns shared scope, evidence, maintainability, read-only operation, and reporting rules for these three tasks. Their source prompts own the technology-specific criteria, and the publisher embeds the same shared contract in each chat copy; document-review severity and approval rules remain scoped to document review rather than being silently applied to code.
 

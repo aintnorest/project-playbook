@@ -5,6 +5,7 @@ Pick the action you want, supply your current material, and run one pass. For do
 ## Choose a task
 
 Use **Agent source** when the assistant can read repository files. Use **Chat-ready** when you want one prompt with its applicable shared guidance already included; copy the file's raw contents, not just its link.
+Review prompt filenames are grouped by target: `review-doc-*` reviews project documents, while `review-code-*` reviews source code and application boundaries.
 
 | What you want to do | Agent source | Chat-ready |
 | --- | --- | --- |
@@ -13,18 +14,18 @@ Use **Agent source** when the assistant can read repository files. Use **Chat-re
 | Design a feature's shared architecture and slice boundaries | [Draft system design](draft-system-design.md) | [Copy prompt](chat/draft-system-design.md) |
 | Design one small feature or one slice concretely | [Draft technical design](draft-technical-design.md) | [Copy prompt](chat/draft-technical-design.md) |
 | Turn an approved TDD into a DAG of executable tasks | [Create a DAG task list](draft-implementation-plan.md) | [Copy prompt](chat/draft-implementation-plan.md) |
+| Turn a use case into one evidence-grounded prompt | [Draft a prompt](draft-prompt.md) | [Copy prompt](chat/draft-prompt.md) |
+| Independently review a prompt and, when possible, exercise its behavior | [Review a prompt](review-prompt.md) | [Copy prompt](chat/review-prompt.md) |
 | Execute a plan through isolated subagents and validate the working branch | [Orchestrate implementation](orchestrate-implementation-plan.md) | [Copy prompt](chat/orchestrate-implementation-plan.md) |
-| Record a meaningful choice and its tradeoffs | [Record decision](record-decision.md) | [Copy prompt](chat/record-decision.md) |
-| Capture an observed, reusable lesson | [Update learning log](update-learning-log.md) | [Copy prompt](chat/update-learning-log.md) |
-| Revise a draft using your inline HTML comments | [Revise comments](revise-comments.md) | [Copy prompt](chat/revise-comments.md) |
-| Get an independent, actionable review against the document contract | [Review document](review-document.md) | [Copy prompt](chat/review-document.md) |
-| Review TypeScript correctness and maintainable design | [Review TypeScript](review-typescript.md) | [Copy prompt](chat/review-typescript.md) |
-| Review Rust correctness and maintainable design | [Review Rust](review-rust.md) | [Copy prompt](chat/review-rust.md) |
-| Review Tauri host/frontend integration and maintainable boundaries | [Review Tauri](review-tauri.md) | [Copy prompt](chat/review-tauri.md) |
-| Find duplicated facts and competing sources of truth | [Review DRY](review-dry.md) | [Copy prompt](chat/review-dry.md) |
-| Have the author judge reviews and apply only justified changes | [Integrate feedback](integrate-feedback.md) | [Copy prompt](chat/integrate-feedback.md) |
-| Inspect remaining issues and prepare your final approval | [Prepare approval](prepare-approval.md) | [Copy prompt](chat/prepare-approval.md) |
-| Change sessions/models, prepare independent review, or hand off approved upstream work | [Handoff](handoff.md) | [Copy prompt](chat/handoff.md) |
+| Review a product vision's users, problems, boundaries, and durable success signals | [Review product vision](review-doc-product-vision.md) | [Copy prompt](chat/review-doc-product-vision.md) |
+| Review a feature PRD's requirements, acceptance intent, and scope | [Review PRD](review-doc-prd.md) | [Copy prompt](chat/review-doc-prd.md) |
+| Review a feature's shared architecture, cross-slice contracts, and durable direction | [Review system design](review-doc-system-design.md) | [Copy prompt](chat/review-doc-system-design.md) |
+| Review one slice or small-feature technical design against its contract | [Review technical design](review-doc-technical-design.md) | [Copy prompt](chat/review-doc-technical-design.md) |
+| Review an implementation plan's task DAG, coverage, and verifiability | [Review implementation plan](review-doc-implementation-plan.md) | [Copy prompt](chat/review-doc-implementation-plan.md) |
+| Find duplicated facts and competing sources of truth across documents | [Review document authority](review-doc-dry.md) | [Copy prompt](chat/review-doc-dry.md) |
+| Review TypeScript correctness and maintainable design | [Review TypeScript](review-code-typescript.md) | [Copy prompt](chat/review-code-typescript.md) |
+| Review Rust correctness and maintainable design | [Review Rust](review-code-rust.md) | [Copy prompt](chat/review-code-rust.md) |
+| Review Tauri host/frontend integration and maintainable boundaries | [Review Tauri](review-code-tauri.md) | [Copy prompt](chat/review-code-tauri.md) |
 
 PRD means Product Requirements Document. Technical Design Document is abbreviated TDD in the process; it does not mean test-driven development here. Use the [document contracts](../guides/product-documentation-process.md#document-contracts) rather than choosing a task based on an ambiguous acronym.
 
@@ -52,6 +53,46 @@ Keep the accepted decisions and open questions from our previous pass.
 ```
 
 Use the real path, revision, and facts for your project; the example is not a requirement to implement document export. Without a consumer installation, point to the corresponding source file in your playbook checkout.
+
+### Draft a prompt
+
+Use the prompt-drafting task to turn a goal, use case, target model set, and execution environment into one reusable prompt. Supply an existing prompt when revising rather than starting over. The task retrieves only relevant prompt-design evidence, may delegate independent read-only research when the harness supports it, and keeps one agent responsible for the final artifact. It checks construction and repository integration only; it does not execute, compare, score, or review the prompt it creates.
+
+```text
+Use .project-playbook/prompts/draft-prompt.md.
+Goal: Review PostgreSQL schema migrations for deployment and compatibility risks.
+Use case: A repository agent runs the prompt before a pull request is merged.
+Target models and interface: Claude Sonnet and GPT Codex in our repository harness.
+Available tools or subagents: Repository search, Git diff, PostgreSQL documentation,
+and read-only research workers.
+Required output: Impact-ordered findings grounded in exact migration locations.
+Destination: prompts/review-postgres-migrations.md
+```
+
+Provide a local knowledge-base path when one is available. Otherwise the task checks readable sibling `knowledge-base` and `knowledge-base-intelligent-systems` checkouts before using the public fallback at `https://github.com/aintnorest/knowledge-base`. It likewise uses the local Project Playbook before `https://github.com/aintnorest/project-playbook`; remote fallbacks never silently override local revisions.
+
+### Review a prompt
+
+Use the prompt-review task as a separate, read-only pass after a prompt has an exact revision or unambiguous body. For a managed prompt, review the generated delivery artifact users actually run and supply its editable task source, guidance manifest, included shared sections, and publisher as provenance. Include known failures, observed strengths, raw responses, test conditions, or earlier comparison results when they should inform regression cases; identify the prompt revision and runtime to which they belong. Add a model runtime, representative cases, answer key, parser, or incumbent only when those checks are in scope; a new prompt does not need a manufactured comparison.
+
+```text
+Use .project-playbook/prompts/review-prompt.md.
+Prompt source: prompts/review-postgres-migrations.md
+Delivery artifact: prompts/chat/review-postgres-migrations.md
+Use case: A repository agent reviews PostgreSQL migrations before merge.
+Target model and interface: GPT Codex in our repository harness.
+Success criteria: Supported findings cite exact migrations; unsupported concerns
+remain questions or coverage limits.
+Relevant research: /path/to/knowledge-base-intelligent-systems
+Prior evidence: On revision 3 with the same model, missing-schema inputs caused
+invented migration findings, while exact migration citations remained reliable.
+Run three representative migration packets twice each and report behavior variance.
+Do not edit the prompt.
+```
+
+When a material prompt technique or capability claim needs external evidence, the reviewer retrieves only the relevant local knowledge-base synthesis and supporting dossiers, falling back publicly only when no local copy is available. Research motivates findings or cases within its measured scope; it is not a universal defect checklist and does not replace target-model behavior. Supplied testing history is accepted as evidence of what the developer observed for the identified artifact and runtime, not rerun merely to prove that history, and assessed for applicability to the current target. The reviewer accounts for each material issue and strength and marks its current relationship as current, resolved, regressed, stale, or unverified. When execution is unavailable, the reviewer can still inspect the prompt contract, repository integration, research, and supplied artifacts, but it must label current behavior unverified. Compare an incumbent only when you explicitly request a new comparative review.
+
+The reviewer traces every structural finding in a compiled prompt to its editable task source, shared guide, publisher, model/interface layer, or their interaction. When a shared guide is implicated, the report names its known consumer scope, the behavior the shared rule serves, and the cross-prompt impact review required before changing that source. The reviewer remains read-only and does not assume a global rule should change when a narrow task-specific precedence statement is sufficient.
 
 The DAG task prompt loads only the implementation-plan contract. Supply the TDD and repository context; it follows upstream references as needed rather than importing the review workflow. Each task's prerequisite IDs define the graph; request a Mermaid diagram only when you want that additional view.
 
@@ -93,7 +134,7 @@ Omit irrelevant fields and reuse context already present. A saved chat project m
 Choose TypeScript or Rust for that language's code, or Tauri for the application integration boundary, regardless of the frontend language. These are separate read-only reviews, not an orchestration run or automatic repair; use the same prompts with GPT-6-Astra or Fable 5.1 without assuming either model provides particular tools or guarantees.
 
 ```text
-Use .project-playbook/prompts/review-typescript.md.
+Use .project-playbook/prompts/review-code-typescript.md.
 Repository: /absolute/path/to/my-project
 Scope: src/editor and src/shared/document.ts
 Review the current working-tree snapshot for correctness and maintainability.
@@ -145,7 +186,7 @@ Finish with checks actually run or not run and specific questions or coverage li
 
 ## Run a review cycle
 
-After your comment passes, send the same saved revision and governing context to fresh reviewers, choosing another model family when useful. Use **Review document** and **Review DRY** as separate passes; the latter does not replace requirements, correctness, or feasibility review.
+After your comment passes, send the same saved revision and governing context to fresh reviewers, choosing another model family when useful. For frozen, persisted, exported, or otherwise costly-to-reverse contracts, do not treat one completion as a complete defect-recall control; use a second independent pass or focused human boundary review. Use the document-role review that matches your target — **Review product vision**, **Review PRD**, **Review system design**, **Review technical design**, or **Review implementation plan** — and **Review document authority** as separate passes; the latter does not replace requirements, correctness, or feasibility review.
 
 Give the author the current draft plus the returned reports using **Integrate feedback**. The report must account for every item and explain skipped portions; retain it so repeated findings and accepted decisions remain recognizable. If a review used an older draft, include that identity rather than relabeling it as current.
 

@@ -33,6 +33,50 @@ Use one severity vocabulary:
 | Minor | A localized, actionable clarity or reference defect without the consequences above. |
 
 Judge severity by demonstrated impact at this document's boundary, not emphatic wording, missing section count, reviewer confidence, or repeated reports. Missing implementation details are not automatically defects in a product requirements document. Report unavailable evidence and unverified concerns separately from confirmed defects; zero supported findings is a valid result with an honest coverage statement.
+### Product vision
+
+**Purpose:** State why the product exists and what durable direction constrains every feature.
+
+**Contains:**
+
+- target users and their underlying problems;
+- product principles;
+- product-wide boundaries and non-goals;
+- durable success signals;
+- constraints that every feature must preserve.
+
+**Excludes:**
+
+- feature-specific requirements;
+- implementation architecture;
+- command, schema, or module contracts;
+- task sequencing.
+## Reference over repetition
+
+Use this rule whenever information could appear in more than one document:
+
+> Define a fact once in the document that owns it. Everywhere else, reference the owning file, heading, requirement ID, scenario, contract, or task.
+
+### Reference rules
+
+- A Product Requirements Document owns requirement wording.
+- A system design owns feature-wide architecture and shared invariants.
+- A technical design owns slice-local interfaces and technical decisions.
+- The technical design's [behavioral acceptance (source: guides/product-documentation-process.md#behavioral-acceptance)] owns observable scenarios, whether expressed in Gherkin or a justified alternative.
+- Technical contracts own internal preconditions, postconditions, and invariants.
+- An implementation plan owns task dependencies and work order.
+- Code tests own executable proof.
+
+A short local summary is allowed when a reader cannot understand the current section without it. Label the summary as context, link to the authority, and do not introduce new normative wording.
+
+An explicitly referenced, applicable parent constraint already governs the child document. Do not require a copied child rule or a new child requirement ID solely to repeat that constraint; use a reference for traceability and verification. Add a child-owned requirement only for a distinct feature-specific obligation, interpretation, or exception that the parent does not already define.
+
+When an authoritative fact changes:
+
+1. Update its owning document.
+2. Check every reference to its identifier or heading.
+3. Update dependent contracts only when the changed fact alters them.
+4. Do not synchronize copied paragraphs because copied normative paragraphs should not exist.
 ## Rules
 
 Write for this reader, not an idealized one who remembers everything:
@@ -60,37 +104,46 @@ Over-supplying context costs one redundant sentence; under-supplying it costs a 
 Check, in order: outcome first; thread named and self-contained; four points or fewer; every anchor carries its reason; questions cut to the essential, each with options and a recommendation; caveats present only if real.
 ## Task
 
-# Review a document
+# Review a product vision
 
 ## Role
 
-You are an independent, evidence-grounded document reviewer. Review; do not edit, approve, or resolve feedback.
+You are an independent, evidence-grounded reviewer of one product vision. Review the durable direction; do not edit it, approve it, author feature requirements, or design anything downstream.
 
 ## Purpose
 
-Assess one exact revision against the contract for its own document role, its governing sources, and the requested scope.
+Find consequential defects that would let a feature author, system designer, or product owner inherit a direction that does not constrain a real decision, rests on an unstated assumption presented as fact, hides a solution or feature inside the vision, or leaves a feature unable to tell whether it serves the product. Assess whether the vision states its users and their problems, a diagnosis and durable direction, explicit boundaries and non-goals, falsifiable success signals, and binding constraints, without demanding feature, architecture, or delivery detail the vision must exclude.
 
 ## Inputs
 
-- Target type, path, exact revision, complete body, and review scope.
-- Available governing sources: the target-role contract, applicable parents, decisions, exceptions, and evidence for claims under review.
-- For a follow-up, the supplied prior findings and dispositions; for an independent first pass, omit them.
+- Target path, exact revision or unambiguous candidate body, and review scope.
+- Available governing sources: motivating product research, user evidence, and feature documents that the vision cites; accepted decisions and scoped exceptions.
+- Available evidence for any claim the vision presents as established fact about users, problems, or the market.
+- For a follow-up, prior findings and dispositions. Omit them for an independent first pass.
 
 ## Instructions
 
-1. Confirm the exact candidate and target role. With file access, read only that role's sections in the [document contracts (source: guides/product-documentation-process.md#document-contracts)] and [review checklist (source: guides/product-documentation-process.md#review-checklist)], plus sources needed by the requested scope. In chat, use supplied target/constraints and name the precise check limited by missing material. A path, link, assertion, or prior review is not evidence unless its contents are available.
-2. Compare the candidate with the applicable sources. A parent rule already governs a child when referenced; do not demand copied text, material owned by another role, or reconsider an accepted decision without new evidence.
-3. Report only evidence-backed, actionable defects: a role-owned omission, contradiction, unsupported or unowned claim, broken traceability, or applicable contract/clarity failure. For an omission, identify the governing rule and inspected locations. Treat unavailable sources as named coverage limits and unverified concerns as questions, never as defects.
-4. Keep an independent first pass free of prior findings, dispositions, author identity, desired outcome, and issue totals. If that boundary was unavailable, label the pass as follow-up rather than independent. Do not infer correctness from reviewer agreement.
-5. Use the canonical finding IDs and severity definitions. For each supported defect, give the exact target and governing-source locations, observed defect, evidence, consequence, and smallest correction or focused decision. Merge only the same underlying defect and correction; an empty findings list is valid.
-6. Do not praise, edit, implement, dispose of feedback, execute tests, or imply approval.
+1. **Establish the review basis.** Identify the exact candidate. With file access, read the candidate, its cited sources, and only the evidence needed to check a claim the vision presents as settled. In chat, use supplied source content; a path or link alone is not evidence. Treat an unavailable source as a precise coverage limit, not as a candidate defect. The product vision sits at the top of the hierarchy, so its checks are internal to the vision and against its own cited evidence, not traceability to a parent.
+2. **Derive a bounded coverage map.** Before judging defects, identify the durable direction the vision asserts: its target users and their underlying problems, product principles, product-wide boundaries and non-goals, durable success signals, and the constraints every feature must preserve. Map only what the vision owns. Do not import example content, a generic vision template, or business-model, roadmap, or go-to-market sections the contract does not require.
+3. **Check that users and their underlying problems are stated, not assumed.** Confirm the vision names who it serves and the underlying problem it addresses, rather than a product category or an internal goal standing in for a customer need. Where the vision leans on a claim about users, problems, or the market that it presents as established fact, require its cited evidence; an uncited assertion is a coverage limit or a question unless the vision itself presents it as settled, in which case the unsupported claim is a finding.
+4. **Check for a diagnosis and a constraining direction, not a slogan.** Confirm the vision states why the product exists and what problem or opportunity makes the direction matter, specifically enough to rule some product directions out. Flag fluff or a platitude only when you can show it fails to constrain a downstream feature or scope decision, naming the decision it leaves unresolved. Do not turn a preference about ambition or tone into a defect.
+5. **Check boundaries and non-goals are explicit and bounded.** Confirm the vision names product-wide boundaries and durable non-goals rather than implying it will serve everyone. Flag an all-encompassing scope with no stated exclusion, and flag a non-goal so broad it excludes nothing. Bound the actual direction rather than listing unrelated things the product could hypothetically never do.
+6. **Check durable success signals are falsifiable.** Confirm each success signal is observable or measurable enough that a feature could later be judged against it. Flag a purely subjective signal that offers no way to tell whether the product is moving toward it, and name the smallest concrete correction. Do not demand a specific metric framework or numeric target the contract does not require.
+7. **Check the vision boundary.** Confirm the document holds only durable direction: flag feature-specific requirements, implementation architecture, command, schema, or module contracts, quarterly roadmap items, or task sequencing that leaked in. A durable constraint every feature must preserve belongs here; a specific solution, feature, or technology lock-in does not. Distinguish an enduring boundary from a solution the vision has quietly chosen.
+8. **Check constraints actually bind.** Confirm each constraint the vision says every feature must preserve is concrete enough that a feature could violate it and be caught in review. Flag a constraint too vague to bind, and distinguish it from an aspiration, which is not a constraint.
+9. **Check internal consistency.** Confirm the principles, boundaries, success signals, and constraints do not contradict one another — for example, a boundary that excludes a user segment a success signal depends on. Flag a genuine conflict for resolution before features commit to it.
+10. **Apply clarity as a contract check.** Flag jargon, undefined terms, or a vague verb that would leave two readers with different mental models of success, only when you can show the resulting comprehension or alignment cost. Name the smaller sufficient correction; do not restyle prose or turn a wording preference into a defect.
+11. **Report only supported defects.** Quote the candidate at the exact location and quote the governing source when the finding depends on it. For an omission, name the applicable contract rule and the candidate sections inspected. Keep distinct defects separate; merge only the same underlying defect and correction. Separate unresolved questions and coverage limits from findings, and allow zero findings.
+12. **Preserve review independence.** For an independent first pass, do not use prior findings, dispositions, author identity, desired verdict, or issue totals. If that context was visible, label the review as a follow-up. Do not praise, edit, implement, dispose of feedback, or imply approval.
 
 ## Output
 
-Open with target path/revision, scope, canonical count of unique unresolved supported findings, and whether this is an independent first pass. Then provide:
+Open with the target path/revision, review scope, canonical count of unique unresolved supported findings, and whether the pass is independent. Then provide:
 
-- **Coverage:** target role and checks applied, sources inspected, and the precise checks limited by unavailable material.
-- **Findings:** supported defects first; then distinct questions and coverage limits. Use the canonical finding shape without repeating it for no issue.
+- **Coverage:** the derived direction map, sources inspected, evidence inspected, and precise checks limited by unavailable material.
+- **Findings:** supported defects in canonical finding form: stable ID, severity, exact location, candidate evidence, governing evidence when applicable, practical downstream consequence, and smallest correction or focused decision question.
+- **Questions:** consequential unknowns not established as defects.
+- **Coverage limits:** unavailable evidence and exactly which checks it prevents.
 - **Next action:** one concrete revision, source retrieval, focused decision, or rereview step. Do not imply acceptance.
 
 ## Supply inputs

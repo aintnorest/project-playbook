@@ -16,7 +16,7 @@ The repository already forbids the opposite failure, speculative generalization 
 
 Add a forward-compatibility check to the three design prompts and admit the product vision as a traceable source:
 
-- `draft-system-design.md`, `draft-technical-design.md`, and `review-technical-design.md` each gain one instruction requiring the design to trace to the product vision's durable direction, not only the parent PRD, and requiring any costly-to-reverse or de facto global choice to be named.
+- `draft-system-design.md`, `draft-technical-design.md`, and `review-doc-technical-design.md` each gain one instruction requiring the design to trace to the product vision's durable direction, not only the parent PRD, and requiring any costly-to-reverse or de facto global choice to be named.
 - The product vision's durable direction is added as an available governing source in each prompt's inputs; an unavailable vision is a coverage limit, not a defect.
 
 The check rests on one reconciling principle: you need not build the future now, but you must not foreclose it. Concretely:
