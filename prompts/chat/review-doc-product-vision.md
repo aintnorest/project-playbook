@@ -35,21 +35,44 @@ Use one severity vocabulary:
 Judge severity by demonstrated impact at this document's boundary, not emphatic wording, missing section count, reviewer confidence, or repeated reports. Missing implementation details are not automatically defects in a product requirements document. Report unavailable evidence and unverified concerns separately from confirmed defects; zero supported findings is a valid result with an honest coverage statement.
 ### Product vision
 
+**File:** `docs/product-vision.md`
+
 **Purpose:** State why the product exists and what durable direction constrains every feature.
+
+Use this title and top-level section order:
+
+1. `# Product vision: <product>`
+2. `## Status`
+3. `## Vision`
+4. `## Target users and underlying problems`
+5. `## Product principles`
+6. `## Product-wide boundaries and non-goals`
+7. `## Durable success signals`
+8. `## Constraints every feature must preserve`
+9. `## Open decisions`, only when consequential vision-level decisions remain open.
 
 **Contains:**
 
-- target users and their underlying problems;
-- product principles;
+- document status and an existing revision identifier when one is used;
+- a concise statement of why the product exists and the future it should create;
+- durable target users and their underlying problems;
+- product principles that guide choices across features;
 - product-wide boundaries and non-goals;
-- durable success signals;
-- constraints that every feature must preserve.
+- durable, observable success signals without time-bound targets;
+- constraints that every feature must preserve;
+- consequential open decisions whose resolution would change durable product direction.
+
+In `Target users and underlying problems`, name who the product serves before describing exclusions or problems. Include an excluded audience only when it is a plausible subgroup or edge of the stated target and the distinction changes product direction; do not enumerate unrelated people the product was never intended to serve. Put broader product exclusions under `Product-wide boundaries and non-goals`.
+
+The vision owns only product-wide facts intended to remain true when individual features, delivery sequence, interfaces, or implementation change. A feature Product Requirements Document (PRD) references applicable vision content instead of copying it, then owns its feature-specific users, problem, non-goals, requirements, acceptance intent, constraints, and product decisions. Evidence may follow the claim it supports; a separate evidence section is not required.
 
 **Excludes:**
 
-- feature-specific requirements;
+- feature-specific requirements, user stories, and acceptance criteria;
+- quantified or time-bound targets, roadmap sequencing, releases, and milestones;
 - implementation architecture;
-- command, schema, or module contracts;
+- command, schema, interface, or module contracts;
+- business-model, pricing, competitive-positioning, and go-to-market plans;
 - task sequencing.
 ## Reference over repetition
 
@@ -58,6 +81,8 @@ Use this rule whenever information could appear in more than one document:
 > Define a fact once in the document that owns it. Everywhere else, reference the owning file, heading, requirement ID, scenario, contract, or task.
 
 ### Reference rules
+
+- A product vision owns durable product-wide users, problems, principles, boundaries, success signals, and constraints.
 
 - A Product Requirements Document owns requirement wording.
 - A system design owns feature-wide architecture and shared invariants.
@@ -124,12 +149,12 @@ Find consequential defects that would let a feature author, system designer, or 
 ## Instructions
 
 1. **Establish the review basis.** Identify the exact candidate. With file access, read the candidate, its cited sources, and only the evidence needed to check a claim the vision presents as settled. In chat, use supplied source content; a path or link alone is not evidence. Treat an unavailable source as a precise coverage limit, not as a candidate defect. The product vision sits at the top of the hierarchy, so its checks are internal to the vision and against its own cited evidence, not traceability to a parent.
-2. **Derive a bounded coverage map.** Before judging defects, identify the durable direction the vision asserts: its target users and their underlying problems, product principles, product-wide boundaries and non-goals, durable success signals, and the constraints every feature must preserve. Map only what the vision owns. Do not import example content, a generic vision template, or business-model, roadmap, or go-to-market sections the contract does not require.
-3. **Check that users and their underlying problems are stated, not assumed.** Confirm the vision names who it serves and the underlying problem it addresses, rather than a product category or an internal goal standing in for a customer need. Where the vision leans on a claim about users, problems, or the market that it presents as established fact, require its cited evidence; an uncited assertion is a coverage limit or a question unless the vision itself presents it as settled, in which case the unsupported claim is a finding.
+2. **Derive a bounded coverage map and check the canonical structure.** Confirm the document uses the product-vision contract's title and top-level section order: `Status`, `Vision`, `Target users and underlying problems`, `Product principles`, `Product-wide boundaries and non-goals`, `Durable success signals`, `Constraints every feature must preserve`, and `Open decisions` only when non-empty. Then map the durable direction in those sections. Project-specific guarantees, responsibility rules, and evidence belong within their canonical owner rather than in competing top-level sections. Map only what the vision owns; do not import example content, a generic vision template, or business-model, roadmap, or go-to-market sections the contract excludes.
+3. **Check that served users come first and their underlying problems are stated.** Confirm the vision first names who it serves and the underlying problem it addresses, rather than a product category or an internal goal standing in for a customer need. If it names an audience it does not serve, confirm that audience is a plausible subgroup or edge of the stated target and that the distinction changes product direction; flag lists of unrelated people the product was never intended to serve, and route broader exclusions to `Product-wide boundaries and non-goals`. Where the vision leans on a claim about users, problems, or the market that it presents as established fact, require its cited evidence; an uncited assertion is a coverage limit or a question unless the vision itself presents it as settled, in which case the unsupported claim is a finding.
 4. **Check for a diagnosis and a constraining direction, not a slogan.** Confirm the vision states why the product exists and what problem or opportunity makes the direction matter, specifically enough to rule some product directions out. Flag fluff or a platitude only when you can show it fails to constrain a downstream feature or scope decision, naming the decision it leaves unresolved. Do not turn a preference about ambition or tone into a defect.
 5. **Check boundaries and non-goals are explicit and bounded.** Confirm the vision names product-wide boundaries and durable non-goals rather than implying it will serve everyone. Flag an all-encompassing scope with no stated exclusion, and flag a non-goal so broad it excludes nothing. Bound the actual direction rather than listing unrelated things the product could hypothetically never do.
-6. **Check durable success signals are falsifiable.** Confirm each success signal is observable or measurable enough that a feature could later be judged against it. Flag a purely subjective signal that offers no way to tell whether the product is moving toward it, and name the smallest concrete correction. Do not demand a specific metric framework or numeric target the contract does not require.
-7. **Check the vision boundary.** Confirm the document holds only durable direction: flag feature-specific requirements, implementation architecture, command, schema, or module contracts, quarterly roadmap items, or task sequencing that leaked in. A durable constraint every feature must preserve belongs here; a specific solution, feature, or technology lock-in does not. Distinguish an enduring boundary from a solution the vision has quietly chosen.
+6. **Check durable success signals are falsifiable.** Confirm each success signal names an observable long-term outcome clearly enough that a feature could later be judged against it. Flag a purely subjective signal that offers no way to tell whether the product is moving toward it. Flag quantified or time-bound targets and feature acceptance that should be owned downstream. Do not demand a specific metric framework or numeric target.
+7. **Check the vision boundary.** Confirm the document holds only durable product-wide direction: flag feature-specific users, problems, non-goals, requirements, acceptance criteria, or constraints; quantified targets; product-roadmap sequencing, releases, or milestones; business-model, pricing, competitive-positioning, or go-to-market plans; implementation architecture; command, schema, interface, or module contracts; and task sequencing. A durable constraint every feature must preserve belongs here; a specific solution, feature, surface, technology lock-in, or delivery order does not. Distinguish an enduring boundary from a solution the vision has quietly chosen.
 8. **Check constraints actually bind.** Confirm each constraint the vision says every feature must preserve is concrete enough that a feature could violate it and be caught in review. Flag a constraint too vague to bind, and distinguish it from an aspiration, which is not a constraint.
 9. **Check internal consistency.** Confirm the principles, boundaries, success signals, and constraints do not contradict one another — for example, a boundary that excludes a user segment a success signal depends on. Flag a genuine conflict for resolution before features commit to it.
 10. **Apply clarity as a contract check.** Flag jargon, undefined terms, or a vague verb that would leave two readers with different mental models of success, only when you can show the resulting comprehension or alignment cost. Name the smaller sufficient correction; do not restyle prose or turn a wording preference into a defect.

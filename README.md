@@ -6,7 +6,7 @@ The playbook is Markdown with no runtime or model-service dependency for consume
 
 ## Contents
 
-- `guides/` contains authoritative shared standards and workflows.
+- `guides/` contains authoritative shared standards and workflows, including the [Beads task-management policy](guides/beads-task-management.md) for storage boundaries, explicit agent activation, issue quality, collaboration, and recovery safety.
 - `prompts/` contains task sources, the action-oriented catalog, and generated chat-ready delivery copies.
 - `decisions/` preserves the reasoning behind important playbook choices.
 - `integrations/` explains how other repositories consume the playbook.

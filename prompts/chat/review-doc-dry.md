@@ -36,6 +36,8 @@ Use this rule whenever information could appear in more than one document:
 
 ### Reference rules
 
+- A product vision owns durable product-wide users, problems, principles, boundaries, success signals, and constraints.
+
 - A Product Requirements Document owns requirement wording.
 - A system design owns feature-wide architecture and shared invariants.
 - A technical design owns slice-local interfaces and technical decisions.

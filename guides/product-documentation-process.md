@@ -92,21 +92,44 @@ Do not add `.md` to directory names. The directory supplies context; stable file
 
 ### Product vision
 
+**File:** `docs/product-vision.md`
+
 **Purpose:** State why the product exists and what durable direction constrains every feature.
+
+Use this title and top-level section order:
+
+1. `# Product vision: <product>`
+2. `## Status`
+3. `## Vision`
+4. `## Target users and underlying problems`
+5. `## Product principles`
+6. `## Product-wide boundaries and non-goals`
+7. `## Durable success signals`
+8. `## Constraints every feature must preserve`
+9. `## Open decisions`, only when consequential vision-level decisions remain open.
 
 **Contains:**
 
-- target users and their underlying problems;
-- product principles;
+- document status and an existing revision identifier when one is used;
+- a concise statement of why the product exists and the future it should create;
+- durable target users and their underlying problems;
+- product principles that guide choices across features;
 - product-wide boundaries and non-goals;
-- durable success signals;
-- constraints that every feature must preserve.
+- durable, observable success signals without time-bound targets;
+- constraints that every feature must preserve;
+- consequential open decisions whose resolution would change durable product direction.
+
+In `Target users and underlying problems`, name who the product serves before describing exclusions or problems. Include an excluded audience only when it is a plausible subgroup or edge of the stated target and the distinction changes product direction; do not enumerate unrelated people the product was never intended to serve. Put broader product exclusions under `Product-wide boundaries and non-goals`.
+
+The vision owns only product-wide facts intended to remain true when individual features, delivery sequence, interfaces, or implementation change. A feature Product Requirements Document (PRD) references applicable vision content instead of copying it, then owns its feature-specific users, problem, non-goals, requirements, acceptance intent, constraints, and product decisions. Evidence may follow the claim it supports; a separate evidence section is not required.
 
 **Excludes:**
 
-- feature-specific requirements;
+- feature-specific requirements, user stories, and acceptance criteria;
+- quantified or time-bound targets, roadmap sequencing, releases, and milestones;
 - implementation architecture;
-- command, schema, or module contracts;
+- command, schema, interface, or module contracts;
+- business-model, pricing, competitive-positioning, and go-to-market plans;
 - task sequencing.
 
 ### Feature Product Requirements Document
@@ -261,6 +284,8 @@ Use this rule whenever information could appear in more than one document:
 > Define a fact once in the document that owns it. Everywhere else, reference the owning file, heading, requirement ID, scenario, contract, or task.
 
 ### Reference rules
+
+- A product vision owns durable product-wide users, problems, principles, boundaries, success signals, and constraints.
 
 - A Product Requirements Document owns requirement wording.
 - A system design owns feature-wide architecture and shared invariants.
@@ -420,6 +445,15 @@ For subagent execution with an owned integration branch and isolated task worktr
 Update document status, requirement coverage, and the learning log when the milestone creates a durable reusable lesson. Preserve superseded decisions through history rather than leaving conflicting current contracts.
 
 ## Review checklist
+
+Before approving a product vision:
+
+- It uses the canonical title and top-level section order, omitting `Open decisions` when none remain.
+- It names served users first and limits any excluded audience to a meaningful subgroup or edge of that target.
+- Every statement is product-wide and durable rather than a feature requirement, roadmap item, or implementation choice.
+- Success signals name observable long-term outcomes rather than time-bound targets or feature acceptance.
+- Product-wide constraints are concrete enough for a feature review to detect a violation.
+- Established claims about users, problems, or the market cite available evidence.
 
 Before approving a Product Requirements Document:
 

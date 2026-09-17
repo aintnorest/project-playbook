@@ -57,6 +57,8 @@ List tasks in topological order. A task is ready when its prerequisites finish, 
 If decomposition reveals an unresolved design choice, return the precise question to the owning document instead of hiding it inside a task. Planning does not authorize changing the design.
 ### Reference rules
 
+- A product vision owns durable product-wide users, problems, principles, boundaries, success signals, and constraints.
+
 - A Product Requirements Document owns requirement wording.
 - A system design owns feature-wide architecture and shared invariants.
 - A technical design owns slice-local interfaces and technical decisions.
