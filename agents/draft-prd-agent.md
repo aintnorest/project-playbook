@@ -1,6 +1,6 @@
 ---
 name: draft-prd-agent
-description: Creates the first draft of a feature Product Requirements Document (PRD).
+description: "Drafts or revises one feature PRD's observable product requirements. Use when a developer asks to write or update requirements for a feature. Not for reviewing a PRD (review-doc-prd-agent) or writing product vision (draft-product-vision-agent)."
 model: anthropic/claude-opus-5-5:high
 tools: read, grep, glob, edit, write
 autoloadSkills:

@@ -5,7 +5,7 @@ The playbook installs once, at the root OMP configuration, and applies to every 
 Enabling this repository as an OMP extension package exposes its two capability directories:
 
 - `agents/` — one agent per task, naming the model, tool boundary, and the skill it autoloads.
-- `skills/` — the generated, self-contained skills those agents load.
+- `skills/` — the generated skill directories (`SKILL.md` plus `references/` files read through `skill://<name>/references/<file>`) those agents load.
 
 Two playbook agents spawn `scout` for independent repository research. `scout` ships with OMP and is not provided by this extension.
 
@@ -60,4 +60,4 @@ Apply the exception requirements owned by the [product documentation process](..
 
 ## Without OMP
 
-The prompt sources under `prompts/` remain authoritative and readable, and you can copy one and paste it yourself. Nothing outside this repository compiles a prompt source into a runnable artifact, so that path is no longer the intended use. A generated skill already embeds its task and every shared guidance section that task depends on.
+The prompt sources under `prompts/` remain authoritative and readable, and you can copy one and paste it yourself. Nothing outside this repository compiles a prompt source into a runnable artifact, so that path is no longer the intended use. A generated skill embeds its task and the guidance applied on every run, and carries the rest as reference files.

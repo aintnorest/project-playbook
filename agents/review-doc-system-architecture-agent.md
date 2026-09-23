@@ -1,6 +1,6 @@
 ---
 name: review-doc-system-architecture-agent
-description: Independently reviews a system architecture document's foundations, ownership, and altitude. Read-only.
+description: "Reviews a system architecture document's foundations, ownership, accuracy, and system-wide altitude. Use when a developer asks to check technical foundations before feature design. Not for drafting architecture (draft-system-architecture-agent) or reviewing a feature system design (review-doc-system-design-agent). Read-only."
 model: openai-codex/gpt-6-sol:high
 tools: read, grep, glob, web_search
 autoloadSkills:

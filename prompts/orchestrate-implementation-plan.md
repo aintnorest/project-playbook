@@ -10,9 +10,12 @@ Execute an existing `implementation-plan.md` against its approved design, preser
 
 ## Required guidance
 
-- [Communication rules](../guides/communication-policy.md#rules)
 - [Implementation plan contract](../guides/product-documentation-process.md#implementation-plan)
+
+## Reference guidance
+
 - [Reference rules](../guides/product-documentation-process.md#reference-rules)
+- [Communication rules](../guides/communication-policy.md#rules)
 
 ## Inputs
 
@@ -99,7 +102,7 @@ Only after integration and its checks succeed, save the handback and validation 
 
 ### 6. Handle bounded issues; halt for significant design changes
 
-A small issue is a local implementation correction or plan clarification that preserves approved behavior, interfaces, invariants, and acceptance. Delegate it with explicit scope, keep its evidence under the affected task, and have a subagent update the owning documentation or plan when needed; do not turn incidental cleanup into new product work.
+A small issue is a local implementation correction or plan clarification that preserves approved behavior, interfaces, invariants, and acceptance. Delegate it with explicit scope, keep its evidence under the affected task, and have a subagent update the owning documentation or plan when needed; read [reference rules](../guides/product-documentation-process.md#reference-rules) when updating any governing document or plan during issue resolution. Do not turn incidental cleanup into new product work.
 
 A significant issue changes a material TDD or system-design decision, product behavior, a shared interface/invariant, compatibility, security, or data ownership; also escalate an issue spanning multiple tasks when its resolution is complex or far-reaching. Examples include replacing the persistence strategy, changing an API consumed by several tasks, or discovering a shared transaction assumption is false; the number of changed files alone does not decide severity, and uncertainty about material impact is itself a reason to pause.
 
@@ -118,6 +121,8 @@ After all planned outcomes are integrated, run the repository's required final v
 Have subagents update required document status and other repository-required delivery material, then validate and integrate those changes too. Finish with a clean integration checkout, no active workers, saved evidence, and all safely removable task worktrees removed; if completion or cleanup is blocked, report the exact remaining state rather than claiming success.
 
 ## Output
+
+Before writing any message, report, or question to the developer, read [communication rules](../guides/communication-policy.md#rules).
 
 During execution, report concise stage changes, accepted task IDs, branch state, and consequential blockers rather than narrating every tool call. A design halt returns the decision packet and preserved-work state, not a completion report.
 

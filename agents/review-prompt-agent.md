@@ -1,6 +1,6 @@
 ---
 name: review-prompt-agent
-description: Reviews a prompt against evidence records and suggests specific fixes; never executes the prompt.
+description: "Evaluates one prompt against its use case and supplied evidence, recommending specific source fixes. Use when a developer asks to review a prompt's results or composition. Not for creating or revising the prompt itself (draft-prompt-agent). Read-only."
 model: openai-codex/gpt-6-sol:high
 tools: read, grep, glob, web_search
 autoloadSkills:

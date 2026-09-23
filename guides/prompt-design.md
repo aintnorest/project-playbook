@@ -62,14 +62,19 @@ If subagents, repository access, or external retrieval are unavailable, complete
 
 Write the model-neutral task contract before considering adaptations. Give the model a concrete responsibility rather than a prestige persona. Define observable work, authority, boundaries, and failure handling instead of relying on phrases such as “expert,” “world-class,” or “think carefully.”
 
-A reusable Project Playbook task uses these sections:
+A reusable Project Playbook task uses these sections, in order:
 
-1. `Role` — one responsibility and its boundary.
-2. `Purpose` — the outcome the task exists to produce.
-3. `Required guidance` — only a bullet list of the smallest sufficient relative Markdown links to existing local authoritative sections. Put operational prose elsewhere. Verify every file and fragment; if the target checkout is unavailable, leave the task explicitly unpublishable and name the unresolved links instead of fabricating them.
-4. `Inputs` — required and optional material, including how absence is handled.
-5. `Instructions` — ordered operations, authority, tool use, questions, failure behavior, and stopping conditions.
-6. `Output` — the exact artifact and any concise evidence or limitation report.
+1. `# <Title>` — a concise task name.
+2. `Role` — one responsibility and its boundary.
+3. `Purpose` — the outcome the task exists to produce.
+4. `Required guidance` — at least one bullet linking a local authoritative section, inlined in the generated skill.
+5. `Reference guidance` (optional) — a bullet list of relative Markdown links to local sections, each linked at least once from `Instructions` or `Output` with a condition for reading it.
+6. `Inputs` — required and optional material, including how absence is handled.
+7. `Instructions` — ordered operations, authority, tool use, questions, failure behavior, and stopping conditions.
+8. `Gotchas` (optional) — evidence-backed failure rules in bullets, omitted when empty.
+9. `Output` — the exact artifact and any concise evidence or limitation report.
+
+The [skill construction contract](skill-design.md#classify-guidance) owns the guidance split and [size budget](skill-design.md#budget-and-description). Put operational prose outside the manifest lists. Verify every file and fragment; if the target checkout is unavailable, leave the task explicitly unpublishable and name the unresolved links instead of fabricating them.
 
 For another delivery surface, retain the same semantics without forcing those headings. Keep the builder's own repository format, guidance manifest, publication status, research process, and report wrapper separate from the generated prompt. Carry one of those controls into the generated artifact only when its stated destination or runtime requires it. Keep durable requirements in the prompt and rationale in the design record; do not turn the operational prompt into a literature review.
 
@@ -106,7 +111,7 @@ Adaptations may cover reasoning-effort controls, verbosity controls, supported m
 
 ### Deliver the prompt and its evidence
 
-With file access, write only the authorized prompt target unless library registration or a separate design record is explicitly in scope. Preserve unrelated content and existing source-of-truth boundaries. For a Project Playbook task, use local relative links under `Required guidance`; generated `skills/<name>/SKILL.md` files remain publisher-owned OMP skills.
+With file access, write only the authorized prompt target unless library registration or a separate design record is explicitly in scope. Preserve unrelated content and existing source-of-truth boundaries. For a Project Playbook task, use local relative links under `Required guidance` and `Reference guidance`; generated `skills/<name>/` directories (`SKILL.md` and `references/`) remain publisher-owned OMP skills.
 
 Prompt construction may verify the artifact it writes: required sections, local-link resolution, schema syntax, or publisher freshness. It does not execute the generated prompt, create behavioral candidates, score outputs, or review its own work. Prompt evaluation reviews the resulting artifact only from evidence records supplied separately.
 
@@ -123,9 +128,8 @@ Describe the result as a draft or revision grounded in the stated evidence. Do n
 ### Establish the review basis
 
 Review one exact prompt without editing or executing it. The dispatcher supplies:
-
 - the editable prompt source;
-- its generated `skills/<name>/SKILL.md` artifact;
+- its generated `skills/<name>/SKILL.md` artifact and its `references/` files;
 - the intended use case, users, input authority, output consumer, consequential failures, and success criteria;
 - evidence records such as real-run reports, raw responses, observations, grader reports, and dispositions, with the prompt revision and runtime identified when known;
 - any applicable shared-guidance sources, publisher details, or research needed to interpret the evidence.
@@ -134,9 +138,9 @@ If the source, generated skill, or intended contract is missing or ambiguous, re
 
 ### Inspect source and generated instructions
 
-Check task responsibility, authority, inputs, tool permissions, failure and escalation behavior, stopping condition, output boundary, model or interface adaptations, and separation between the prompt's own surface and the artifact it produces. Confirm that the generated skill faithfully composes the prompt source and its linked guidance, and trace each effective instruction to its editable owner.
+Check task responsibility, authority, inputs, tool permissions, failure and escalation behavior, stopping condition, output boundary, model or interface adaptations, and separation between the prompt's own surface and the artifact it produces. Confirm that the generated skill faithfully composes the prompt source, its linked guidance, reference files, and their read conditions, and trace each effective instruction to its editable owner.
 
-For each structural finding, identify whether the smallest correction belongs to the prompt source, an included shared guide, the publisher, a model or interface adaptation, or the interaction among them. When shared guidance is implicated, name the known consumer scope or state that it was not enumerated, explain which other behavior the shared rule serves, and require a cross-prompt impact review before anyone changes the shared owner. Do not edit the source, duplicate shared policy into the task, or assume a globally valid rule should change when a narrow task-specific precedence statement would resolve the conflict.
+For each structural finding, identify whether the smallest correction belongs to the prompt source, an included shared guide, the publisher, the agent description or routing case, a model or interface adaptation, or the interaction among them. When shared guidance is implicated, name the known consumer scope or state that it was not enumerated, explain which other behavior the shared rule serves, and require a cross-prompt impact review before anyone changes the shared owner. Do not edit the source, duplicate shared policy into the task, or assume a globally valid rule should change when a narrow task-specific precedence statement would resolve the conflict.
 
 ### Assess supplied evidence
 

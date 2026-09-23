@@ -1,6 +1,6 @@
 ---
 name: review-doc-system-design-agent
-description: Independently reviews a feature's shared architecture and cross-slice contracts. Read-only.
+description: "Reviews a large feature's shared architecture, cross-slice contracts, and slice decomposition. Use when a developer asks to check feature-wide system design before slice design. Not for drafting it (draft-system-design-agent) or reviewing a slice TDD (review-doc-technical-design-agent). Read-only."
 model: openai-codex/gpt-6-sol:high
 tools: read, grep, glob, web_search
 autoloadSkills:

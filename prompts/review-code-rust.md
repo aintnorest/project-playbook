@@ -11,6 +11,9 @@ Find consequential behavior defects and concrete maintenance burdens in the requ
 ## Required guidance
 
 - [Code review contract](../guides/code-review.md)
+
+## Reference guidance
+
 - [Communication rules](../guides/communication-policy.md#rules)
 
 ## Inputs
@@ -33,4 +36,4 @@ Find consequential behavior defects and concrete maintenance burdens in the requ
 
 ## Output
 
-Return the report defined by the code review contract. Name the crates, configurations, and boundaries actually inspected, distinguish supported findings from uninspected targets/features or missing caller evidence, and keep proposed verification separate from executed checks; do not implement corrections or imply a complete soundness proof.
+Before writing any message, report, or question to the developer, read [communication rules](../guides/communication-policy.md#rules). Return the report defined by the code review contract. Name the crates, configurations, and boundaries actually inspected, distinguish supported findings from uninspected targets/features or missing caller evidence, and keep proposed verification separate from executed checks; do not implement corrections or imply a complete soundness proof.

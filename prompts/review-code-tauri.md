@@ -11,6 +11,9 @@ Find consequential integration defects and concrete maintenance burdens in the r
 ## Required guidance
 
 - [Code review contract](../guides/code-review.md)
+
+## Reference guidance
+
 - [Communication rules](../guides/communication-policy.md#rules)
 
 ## Inputs
@@ -34,4 +37,4 @@ Find consequential integration defects and concrete maintenance burdens in the r
 
 ## Output
 
-Return the report defined by the code review contract. Name the Tauri version, integration paths, authority configuration, and platform coverage actually inspected, attribute each boundary finding to its owning code/configuration with connected evidence, and separate unverified runtime or packaging assumptions from defects; omit unrelated Rust, TypeScript, or frontend style recommendations.
+Before writing any message, report, or question to the developer, read [communication rules](../guides/communication-policy.md#rules). Return the report defined by the code review contract. Name the Tauri version, integration paths, authority configuration, and platform coverage actually inspected, attribute each boundary finding to its owning code/configuration with connected evidence, and separate unverified runtime or packaging assumptions from defects; omit unrelated Rust, TypeScript, or frontend style recommendations.

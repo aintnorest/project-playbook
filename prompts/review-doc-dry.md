@@ -13,6 +13,9 @@ Assess one exact target revision and the supplied related documents for duplicat
 - [Evidence and authority](../guides/document-review.md#evidence-and-authority)
 - [Findings](../guides/document-review.md#findings)
 - [Reference over repetition](../guides/product-documentation-process.md#reference-over-repetition)
+
+## Reference guidance
+
 - [Communication rules](../guides/communication-policy.md#rules)
 
 ## Inputs
@@ -30,6 +33,8 @@ Assess one exact target revision and the supplied related documents for duplicat
 5. Use canonical finding IDs and severities. Do not force findings, praise correct material, edit, implement, execute tests, resolve feedback, or imply approval.
 
 ## Output
+
+Before writing any message, report, or question to the developer, read [communication rules](../guides/communication-policy.md#rules).
 
 Open with target path/revision, DRY scope, and canonical count of unique unresolved supported findings. Then provide:
 

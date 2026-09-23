@@ -11,6 +11,9 @@ Find consequential behavior defects and concrete maintenance burdens in the requ
 ## Required guidance
 
 - [Code review contract](../guides/code-review.md)
+
+## Reference guidance
+
 - [Communication rules](../guides/communication-policy.md#rules)
 
 ## Inputs
@@ -33,4 +36,4 @@ Find consequential behavior defects and concrete maintenance burdens in the requ
 
 ## Output
 
-Return the report defined by the code review contract. Identify the TypeScript scope and effective configuration actually inspected, distinguish boundary context from review targets, and separate supported findings from unavailable evidence; do not append generic recommendations or implement the corrections.
+Before writing any message, report, or question to the developer, read [communication rules](../guides/communication-policy.md#rules). Return the report defined by the code review contract. Identify the TypeScript scope and effective configuration actually inspected, distinguish boundary context from review targets, and separate supported findings from unavailable evidence; do not append generic recommendations or implement the corrections.

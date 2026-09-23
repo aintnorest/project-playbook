@@ -11,6 +11,9 @@ Turn an approved Technical Design Document (TDD) into a concise directed acyclic
 ## Required guidance
 
 - [Implementation plan contract](../guides/product-documentation-process.md#implementation-plan)
+
+## Reference guidance
+
 - [Communication rules](../guides/communication-policy.md#rules)
 
 ## Inputs
@@ -43,3 +46,4 @@ Return concise Markdown: the source TDD path/revision, then task blocks in topol
 `Depends on` is the authoritative DAG. A task becomes ready when its prerequisites finish; do not impose wave barriers. Include a derived Mermaid diagram only if requested.
 
 Write only the authorized plan file when file access is available; otherwise return the plan in chat. No TDD summary, review/disposition report, estimates, or narrated reasoning.
+Before writing any message, report, or question to the developer, read [communication rules](../guides/communication-policy.md#rules).

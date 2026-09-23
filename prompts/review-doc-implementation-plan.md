@@ -14,6 +14,9 @@ Find consequential defects that would cause a task executor to start blocked, bu
 - [Evidence and authority](../guides/document-review.md#evidence-and-authority)
 - [Findings](../guides/document-review.md#findings)
 - [Implementation plan contract](../guides/product-documentation-process.md#implementation-plan)
+
+## Reference guidance
+
 - [Reference over repetition](../guides/product-documentation-process.md#reference-over-repetition)
 - [Communication rules](../guides/communication-policy.md#rules)
 
@@ -30,6 +33,7 @@ Find consequential defects that would cause a task executor to start blocked, bu
 2. **Derive a bounded coverage map.** Before judging defects, enumerate the TDD's applicable requirements, acceptance scenarios, and technical contracts, and enumerate the plan's tasks with their identifiers, targets, and direct prerequisites. Map only obligations the approved TDD establishes. Do not import unapproved future work, generic engineering tasks, or requirements the TDD does not carry.
 3. **Check DAG structural correctness.** Confirm the direct-prerequisite edges form an acyclic graph for which a topological order exists, that every prerequisite identifier resolves to a real earlier task, that no task depends on itself, and that each edge names the required output or hard ordering constraint it supplies rather than a vague "when ready." Flag a cycle, a dangling prerequisite, or an edge asserting order without a stated reason. A runtime loop described in the design is not a cycle in this task graph.
 4. **Check coverage of the design in both directions.** Confirm every applicable TDD requirement, scenario, and technical contract maps to at least one task or is an explicit, justified non-goal, and that every task traces to a TDD obligation. Flag missing work that leaves a requirement unbuilt, and a task with no TDD reference as unauthorized scope. Tasks reference the requirement, scenario, or contract by identifier or heading rather than copying its text.
+   When checking whether a task references rather than copies its owning obligation, read [reference over repetition](../guides/product-documentation-process.md#reference-over-repetition).
 5. **Check each task is independently verifiable.** Confirm each task names concrete file and symbol targets, distinguishing an edit to existing code from an approved planned creation; states a bounded change tied to its TDD reference; and gives observable acceptance with a narrow verification command or concrete exercise and its expected result. Flag a verification that asserts only that the code builds, compiles, or has no errors, or a manual "looks good" with no reproducible check, because none of these confirm the changed behavior. Verify existing targets against accessible source; treat an unverifiable target as a coverage limit unless the plan presents it as existing.
 6. **Check verification prerequisites are available when the task runs.** Confirm every fixture, tool, data, or predecessor output a task's verification needs exists within the task itself, the existing repository, or a named predecessor task. Flag a check that cannot run at the task's completion because its prerequisite lives only in a later task.
 7. **Check independence and shared-file ownership.** Confirm tasks the plan treats as concurrent have compatible file and contract ownership, or an explicit ordered handoff names which task runs first and the state it leaves behind. Flag an unstated shared-file conflict between tasks the graph marks ready together, and a hidden dependency that would in fact block a task the graph presents as ready. Where the plan claims parallelism, confirm the dependency edges actually permit it.
@@ -40,6 +44,8 @@ Find consequential defects that would cause a task executor to start blocked, bu
 12. **Preserve review independence.** For an independent first pass, do not use prior findings, dispositions, author identity, desired verdict, or issue totals. If that context was visible, label the review as a follow-up. Do not praise, edit, implement, execute tasks, dispose of feedback, or imply approval.
 
 ## Output
+
+Before writing any message, report, or question to the developer, read [communication rules](../guides/communication-policy.md#rules).
 
 Open with the target path/revision, the source TDD path/revision, review scope, canonical count of unique unresolved supported findings, and whether the pass is independent. Then provide:
 

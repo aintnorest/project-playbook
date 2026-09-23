@@ -1,6 +1,6 @@
 ---
 name: review-code-typescript-agent
-description: Independently reviews TypeScript for correctness and maintainable design. Read-only.
+description: "Reviews TypeScript behavior and contracts for consequential defects and maintenance burdens. Use when a developer asks for a focused TypeScript code review. Not for Rust-only review (review-code-rust-agent) or Tauri host/frontend integration (review-code-tauri-agent). Read-only."
 model: openai-codex/gpt-6-sol:high
 tools: read, grep, glob, web_search
 autoloadSkills:

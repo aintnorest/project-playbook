@@ -1,6 +1,6 @@
 ---
 name: review-code-rust-agent
-description: Independently reviews Rust for correctness and maintainable design. Read-only.
+description: "Reviews Rust behavior, ownership, APIs, and invariants for consequential defects and maintenance burdens. Use when a developer asks for a focused Rust code review. Not for Tauri host/frontend integration (review-code-tauri-agent) or TypeScript code (review-code-typescript-agent). Read-only."
 model: openai-codex/gpt-6-sol:high
 tools: read, grep, glob, web_search
 autoloadSkills:

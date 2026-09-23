@@ -1,6 +1,6 @@
 ---
 name: review-doc-prd-agent
-description: Independently reviews a feature PRD's requirements, acceptance intent, and scope. Read-only.
+description: "Reviews one feature PRD's requirements, acceptance intent, traceability, and scope against its contract. Use when a developer asks to check a PRD before technical design. Not for drafting a PRD (draft-prd-agent) or reviewing a product vision (review-doc-product-vision-agent). Read-only."
 model: openai-codex/gpt-6-sol:high
 tools: read, grep, glob, web_search
 autoloadSkills:

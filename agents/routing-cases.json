@@ -1,0 +1,211 @@
+{
+  "draft-implementation-plan-agent": {
+    "positive": [
+      "Turn the approved EXPORT TDD into an implementation plan",
+      "Write a task DAG from the approved technical design for document export",
+      "Revise the EXPORT implementation plan so each task has a verifiable exit state"
+    ],
+    "negative": [
+      {"request": "Review the EXPORT implementation plan for blocked tasks", "expected": "review-doc-implementation-plan-agent"},
+      {"request": "Execute the approved EXPORT implementation plan", "expected": "orchestrate-implementation-plan-agent"}
+    ]
+  },
+  "draft-prd-agent": {
+    "positive": [
+      "Write a PRD for the EXPORT feature",
+      "Revise the document export requirements and acceptance intent",
+      "Draft the product requirements for exporting documents"
+    ],
+    "negative": [
+      {"request": "Review the EXPORT PRD for missing requirements", "expected": "review-doc-prd-agent"},
+      {"request": "Update our durable product vision", "expected": "draft-product-vision-agent"}
+    ]
+  },
+  "draft-product-vision-agent": {
+    "positive": [
+      "Draft a product vision that frames where document export fits",
+      "Revise the product vision's enduring direction and non-goals",
+      "Write the product vision before we define the EXPORT feature requirements"
+    ],
+    "negative": [
+      {"request": "Review the current product vision's success signals", "expected": "review-doc-product-vision-agent"},
+      {"request": "Write the EXPORT feature PRD", "expected": "draft-prd-agent"}
+    ]
+  },
+  "draft-prompt-agent": {
+    "positive": [
+      "Design a reusable prompt for reviewing EXPORT requirements",
+      "Create one evidence-grounded prompt for the stated document export task",
+      "Revise our prompt for drafting feature requirements for the target models"
+    ],
+    "negative": [
+      {"request": "Evaluate this prompt against the supplied failure records", "expected": "review-prompt-agent"},
+      {"request": "Draft the EXPORT feature PRD itself", "expected": "draft-prd-agent"}
+    ]
+  },
+  "draft-system-architecture-agent": {
+    "positive": [
+      "Propose the system-wide technical foundations before designing EXPORT",
+      "Revise the architecture document's repository-wide technology decisions",
+      "Decide and record a missing system-level foundation for future features"
+    ],
+    "negative": [
+      {"request": "Review the system architecture's foundation boundaries", "expected": "review-doc-system-architecture-agent"},
+      {"request": "Design the shared architecture of the EXPORT feature", "expected": "draft-system-design-agent"}
+    ]
+  },
+  "draft-system-design-agent": {
+    "positive": [
+      "Draft the shared system design for the large EXPORT feature",
+      "Specify the contracts between document export feature slices",
+      "Revise the EXPORT feature-wide architecture before slice design"
+    ],
+    "negative": [
+      {"request": "Review the EXPORT system design's cross-slice contracts", "expected": "review-doc-system-design-agent"},
+      {"request": "Write the TDD for one document export slice", "expected": "draft-technical-design-agent"}
+    ]
+  },
+  "draft-technical-design-agent": {
+    "positive": [
+      "Write a TDD for one EXPORT feature slice",
+      "Draft the technical design for a small document export feature",
+      "Revise the EXPORT slice design with testable local contracts"
+    ],
+    "negative": [
+      {"request": "Review the document export slice TDD", "expected": "review-doc-technical-design-agent"},
+      {"request": "Turn the approved EXPORT TDD into a task plan", "expected": "draft-implementation-plan-agent"}
+    ]
+  },
+  "orchestrate-implementation-plan-agent": {
+    "positive": [
+      "Execute the approved document export implementation plan",
+      "Implement the approved EXPORT task DAG and integrate the results",
+      "Run the approved plan through isolated workers and validate the working branch"
+    ],
+    "negative": [
+      {"request": "Draft an implementation plan from the approved EXPORT TDD", "expected": "draft-implementation-plan-agent"},
+      {"request": "Review the task DAG before implementation begins", "expected": "review-doc-implementation-plan-agent"}
+    ]
+  },
+  "review-code-rust-agent": {
+    "positive": [
+      "Review the Rust code in the document export path for behavior defects",
+      "Check Rust ownership and API invariants in this change",
+      "Find consequential Rust maintenance issues in the requested scope"
+    ],
+    "negative": [
+      {"request": "Review the Tauri host/frontend boundary for document export", "expected": "review-code-tauri-agent"},
+      {"request": "Review the TypeScript code for export behavior defects", "expected": "review-code-typescript-agent"}
+    ]
+  },
+  "review-code-tauri-agent": {
+    "positive": [
+      "Review Tauri host/frontend integration in the EXPORT path",
+      "Check authority and lifecycle across the Tauri boundary",
+      "Inspect the Tauri configuration and cross-boundary behavior for export"
+    ],
+    "negative": [
+      {"request": "Review Rust ownership in this isolated module", "expected": "review-code-rust-agent"},
+      {"request": "Review a TypeScript-only export change", "expected": "review-code-typescript-agent"}
+    ]
+  },
+  "review-code-typescript-agent": {
+    "positive": [
+      "Review the TypeScript document export code for correctness",
+      "Check TypeScript contracts and behavior in this change",
+      "Find maintenance burdens in the requested TypeScript scope"
+    ],
+    "negative": [
+      {"request": "Review the isolated Rust code for invariant violations", "expected": "review-code-rust-agent"},
+      {"request": "Check Tauri host/frontend integration for EXPORT", "expected": "review-code-tauri-agent"}
+    ]
+  },
+  "review-doc-dry-agent": {
+    "positive": [
+      "Check whether the EXPORT PRD and TDD both claim authority over the same rule",
+      "Find conflicting normative rules across this revision and its related documents",
+      "Review duplicate rule ownership without flagging useful reader context"
+    ],
+    "negative": [
+      {"request": "Review the EXPORT PRD's requirement testability", "expected": "review-doc-prd-agent"},
+      {"request": "Draft a technical design for the EXPORT slice", "expected": "draft-technical-design-agent"}
+    ]
+  },
+  "review-doc-implementation-plan-agent": {
+    "positive": [
+      "Review the EXPORT implementation plan's task dependencies",
+      "Check whether the plan covers the approved document export design",
+      "Find unverifiable exit states in the implementation task DAG"
+    ],
+    "negative": [
+      {"request": "Review the EXPORT TDD's technical contracts", "expected": "review-doc-technical-design-agent"},
+      {"request": "Write the implementation plan from the approved design", "expected": "draft-implementation-plan-agent"}
+    ]
+  },
+  "review-doc-prd-agent": {
+    "positive": [
+      "Review the PRD in docs/features/export/prd.md",
+      "Check whether the export feature's requirements doc is ready for technical design",
+      "Independent review of our PRD before we start the TDD"
+    ],
+    "negative": [
+      {"request": "Review the product vision doc", "expected": "review-doc-product-vision-agent"},
+      {"request": "Write a PRD for document export", "expected": "draft-prd-agent"}
+    ]
+  },
+  "review-doc-product-vision-agent": {
+    "positive": [
+      "Review the product vision's users and their problems",
+      "Check whether the product vision states durable direction for EXPORT decisions",
+      "Assess our vision's boundaries and falsifiable success signals"
+    ],
+    "negative": [
+      {"request": "Review the EXPORT PRD's acceptance intent", "expected": "review-doc-prd-agent"},
+      {"request": "Draft a revised product vision", "expected": "draft-product-vision-agent"}
+    ]
+  },
+  "review-doc-system-architecture-agent": {
+    "positive": [
+      "Review the system architecture's technical foundations",
+      "Check whether architecture decisions belong at system-wide altitude",
+      "Assess the architecture document's repository-backed accuracy"
+    ],
+    "negative": [
+      {"request": "Review the large EXPORT feature's shared system design", "expected": "review-doc-system-design-agent"},
+      {"request": "Draft the system architecture document", "expected": "draft-system-architecture-agent"}
+    ]
+  },
+  "review-doc-system-design-agent": {
+    "positive": [
+      "Review the EXPORT system design's slice decomposition",
+      "Check feature-wide cross-slice contracts for gaps",
+      "Assess the shared architecture for a large document export feature"
+    ],
+    "negative": [
+      {"request": "Review the system-wide architecture foundations", "expected": "review-doc-system-architecture-agent"},
+      {"request": "Draft the EXPORT feature system design", "expected": "draft-system-design-agent"}
+    ]
+  },
+  "review-doc-technical-design-agent": {
+    "positive": [
+      "Review the EXPORT slice TDD before implementation planning",
+      "Check technical contract completeness for a small export feature",
+      "Assess this document export design's feasibility and traceability"
+    ],
+    "negative": [
+      {"request": "Review the EXPORT feature-wide system design", "expected": "review-doc-system-design-agent"},
+      {"request": "Draft the export slice technical design", "expected": "draft-technical-design-agent"}
+    ]
+  },
+  "review-prompt-agent": {
+    "positive": [
+      "Review the EXPORT prompt against supplied evidence records",
+      "Evaluate whether this prompt accounts for observed failures",
+      "Check prompt composition and recommend evidence-backed source fixes"
+    ],
+    "negative": [
+      {"request": "Create a reusable prompt for the document export task", "expected": "draft-prompt-agent"},
+      {"request": "Review the EXPORT PRD requirements", "expected": "review-doc-prd-agent"}
+    ]
+  }
+}

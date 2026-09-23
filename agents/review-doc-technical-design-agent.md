@@ -1,6 +1,6 @@
 ---
 name: review-doc-technical-design-agent
-description: Independently reviews one slice or small-feature technical design against its contract. Read-only.
+description: "Reviews a small-feature or slice TDD's contracts, feasibility, traceability, and boundaries. Use when a developer asks to check technical design before implementation planning. Not for drafting the TDD (draft-technical-design-agent) or reviewing feature-wide system design (review-doc-system-design-agent). Read-only."
 model: openai-codex/gpt-6-sol:high
 tools: read, grep, glob, web_search
 autoloadSkills:

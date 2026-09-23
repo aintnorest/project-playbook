@@ -1,6 +1,6 @@
 ---
 name: review-doc-implementation-plan-agent
-description: Independently reviews an implementation plan's task DAG, coverage, and verifiability. Read-only.
+description: "Reviews an implementation plan's task DAG, design coverage, dependencies, ownership, and per-task verifiability. Use when a developer asks to check a plan before execution. Not for drafting the plan (draft-implementation-plan-agent) or reviewing a TDD (review-doc-technical-design-agent). Read-only."
 model: openai-codex/gpt-6-sol:high
 tools: read, grep, glob, web_search
 autoloadSkills:

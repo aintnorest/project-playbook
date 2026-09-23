@@ -6,7 +6,7 @@ Project Playbook provides reusable guidance and task instructions for planning, 
 
 [Install the playbook in OMP](integrations/omp.md), then dispatch a playbook agent by name or describe the task and let OMP choose one.
 
-Guides define the shared rules for the work. Agents route tasks and enforce their boundaries. Generated skills give each agent the task-specific instructions and guidance it needs. Templates in `templates/` give documents you maintain by hand, such as the roadmap, their starting structure.
+Guides define the shared rules for the work. Agents route tasks and enforce their boundaries. Generated skill directories (`SKILL.md` plus `references/`) give each agent the task-specific instructions and guidance it needs. Templates in `templates/` give documents you maintain by hand, such as the roadmap, their starting structure.
 
 ## Changing the playbook
 

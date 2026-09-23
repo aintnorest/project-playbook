@@ -41,6 +41,8 @@ AGENT_RULES = (
     "standard-lines",
     "no-done-when",
     "reviewer-read-only",
+    "description-contract",
+    "routing-cases",
 )
 
 
@@ -83,7 +85,7 @@ class Bundle:
     output: Path
     name: str
     description: str
-    content: bytes
+    files: Dict[Path, bytes]
 
 
 @dataclass(frozen=True)
@@ -91,6 +93,7 @@ class Agent:
     path: Path
     frontmatter: Dict[str, object]
     body: str
+    raw_description: str
 
 def repository_root() -> Path:
     return Path(__file__).resolve().parent.parent
@@ -222,34 +225,34 @@ def local_path(root: Path, current: Document, path_text: str) -> Path:
     return resolved
 
 
-def find_required_guidance(document: Document) -> Heading:
-    matching = [heading for heading in document.headings if heading.title == "Required guidance"]
-    if len(matching) != 1 or matching[0].level != 2:
+def find_manifest(document: Document, title: str, required: bool) -> Optional[Heading]:
+    matching = [heading for heading in document.headings if heading.title == title]
+    if len(matching) > 1 or (matching and matching[0].level != 2) or (required and not matching):
         raise BuildError(
             str(document.relative_path)
-            + " must contain exactly one level-two 'Required guidance' heading"
+            + (" must contain exactly one" if required else " may contain only one")
+            + " level-two '" + title + "' heading"
         )
-    return matching[0]
+    return matching[0] if matching else None
 
 
 def manifest_sections(
     root: Path,
     source: Document,
-    required: Heading,
+    manifest: Heading,
     cache: Dict[Path, Document],
 ) -> List[SelectedSection]:
     selections: List[SelectedSection] = []
     entries = 0
-
-
-    for index in range(required.start + 1, required.end):
+    reference_names = set()
+    for index in range(manifest.start + 1, manifest.end):
         line = source.lines[index]
         if not line.strip():
             continue
         item = MANIFEST_ITEM.match(line)
         if not item:
             raise BuildError(
-                "malformed Required guidance entry in "
+                "malformed " + manifest.title + " entry in "
                 + str(source.relative_path)
                 + " at line "
                 + str(index + 1)
@@ -259,7 +262,7 @@ def manifest_sections(
         target = item.group(2)
         if target.startswith("<") or "?" in target or URL_SCHEME.match(target) or target.startswith("//"):
             raise BuildError(
-                "Required guidance must use a relative local Markdown link in "
+                manifest.title + " must use a relative local Markdown link in "
                 + str(source.relative_path)
                 + " at line "
                 + str(index + 1)
@@ -267,7 +270,7 @@ def manifest_sections(
         path_text, separator, fragment = target.partition("#")
         if not path_text or not path_text.lower().endswith(".md") or (separator and not fragment):
             raise BuildError(
-                "malformed Required guidance link in "
+                "malformed " + manifest.title + " link in "
                 + str(source.relative_path)
                 + " at line "
                 + str(index + 1)
@@ -285,7 +288,7 @@ def manifest_sections(
             ]
             if len(matches) != 1:
                 raise BuildError(
-                    "Required guidance fragment does not name a heading in "
+                    manifest.title + " fragment does not name a heading in "
                     + str(document.relative_path)
                     + ": #"
                     + fragment
@@ -295,6 +298,11 @@ def manifest_sections(
             candidate = SelectedSection(document, heading.start, heading.end, heading_index)
         else:
             candidate = SelectedSection(document, 0, len(document.lines), None)
+        if manifest.title == "Reference guidance":
+            filename = reference_filename(candidate)
+            if filename in reference_names:
+                raise BuildError("duplicate reference filename in " + str(source.relative_path) + ": " + filename)
+            reference_names.add(filename)
 
         overlapping = [
             position
@@ -322,7 +330,7 @@ def manifest_sections(
         else:
             selections.append(candidate)
 
-    if not entries:
+    if not entries and manifest.title == "Required guidance":
         raise BuildError(str(source.relative_path) + " must list at least one Required guidance link")
     return selections
 
@@ -338,6 +346,28 @@ def included_sections(selections: Iterable[SelectedSection]) -> Dict[Tuple[Path,
         for heading in document.headings:
             if selection.start <= heading.start < selection.end:
                 sections[(document.path, heading.slug)] = heading.title
+    return sections
+
+
+def reference_filename(selection: SelectedSection) -> str:
+    stem = selection.document.path.stem
+    if selection.is_whole_document:
+        return stem + ".md"
+    return stem + "--" + selection.document.headings[selection.heading_index].slug + ".md"
+
+
+def referenced_sections(
+    selections: Iterable[SelectedSection],
+) -> Dict[Tuple[Path, Optional[str]], str]:
+    sections: Dict[Tuple[Path, Optional[str]], str] = {}
+    for selection in selections:
+        filename = reference_filename(selection)
+        document = selection.document
+        if selection.is_whole_document:
+            sections[(document.path, None)] = filename
+        for heading in document.headings:
+            if selection.start <= heading.start < selection.end:
+                sections[(document.path, heading.slug)] = filename
     return sections
 
 
@@ -362,6 +392,7 @@ def rewrite_destination(
     current: Document,
     destination: str,
     sections: Dict[Tuple[Path, Optional[str]], str],
+    references: Dict[Tuple[Path, Optional[str]], str],
 ) -> Optional[str]:
     target_text = split_destination(destination)
     if not target_text:
@@ -379,6 +410,9 @@ def rewrite_destination(
     section = sections.get((target, decoded_fragment))
     if section:
         return "section:" + section
+    filename = references.get((target, decoded_fragment))
+    if filename:
+        return "reference:" + filename
     reference = target.relative_to(root).as_posix()
     if fragment:
         reference += "#" + fragment
@@ -390,6 +424,9 @@ def rewrite_links_in_line(
     current: Document,
     line: str,
     sections: Dict[Tuple[Path, Optional[str]], str],
+    references: Dict[Tuple[Path, Optional[str]], str],
+    skill: str,
+    linked: Optional[set] = None,
 ) -> str:
     result: List[str] = []
     cursor = 0
@@ -419,12 +456,17 @@ def rewrite_links_in_line(
         start = opening - 1 if opening > 0 and line[opening - 1] == "!" else opening
         label = line[opening + 1 : close]
         destination = line[close + 2 : position - 1]
-        rewritten = rewrite_destination(root, current, destination, sections)
+        rewritten = rewrite_destination(root, current, destination, sections, references)
         result.append(line[cursor:start])
         if rewritten is None:
             result.append(line[start:position])
         elif rewritten.startswith("section:"):
             result.append(label + ' (see included section "' + rewritten[len("section:") :] + '")')
+        elif rewritten.startswith("reference:"):
+            filename = rewritten[len("reference:") :]
+            result.append("[" + label + "](skill://" + skill + "/references/" + filename + ")")
+            if linked is not None:
+                linked.add(filename)
         else:
             # Local source paths are intentionally text, not broken relative URLs.
             result.append("[" + label + " (source: " + rewritten[len("source:") :] + ")]")
@@ -437,12 +479,20 @@ def rewrite_links(
     current: Document,
     lines: Sequence[str],
     sections: Dict[Tuple[Path, Optional[str]], str],
+    references: Dict[Tuple[Path, Optional[str]], str],
+    skill: str,
+    linked: Optional[set] = None,
 ) -> str:
     rewritten: List[str] = []
     in_fence = False
     fence_marker = ""
     fence_length = 0
-    for line in lines:
+    eligible = set()
+    if linked is not None:
+        for heading in parse_headings(lines):
+            if heading.level == 2 and heading.title in ("Instructions", "Output"):
+                eligible.update(range(heading.start, heading.end))
+    for index, line in enumerate(lines):
         if in_fence:
             rewritten.append(line)
             if is_fence_close(line, fence_marker, fence_length):
@@ -454,7 +504,12 @@ def rewrite_links(
             fence_marker, fence_length = opening
             in_fence = True
             continue
-        rewritten.append(rewrite_links_in_line(root, current, line, sections))
+        rewritten.append(
+            rewrite_links_in_line(
+                root, current, line, sections, references, skill,
+                linked if index in eligible else None,
+            )
+        )
     return "".join(rewritten)
 
 
@@ -462,10 +517,13 @@ def render_section(
     root: Path,
     selection: SelectedSection,
     sections: Dict[Tuple[Path, Optional[str]], str],
+    references: Dict[Tuple[Path, Optional[str]], str],
+    skill: str,
 ) -> str:
     document = selection.document
     return rewrite_links(
-        root, document, document.lines[selection.start : selection.end], sections
+        root, document, document.lines[selection.start : selection.end],
+        sections, references, skill,
     ).strip() + "\n"
 
 
@@ -476,31 +534,52 @@ def yaml_double_quoted(value: str) -> str:
 
 
 def skill_description(source: Document) -> str:
-    title = next(
-        (
-            heading.title
-            for heading in source.headings
-            if heading.level == 1 and heading.start == 0 and heading.title
-        ),
-        None,
-    )
-    if title is None:
-        raise BuildError("prompt source must begin with an H1 title: " + str(source.path))
-    return title
+    if not any(
+        heading.level == 1 and heading.start == 0 and heading.title
+        for heading in source.headings
+    ):
+        raise BuildError("prompt source must begin with an H1 title: " + str(source.relative_path))
+    purpose = find_manifest(source, "Purpose", True)
+    paragraph: List[str] = []
+    for line in source.lines[purpose.start + 1 : purpose.end]:
+        if not line.strip():
+            if paragraph:
+                break
+            continue
+        paragraph.append(line.strip())
+    description = " ".join(paragraph)
+    if not description or len(description) > 1024:
+        raise BuildError(
+            "prompt Purpose first paragraph must be 1–1024 characters: "
+            + str(source.relative_path)
+        )
+    return description
 
 
 def render_bundle(
     root: Path,
     source: Document,
-    selections: Sequence[SelectedSection],
+    inline: Sequence[SelectedSection],
+    reference_selections: Sequence[SelectedSection],
     name: str,
     description: str,
-) -> bytes:
-    sections = included_sections(selections)
-    required = find_required_guidance(source)
-    task_lines = source.lines[: required.start] + source.lines[required.end :]
-    task = rewrite_links(root, source, task_lines, sections).strip()
-    guidance = "\n".join(render_section(root, selection, sections).rstrip() for selection in selections)
+) -> Dict[Path, bytes]:
+    sections = included_sections(inline)
+    references = referenced_sections(reference_selections)
+    manifests = [
+        heading for heading in source.headings
+        if heading.level == 2 and heading.title in ("Required guidance", "Reference guidance")
+    ]
+    task_lines = [
+        line for index, line in enumerate(source.lines)
+        if not any(heading.start <= index < heading.end for heading in manifests)
+    ]
+    linked: set = set()
+    task = rewrite_links(root, source, task_lines, sections, references, name, linked).strip()
+    guidance = "\n".join(
+        render_section(root, selection, sections, references, name).rstrip()
+        for selection in inline
+    )
     content = "\n".join(
         [
             "---",
@@ -522,10 +601,25 @@ def render_bundle(
             "",
         ]
     )
-    return content.encode("utf-8")
+    files = {root / "skills" / name / "SKILL.md": content.encode("utf-8")}
+    for selection in reference_selections:
+        filename = reference_filename(selection)
+        if filename not in linked:
+            raise BuildError("reference guidance not linked from Instructions or Output: " + filename)
+        heading = (
+            "#" + selection.document.headings[selection.heading_index].slug
+            if not selection.is_whole_document else ""
+        )
+        provenance = "Source: " + selection.document.relative_path.as_posix() + heading
+        text = (
+            GENERATED_MARKER + "\n" + provenance + "\n\n"
+            + render_section(root, selection, sections, references, name)
+        )
+        files[root / "skills" / name / "references" / filename] = text.encode("utf-8")
+    return files
 
 
-def build_bundles(root: Path) -> List[Bundle]:
+def build_bundles(root: Path, only: Optional[Sequence[str]] = None) -> List[Bundle]:
     prompts_dir = root / "prompts"
     if not prompts_dir.is_dir():
         raise BuildError("prompt source directory does not exist: " + str(prompts_dir))
@@ -534,24 +628,32 @@ def build_bundles(root: Path) -> List[Bundle]:
     )
     if not source_paths:
         raise BuildError("prompt library is empty: " + str(prompts_dir))
+    if only is not None:
+        unknown = set(only) - {path.stem for path in source_paths}
+        if unknown:
+            raise BuildError("unknown prompt source: " + ", ".join(sorted(unknown)))
+        source_paths = [path for path in source_paths if path.stem in only]
 
     cache: Dict[Path, Document] = {}
     bundles: List[Bundle] = []
     for path in source_paths:
         source = load_document(root, path, cache)
-        required = find_required_guidance(source)
-        selections = manifest_sections(root, source, required, cache)
+        required = find_manifest(source, "Required guidance", True)
+        reference = find_manifest(source, "Reference guidance", False)
+        inline = manifest_sections(root, source, required, cache)
+        selected = manifest_sections(root, source, reference, cache) if reference else []
+        for selection in selected:
+            if any(
+                selection.document.path == other.document.path
+                and selection.start < other.end and other.start < selection.end
+                for other in inline
+            ):
+                raise BuildError("Required and Reference guidance overlap: " + reference_filename(selection))
         name = path.stem
         description = skill_description(source)
         output = root / "skills" / name / "SKILL.md"
         bundles.append(
-            Bundle(
-                path,
-                output,
-                name,
-                description,
-                render_bundle(root, source, selections, name, description),
-            )
+            Bundle(path, output, name, description, render_bundle(root, source, inline, selected, name, description))
         )
     return bundles
 
@@ -607,6 +709,7 @@ def parse_agent(path: Path) -> Agent:
 
     frontmatter: Dict[str, object] = {}
     list_key: Optional[str] = None
+    raw_description = ""
     for index, line in enumerate(lines[1:end], start=2):
         if line.startswith("  - "):
             if list_key is None:
@@ -639,13 +742,15 @@ def parse_agent(path: Path) -> Agent:
         key, raw_value = match.groups()
         if key in frontmatter:
             raise BuildError("duplicate agent frontmatter key '" + key + "': " + str(path))
+        if key == "description":
+            raw_description = raw_value.strip()
         if raw_value.strip():
             frontmatter[key] = parse_agent_scalar(path, index, raw_value)
             list_key = None
         else:
             frontmatter[key] = []
             list_key = key
-    return Agent(path, frontmatter, "\n".join(lines[end + 1 :]))
+    return Agent(path, frontmatter, "\n".join(lines[end + 1 :]), raw_description)
 
 
 def load_agent_exceptions(root: Path) -> Tuple[Dict[str, object], Dict[str, object]]:
@@ -695,6 +800,11 @@ def check_agents(root: Path) -> List[str]:
         agent_name(agent): agent for agent in agents if agent_name(agent)
     }
     skills_without_agents, configured_exemptions = load_agent_exceptions(root)
+    routing_path = agents_dir / "routing-cases.json"
+    try:
+        routing = json.loads(routing_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        routing = None
     violations: List[str] = []
     valid_skill_exceptions = set()
     valid_exemptions = set()
@@ -758,11 +868,80 @@ def check_agents(root: Path) -> List[str]:
                 + ": skill-has-agent: expected exactly one agent, found "
                 + str(count)
             )
+    routing_errors: Dict[str, List[str]] = {agent_name(agent): [] for agent in agents}
+    if not isinstance(routing, dict):
+        for agent in agents:
+            routing_errors[agent_name(agent)].append("agents/routing-cases.json must exist and parse as an object")
+    else:
+        for extra in sorted(routing.keys() - agents_by_name.keys()):
+            violations.append("agent " + str(extra) + ": routing-cases: unknown agent")
+        positive_seen = set()
+        for agent in agents:
+            name = agent_name(agent)
+            entry = routing.get(name)
+            errors = routing_errors[name]
+            if not isinstance(entry, dict):
+                errors.append("missing agent entry")
+                continue
+            positives = entry.get("positive")
+            negatives = entry.get("negative")
+            if not isinstance(positives, list) or len(positives) < 3 or not all(
+                isinstance(request, str) and request.strip() for request in positives
+            ):
+                errors.append("positive must have at least three request strings")
+            if not isinstance(negatives, list) or len(negatives) < 2:
+                errors.append("negative must have at least two cases")
+            for request in positives if isinstance(positives, list) else []:
+                if not isinstance(request, str):
+                    continue
+                if request in positive_seen:
+                    errors.append("duplicate positive request: " + request)
+                positive_seen.add(request)
+            sibling = False
+            for case in negatives if isinstance(negatives, list) else []:
+                if not isinstance(case, dict) or not isinstance(case.get("request"), str) or not case["request"].strip() or "expected" not in case:
+                    errors.append("negative case must contain a request and expected")
+                    continue
+                expected = case["expected"]
+                if expected is not None and (
+                    not isinstance(expected, str) or expected not in agents_by_name or expected == name
+                ):
+                    errors.append("negative expected must name another agent or null")
+                if isinstance(expected, str) and expected.startswith("review-doc-") and expected in agents_by_name and expected != name:
+                    sibling = True
+            if name.startswith("review-doc-") and not sibling:
+                errors.append("review-doc negative must expect a review-doc sibling")
+            requests = (
+                [request for request in positives if isinstance(request, str)]
+                if isinstance(positives, list) else []
+            ) + (
+                [case["request"] for case in negatives if isinstance(case, dict) and isinstance(case.get("request"), str)]
+                if isinstance(negatives, list) else []
+            )
+            if any(other.casefold() in request.casefold() for request in requests for other in agents_by_name):
+                errors.append("request must not contain an agent name")
 
     for agent in agents:
         name = agent_name(agent)
         skills = agent_list(agent, "autoloadSkills")
         label = agent.path.name
+        description = agent.frontmatter.get("description")
+        if not exempt(agent, "description-contract") and (
+            not agent.raw_description.startswith('"')
+            or not agent.raw_description.endswith('"')
+            or not isinstance(description, str)
+            or not 1 <= len(description) <= 400
+            or "\n" in description
+            or "Use when" not in description
+            or "Not for" not in description
+            or re.search(r"\b(?:MUST|ALWAYS|NEVER|CRITICAL)\b", description)
+        ):
+            violations.append(
+                "agent " + label + ": description-contract: description must be one double-quoted line, ≤400 characters, contain Use when and Not for, and avoid directive words"
+            )
+        if routing_errors.get(name) and not exempt(agent, "routing-cases"):
+            for reason in routing_errors[name]:
+                violations.append("agent " + label + ": routing-cases: " + reason)
         if not exempt(agent, "agent-has-skill") and (
             len(skills) != 1 or skills[0] not in skill_names
         ):
@@ -830,88 +1009,117 @@ def is_our_bundle(content: bytes) -> bool:
     return marker in content.splitlines()
 
 
-def inspect_outputs(root: Path, bundles: Sequence[Bundle]) -> Tuple[List[Bundle], List[Path]]:
+def inspect_outputs(
+    root: Path, bundles: Sequence[Bundle], scan_stale: bool = True
+) -> Tuple[List[Path], List[Path]]:
     skills_dir = root / "skills"
-    expected = {bundle.output for bundle in bundles}
-    changed: List[Bundle] = []
+    expected = {path: content for bundle in bundles for path, content in bundle.files.items()}
+    changed: List[Path] = []
     stale: List[Path] = []
 
     if skills_dir.is_symlink():
         raise BuildError("skills path must not be a symbolic link: " + str(skills_dir))
     if skills_dir.exists() and not skills_dir.is_dir():
         raise BuildError("skills path is not a directory: " + str(skills_dir))
-    for bundle in bundles:
-        skill_dir = bundle.output.parent
-        if skill_dir.is_symlink():
-            raise BuildError("skill path must not be a symbolic link: " + str(skill_dir))
-        if skill_dir.exists() and not skill_dir.is_dir():
-            raise BuildError("skill path is not a directory: " + str(skill_dir))
-        if bundle.output.is_symlink():
-            raise BuildError("skill output must not be a symbolic link: " + str(bundle.output))
-        if not bundle.output.exists():
-            changed.append(bundle)
+    for path, content in expected.items():
+        for directory in (path.parent.parent, path.parent):
+            if directory.is_symlink():
+                raise BuildError("skill path must not be a symbolic link: " + str(directory))
+            if directory.exists() and not directory.is_dir():
+                raise BuildError("skill path is not a directory: " + str(directory))
+        if path.is_symlink():
+            raise BuildError("skill output must not be a symbolic link: " + str(path))
+        if not path.exists():
+            changed.append(path)
             continue
-        if not bundle.output.is_file():
-            raise BuildError("skill output is not a file: " + str(bundle.output))
-        existing = bundle.output.read_bytes()
+        if not path.is_file():
+            raise BuildError("skill output is not a file: " + str(path))
+        existing = path.read_bytes()
         if not is_our_bundle(existing):
-            raise BuildError("refusing to overwrite unrecognized file: " + str(bundle.output))
-        if existing != bundle.content:
-            changed.append(bundle)
+            raise BuildError("refusing to overwrite unrecognized file: " + str(path))
+        if existing != content:
+            changed.append(path)
 
-    if skills_dir.is_dir():
-        for path in sorted(skills_dir.glob("*/SKILL.md")):
-            if path in expected:
-                continue
-            if path.parent.is_symlink():
-                raise BuildError("skill path must not be a symbolic link: " + str(path.parent))
+    if scan_stale and skills_dir.is_dir():
+        for path in sorted(skills_dir.rglob("*")):
             if path.is_symlink():
-                raise BuildError("skill output must not be a symbolic link: " + str(path))
+                raise BuildError("skill path must not be a symbolic link: " + str(path))
+            if path.is_dir():
+                continue
             if not path.is_file():
                 raise BuildError("skill output is not a file: " + str(path))
-            if is_our_bundle(path.read_bytes()):
+            if not is_our_bundle(path.read_bytes()):
+                raise BuildError("refusing to overwrite unrecognized file: " + str(path))
+            if path not in expected:
                 stale.append(path)
 
     return changed, stale
 
 
-def publish(root: Path, check: bool) -> int:
-    bundles = build_bundles(root)
-    changed, stale = inspect_outputs(root, bundles)
+def skill_size(bundle: Bundle) -> Tuple[int, int]:
+    text = bundle.files[bundle.output].decode("utf-8")
+    return len(text.splitlines()), len(text.split())
+
+
+def publish(root: Path, check: bool, only: Optional[Sequence[str]] = None) -> int:
+    bundles = build_bundles(root, only)
+    changed, stale = inspect_outputs(root, bundles, scan_stale=only is None)
+    oversize = []
+    for bundle in bundles:
+        lines, words = skill_size(bundle)
+        if lines > 500 or words > 3800:
+            oversize.append(
+                "oversize: " + str(bundle.output.relative_to(root))
+                + " (" + str(lines) + " lines, " + str(words) + " words; limit 500/3800)"
+            )
     if check:
-        violations = check_agents(root)
-        for bundle in changed:
-            print("out of date: " + str(bundle.output.relative_to(root)), file=sys.stderr)
+        violations = check_agents(root) if only is None else []
+        for path in changed:
+            print("out of date: " + str(path.relative_to(root)), file=sys.stderr)
         for path in stale:
             print("stale: " + str(path.relative_to(root)), file=sys.stderr)
+        for message in oversize:
+            print(message, file=sys.stderr)
         for violation in violations:
             print(violation, file=sys.stderr)
-        if changed or stale or violations:
+        if changed or stale or oversize or violations:
             return 1
         print("generated skills: current")
         return 0
 
-    for bundle in changed:
-        bundle.output.parent.mkdir(parents=True, exist_ok=True)
-        bundle.output.write_bytes(bundle.content)
+    if oversize:
+        for message in oversize:
+            print(message, file=sys.stderr)
+        return 1
+    expected = {path: content for bundle in bundles for path, content in bundle.files.items()}
+    for path in changed:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(expected[path])
     for path in stale:
         path.unlink()
         parent = path.parent
-        if parent != root and parent.is_dir() and not any(parent.iterdir()):
+        while parent != root / "skills" and parent.is_dir() and not any(parent.iterdir()):
             parent.rmdir()
+            parent = parent.parent
     print("generated skills: " + str(len(changed) + len(stale)) + " changed")
+    print("name lines words references")
+    for bundle in bundles:
+        lines, words = skill_size(bundle)
+        print(bundle.name, lines, words, len(bundle.files) - 1)
     return 0
 
 
 def parse_arguments(arguments: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="fail if generated OMP skills are not current")
+    parser.add_argument("--only", nargs="+", metavar="NAME", help="build only these prompt sources")
     return parser.parse_args(arguments)
 
 
 def main(arguments: Optional[Sequence[str]] = None) -> int:
     try:
-        return publish(repository_root(), parse_arguments(arguments).check)
+        options = parse_arguments(arguments)
+        return publish(repository_root(), options.check, options.only)
     except (BuildError, OSError) as error:
         print("error: " + str(error), file=sys.stderr)
         return 1

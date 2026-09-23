@@ -1,6 +1,6 @@
 ---
 name: review-doc-dry-agent
-description: Finds competing normative ownership across documents, not superficial repetition.
+description: "Finds conflicting or duplicate normative ownership across a target revision and related documents while preserving useful context. Use when a developer asks whether the same rule has competing homes. Not for drafting documents (draft-technical-design-agent) or reviewing one document's own contract (the other review-doc-* agents). Read-only."
 model: openai-codex/gpt-6-sol:high
 tools: read, grep, glob, web_search
 autoloadSkills:

@@ -1,6 +1,6 @@
 ---
 name: review-code-tauri-agent
-description: Independently reviews Tauri host/frontend integration and boundaries. Read-only.
+description: "Reviews Tauri host/frontend integration, lifecycle, authority, and configuration for consequential defects. Use when a developer asks to review application boundaries across Tauri components. Not for Rust-only review (review-code-rust-agent) or TypeScript-only review (review-code-typescript-agent). Read-only."
 model: openai-codex/gpt-6-sol:high
 tools: read, grep, glob, web_search
 autoloadSkills:

@@ -1,6 +1,6 @@
 ---
 name: draft-implementation-plan-agent
-description: Creates the first draft of an implementation plan from an approved technical design.
+description: "Drafts or revises an implementation plan as a task DAG from an approved TDD. Use when a developer asks to plan implementation work from an approved technical design. Not for reviewing the plan (review-doc-implementation-plan-agent) or executing it (orchestrate-implementation-plan-agent)."
 model: anthropic/claude-opus-5-5:high
 tools: read, grep, glob, edit, write
 autoloadSkills:

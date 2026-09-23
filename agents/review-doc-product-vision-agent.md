@@ -1,6 +1,6 @@
 ---
 name: review-doc-product-vision-agent
-description: Independently reviews a product vision's users, problems, boundaries, and durable success signals. Read-only.
+description: "Reviews a product vision's users, problems, durable direction, boundaries, and success signals. Use when a developer asks to check the product vision before feature work. Not for drafting the vision (draft-product-vision-agent) or reviewing a feature PRD (review-doc-prd-agent). Read-only."
 model: openai-codex/gpt-6-sol:high
 tools: read, grep, glob, web_search
 autoloadSkills:
