@@ -10,7 +10,7 @@ Find consequential behavior defects and concrete maintenance burdens in the requ
 
 ## Required guidance
 
-- [Code review contract](README.md#code-review-contract)
+- [Code review contract](../guides/code-review.md)
 - [Communication rules](../guides/communication-policy.md#rules)
 
 ## Inputs

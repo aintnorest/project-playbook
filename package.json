@@ -1,0 +1,9 @@
+{
+  "name": "project-playbook",
+  "version": "0.0.0",
+  "private": true,
+  "description": "OMP extension package exposing the playbook's agents/ and skills/ capability directories.",
+  "omp": {
+    "extensions": ["./omp-extension.ts"]
+  }
+}

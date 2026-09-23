@@ -40,17 +40,16 @@ Define each primitive in the document that owns it and reference it elsewhere. U
 
 ## Label interface confidence in AI-written specifications
 
-Every concrete interface introduced or referenced by an artificial intelligence (AI)-written specification carries one of these labels:
+Label every concrete interface that the specification verifies or introduces:
 
 | Tag | Meaning |
 | --- | --- |
 | `[EXISTS]` | Verified in the current codebase. |
 | `[PROPOSED]` | New interface introduced by the design. |
-| `[ASSUMED]` | Believed to exist or behave as stated but still needs verification. |
 
 Apply the label to the declaration, schema, command, function signature, or section that introduces the interface. Do not label general explanation or repeat the label on every sentence beneath a clearly labeled contract.
 
-An `[ASSUMED]` interface is an unresolved prerequisite. Before implementation depends on it, verify it and label it `[EXISTS]`, or decide to introduce it and define its contract as `[PROPOSED]`; accepting uncertainty alone does not resolve the prerequisite.
+If an interface cannot be verified and the distinction matters, verify it or raise it as an open decision tagged `[NEEDS YOUR CALL]`. If the distinction does not matter, leave the interface unlabeled. Accepting consequential uncertainty alone does not resolve a prerequisite.
 
 ## Explain data flow instead of naming hierarchy
 
@@ -72,4 +71,4 @@ Use this form for a meaningful design choice:
 
 > We choose Option A over Option B because we prioritize Advantage X at the accepted cost of Disadvantage Y.
 
-Use the exact tags `[DECIDED]` for developer-authorized or source-backed governing decisions and `[NEEDS YOUR CALL]` for consequential choices still awaiting a decision. Identify recommendations as proposals, not decided facts; neither tag approves the whole document. Do not hide a cost because one option is common or modern, and do not invent competing options for choices without a meaningful tradeoff.
+Use `[NEEDS YOUR CALL]` for consequential choices still awaiting the developer's input or unfinished research. Identify recommendations as proposals, not settled facts; the tag does not approve the whole document. Do not hide a cost because one option is common or modern, and do not invent competing options for choices without a meaningful tradeoff.

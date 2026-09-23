@@ -10,9 +10,9 @@ Find consequential defects that would cause a task executor to start blocked, bu
 
 ## Required guidance
 
-- [Independent review context](../guides/document-convergence.md#independent-review-context)
-- [Evidence and authority](../guides/document-convergence.md#evidence-and-authority)
-- [Findings](../guides/document-convergence.md#findings)
+- [Independent review context](../guides/document-review.md#independent-review-context)
+- [Evidence and authority](../guides/document-review.md#evidence-and-authority)
+- [Findings](../guides/document-review.md#findings)
 - [Implementation plan contract](../guides/product-documentation-process.md#implementation-plan)
 - [Reference over repetition](../guides/product-documentation-process.md#reference-over-repetition)
 - [Communication rules](../guides/communication-policy.md#rules)

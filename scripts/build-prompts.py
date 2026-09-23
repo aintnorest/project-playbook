@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Publish file-aware prompt sources as self-contained chat bundles."""
+"""Publish file-aware prompt sources as self-contained OMP skills."""
 
 import argparse
+import json
 import re
 import sys
 import unicodedata
@@ -17,6 +18,30 @@ ATX_HEADING = re.compile(r"^[ \t]{0,3}(#{1,6})(?:[ \t]+|$)(.*?)(?:\r?\n)?$")
 SETEXT_UNDERLINE = re.compile(r"^[ \t]{0,3}(=+|-+)[ \t]*(?:\r?\n)?$")
 MANIFEST_ITEM = re.compile(r"^[ \t]*[-*+][ \t]+\[([^\]]+)\]\(([^()\s]+)\)[ \t]*(?:\r?\n)?$")
 URL_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
+
+SKILL_POINTER = (
+    "`skill://{skill}` governs this work: its procedure, its output, and when you are "
+    "finished. It overrides this harness's general workflow guidance but never widens "
+    "the boundaries below. Re-read it whenever it is not in your context, after any "
+    "compaction, and before you finish."
+)
+COMPLETION_LINE = (
+    "You are finished only when the skill's Output section is satisfied. Every ending "
+    "it defines is a valid completion, including one that writes nothing or reports no "
+    "findings."
+)
+FALLBACK_LINE = (
+    "If `skill://{skill}` cannot be read, stop and report that instead of working from "
+    "memory."
+)
+AGENT_RULES = (
+    "skill-has-agent",
+    "agent-has-skill",
+    "name-matches-file",
+    "standard-lines",
+    "no-done-when",
+    "reviewer-read-only",
+)
 
 
 class BuildError(Exception):
@@ -56,8 +81,16 @@ class SelectedSection:
 class Bundle:
     source: Path
     output: Path
+    name: str
+    description: str
     content: bytes
 
+
+@dataclass(frozen=True)
+class Agent:
+    path: Path
+    frontmatter: Dict[str, object]
+    body: str
 
 def repository_root() -> Path:
     return Path(__file__).resolve().parent.parent
@@ -438,7 +471,31 @@ def render_section(
 
 
 
-def render_bundle(root: Path, source: Document, selections: Sequence[SelectedSection]) -> bytes:
+def yaml_double_quoted(value: str) -> str:
+    return json.dumps(value, ensure_ascii=False)
+
+
+def skill_description(source: Document) -> str:
+    title = next(
+        (
+            heading.title
+            for heading in source.headings
+            if heading.level == 1 and heading.start == 0 and heading.title
+        ),
+        None,
+    )
+    if title is None:
+        raise BuildError("prompt source must begin with an H1 title: " + str(source.path))
+    return title
+
+
+def render_bundle(
+    root: Path,
+    source: Document,
+    selections: Sequence[SelectedSection],
+    name: str,
+    description: str,
+) -> bytes:
     sections = included_sections(selections)
     required = find_required_guidance(source)
     task_lines = source.lines[: required.start] + source.lines[required.end :]
@@ -446,6 +503,11 @@ def render_bundle(root: Path, source: Document, selections: Sequence[SelectedSec
     guidance = "\n".join(render_section(root, selection, sections).rstrip() for selection in selections)
     content = "\n".join(
         [
+            "---",
+            "name: " + name,
+            "description: " + yaml_double_quoted(description),
+            "hide: true",
+            "---",
             GENERATED_MARKER,
             "",
             "## Included guidance",
@@ -479,50 +541,337 @@ def build_bundles(root: Path) -> List[Bundle]:
         source = load_document(root, path, cache)
         required = find_required_guidance(source)
         selections = manifest_sections(root, source, required, cache)
-        output = root / "prompts" / "chat" / path.name
-        bundles.append(Bundle(path, output, render_bundle(root, source, selections)))
+        name = path.stem
+        description = skill_description(source)
+        output = root / "skills" / name / "SKILL.md"
+        bundles.append(
+            Bundle(
+                path,
+                output,
+                name,
+                description,
+                render_bundle(root, source, selections, name, description),
+            )
+        )
     return bundles
 
 
+def parse_agent_scalar(path: Path, line_number: int, value: str) -> str:
+    value = value.strip()
+    if not value:
+        raise BuildError(
+            "empty agent frontmatter value at "
+            + str(path)
+            + ":"
+            + str(line_number)
+        )
+    if value.startswith('"') or value.startswith("'"):
+        quote = value[0]
+        if len(value) < 2 or value[-1] != quote:
+            raise BuildError(
+                "invalid quoted agent frontmatter value at "
+                + str(path)
+                + ":"
+                + str(line_number)
+            )
+        if quote == '"':
+            try:
+                parsed = json.loads(value)
+            except json.JSONDecodeError as error:
+                raise BuildError(
+                    "invalid quoted agent frontmatter value at "
+                    + str(path)
+                    + ":"
+                    + str(line_number)
+                ) from error
+            if not isinstance(parsed, str):
+                raise BuildError(
+                    "agent frontmatter value is not a string at "
+                    + str(path)
+                    + ":"
+                    + str(line_number)
+                )
+            return parsed
+        return value[1:-1].replace("''", "'")
+    return value
+
+
+def parse_agent(path: Path) -> Agent:
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if not lines or lines[0] != "---":
+        raise BuildError("agent frontmatter must start with ---: " + str(path))
+    try:
+        end = lines.index("---", 1)
+    except ValueError as error:
+        raise BuildError("agent frontmatter is not closed: " + str(path)) from error
+
+    frontmatter: Dict[str, object] = {}
+    list_key: Optional[str] = None
+    for index, line in enumerate(lines[1:end], start=2):
+        if line.startswith("  - "):
+            if list_key is None:
+                raise BuildError(
+                    "agent frontmatter list item has no key at "
+                    + str(path)
+                    + ":"
+                    + str(index)
+                )
+            value = parse_agent_scalar(path, index, line[4:])
+            items = frontmatter[list_key]
+            if not isinstance(items, list):
+                raise BuildError(
+                    "agent frontmatter list has an invalid value at "
+                    + str(path)
+                    + ":"
+                    + str(index)
+                )
+            items.append(value)
+            continue
+
+        match = re.fullmatch(r"([A-Za-z][A-Za-z0-9]*):(.*)", line)
+        if not match:
+            raise BuildError(
+                "unsupported agent frontmatter at "
+                + str(path)
+                + ":"
+                + str(index)
+            )
+        key, raw_value = match.groups()
+        if key in frontmatter:
+            raise BuildError("duplicate agent frontmatter key '" + key + "': " + str(path))
+        if raw_value.strip():
+            frontmatter[key] = parse_agent_scalar(path, index, raw_value)
+            list_key = None
+        else:
+            frontmatter[key] = []
+            list_key = key
+    return Agent(path, frontmatter, "\n".join(lines[end + 1 :]))
+
+
+def load_agent_exceptions(root: Path) -> Tuple[Dict[str, object], Dict[str, object]]:
+    path = root / "agents" / "checks.json"
+    if not path.exists():
+        return {}, {}
+    try:
+        configuration = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise BuildError("invalid agent check configuration: " + str(path)) from error
+    if not isinstance(configuration, dict):
+        raise BuildError("agent check configuration must be an object: " + str(path))
+    skills_without_agents = configuration.get("skillsWithoutAgents", {})
+    exemptions = configuration.get("exemptions", {})
+    if not isinstance(skills_without_agents, dict):
+        raise BuildError("skillsWithoutAgents must be an object: " + str(path))
+    if not isinstance(exemptions, dict):
+        raise BuildError("exemptions must be an object: " + str(path))
+    return skills_without_agents, exemptions
+
+
+def agent_list(agent: Agent, key: str) -> List[str]:
+    value = agent.frontmatter.get(key)
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        return []
+    return value
+
+
+def agent_name(agent: Agent) -> str:
+    value = agent.frontmatter.get("name")
+    return value if isinstance(value, str) else ""
+
+
+def check_agents(root: Path) -> List[str]:
+    agents_dir = root / "agents"
+    agents = (
+        [parse_agent(path) for path in sorted(agents_dir.glob("*.md"))]
+        if agents_dir.is_dir()
+        else []
+    )
+    skill_names = {
+        path.parent.name
+        for path in (root / "skills").glob("*/SKILL.md")
+        if path.is_file()
+    }
+    agents_by_name = {
+        agent_name(agent): agent for agent in agents if agent_name(agent)
+    }
+    skills_without_agents, configured_exemptions = load_agent_exceptions(root)
+    violations: List[str] = []
+    valid_skill_exceptions = set()
+    valid_exemptions = set()
+
+    for skill, reason in sorted(skills_without_agents.items()):
+        if skill not in skill_names:
+            violations.append(
+                "skill " + skill + ": skillsWithoutAgents: unknown skill"
+            )
+        if not isinstance(reason, str) or not reason.strip():
+            violations.append(
+                "skill "
+                + skill
+                + ": skillsWithoutAgents: reason must be a non-empty string"
+            )
+        if skill in skill_names and isinstance(reason, str) and reason.strip():
+            valid_skill_exceptions.add(skill)
+
+    for name, exemptions in sorted(configured_exemptions.items()):
+        agent = agents_by_name.get(name)
+        label = agent.path.name if agent is not None else name
+        if agent is None:
+            violations.append("agent " + label + ": exemptions: unknown agent")
+        if not isinstance(exemptions, dict):
+            raise BuildError("agent exemptions must be an object: " + name)
+        for rule, reason in sorted(exemptions.items()):
+            if rule not in AGENT_RULES:
+                violations.append("agent " + label + ": " + rule + ": unknown rule")
+            if not isinstance(reason, str) or not reason.strip():
+                violations.append(
+                    "agent "
+                    + label
+                    + ": "
+                    + rule
+                    + ": reason must be a non-empty string"
+                )
+            if (
+                agent is not None
+                and rule in AGENT_RULES
+                and isinstance(reason, str)
+                and reason.strip()
+            ):
+                valid_exemptions.add((name, rule))
+
+    def exempt(agent: Agent, rule: str) -> bool:
+        return (agent_name(agent), rule) in valid_exemptions
+
+    agents_for_skill: Dict[str, List[Agent]] = {}
+    for agent in agents:
+        for skill in agent_list(agent, "autoloadSkills"):
+            agents_for_skill.setdefault(skill, []).append(agent)
+
+    for skill in sorted(skill_names):
+        if skill in valid_skill_exceptions:
+            continue
+        count = len(agents_for_skill.get(skill, []))
+        if count != 1:
+            violations.append(
+                "skill "
+                + skill
+                + ": skill-has-agent: expected exactly one agent, found "
+                + str(count)
+            )
+
+    for agent in agents:
+        name = agent_name(agent)
+        skills = agent_list(agent, "autoloadSkills")
+        label = agent.path.name
+        if not exempt(agent, "agent-has-skill") and (
+            len(skills) != 1 or skills[0] not in skill_names
+        ):
+            violations.append(
+                "agent "
+                + label
+                + ": agent-has-skill: autoloadSkills must name exactly one existing skill"
+            )
+        if not exempt(agent, "name-matches-file") and name != agent.path.stem:
+            violations.append(
+                "agent "
+                + label
+                + ": name-matches-file: name '"
+                + name
+                + "' does not match filename"
+            )
+        if not exempt(agent, "standard-lines"):
+            if len(skills) == 1:
+                standard_lines = (
+                    SKILL_POINTER.format(skill=skills[0]),
+                    COMPLETION_LINE,
+                    FALLBACK_LINE.format(skill=skills[0]),
+                )
+                body_lines = set(agent.body.splitlines())
+                missing = [line for line in standard_lines if line not in body_lines]
+            else:
+                missing = ["standard lines require exactly one autoloaded skill"]
+            if missing:
+                violations.append(
+                    "agent "
+                    + label
+                    + ": standard-lines: missing "
+                    + "; ".join(missing)
+                )
+        if not exempt(agent, "no-done-when") and "You are done when" in agent.body:
+            violations.append(
+                "agent "
+                + label
+                + ": no-done-when: body contains 'You are done when'"
+            )
+        if (
+            name.startswith("review-")
+            and not exempt(agent, "reviewer-read-only")
+        ):
+            tools_value = agent.frontmatter.get("tools")
+            if isinstance(tools_value, str):
+                tools = {tool.strip() for tool in tools_value.split(",")}
+            elif isinstance(tools_value, list):
+                tools = {str(tool).strip() for tool in tools_value}
+            else:
+                tools = set()
+            forbidden = sorted(tools.intersection({"edit", "write", "bash"}))
+            if forbidden:
+                violations.append(
+                    "agent "
+                    + label
+                    + ": reviewer-read-only: forbidden tools: "
+                    + ", ".join(forbidden)
+                )
+    return violations
+
+
 def is_our_bundle(content: bytes) -> bool:
-    return content.startswith(GENERATED_MARKER.encode("utf-8") + b"\n")
+    marker = GENERATED_MARKER.encode("utf-8")
+    return marker in content.splitlines()
 
 
 def inspect_outputs(root: Path, bundles: Sequence[Bundle]) -> Tuple[List[Bundle], List[Path]]:
-    chat_dir = root / "prompts" / "chat"
+    skills_dir = root / "skills"
     expected = {bundle.output for bundle in bundles}
     changed: List[Bundle] = []
     stale: List[Path] = []
 
-    if chat_dir.is_symlink():
-        raise BuildError("chat bundle path must not be a symbolic link: " + str(chat_dir))
-    if chat_dir.exists() and not chat_dir.is_dir():
-        raise BuildError("chat bundle path is not a directory: " + str(chat_dir))
+    if skills_dir.is_symlink():
+        raise BuildError("skills path must not be a symbolic link: " + str(skills_dir))
+    if skills_dir.exists() and not skills_dir.is_dir():
+        raise BuildError("skills path is not a directory: " + str(skills_dir))
     for bundle in bundles:
+        skill_dir = bundle.output.parent
+        if skill_dir.is_symlink():
+            raise BuildError("skill path must not be a symbolic link: " + str(skill_dir))
+        if skill_dir.exists() and not skill_dir.is_dir():
+            raise BuildError("skill path is not a directory: " + str(skill_dir))
         if bundle.output.is_symlink():
-            raise BuildError("chat bundle output must not be a symbolic link: " + str(bundle.output))
+            raise BuildError("skill output must not be a symbolic link: " + str(bundle.output))
         if not bundle.output.exists():
             changed.append(bundle)
             continue
         if not bundle.output.is_file():
-            raise BuildError("chat bundle output is not a file: " + str(bundle.output))
+            raise BuildError("skill output is not a file: " + str(bundle.output))
         existing = bundle.output.read_bytes()
         if not is_our_bundle(existing):
             raise BuildError("refusing to overwrite unrecognized file: " + str(bundle.output))
         if existing != bundle.content:
             changed.append(bundle)
 
-    if chat_dir.is_dir():
-        for path in sorted(chat_dir.glob("*.md")):
+    if skills_dir.is_dir():
+        for path in sorted(skills_dir.glob("*/SKILL.md")):
             if path in expected:
                 continue
+            if path.parent.is_symlink():
+                raise BuildError("skill path must not be a symbolic link: " + str(path.parent))
             if path.is_symlink():
-                raise BuildError("chat bundle entry must not be a symbolic link: " + str(path))
+                raise BuildError("skill output must not be a symbolic link: " + str(path))
             if not path.is_file():
-                raise BuildError("chat bundle entry is not a file: " + str(path))
-            if not is_our_bundle(path.read_bytes()):
-                raise BuildError("refusing to delete unrecognized file: " + str(path))
-            stale.append(path)
+                raise BuildError("skill output is not a file: " + str(path))
+            if is_our_bundle(path.read_bytes()):
+                stale.append(path)
+
     return changed, stale
 
 
@@ -530,29 +879,33 @@ def publish(root: Path, check: bool) -> int:
     bundles = build_bundles(root)
     changed, stale = inspect_outputs(root, bundles)
     if check:
-        if changed or stale:
-            for bundle in changed:
-                print("out of date: " + str(bundle.output.relative_to(root)), file=sys.stderr)
-            for path in stale:
-                print("stale: " + str(path.relative_to(root)), file=sys.stderr)
+        violations = check_agents(root)
+        for bundle in changed:
+            print("out of date: " + str(bundle.output.relative_to(root)), file=sys.stderr)
+        for path in stale:
+            print("stale: " + str(path.relative_to(root)), file=sys.stderr)
+        for violation in violations:
+            print(violation, file=sys.stderr)
+        if changed or stale or violations:
             return 1
-        print("prompt bundles: current")
+        print("generated skills: current")
         return 0
 
-    if changed or stale:
-        chat_dir = root / "prompts" / "chat"
-        chat_dir.mkdir(exist_ok=True)
-        for bundle in changed:
-            bundle.output.write_bytes(bundle.content)
-        for path in stale:
-            path.unlink()
-    print("prompt bundles: " + str(len(changed) + len(stale)) + " changed")
+    for bundle in changed:
+        bundle.output.parent.mkdir(parents=True, exist_ok=True)
+        bundle.output.write_bytes(bundle.content)
+    for path in stale:
+        path.unlink()
+        parent = path.parent
+        if parent != root and parent.is_dir() and not any(parent.iterdir()):
+            parent.rmdir()
+    print("generated skills: " + str(len(changed) + len(stale)) + " changed")
     return 0
 
 
 def parse_arguments(arguments: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--check", action="store_true", help="fail if generated chat bundles are not current")
+    parser.add_argument("--check", action="store_true", help="fail if generated OMP skills are not current")
     return parser.parse_args(arguments)
 
 

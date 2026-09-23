@@ -11,6 +11,7 @@ Draft or revise `docs/product-vision.md` when the product's enduring direction c
 ## Required guidance
 
 - [Product vision contract](../guides/product-documentation-process.md#product-vision)
+- [Decisions](../guides/product-documentation-process.md#decisions)
 - [Communication rules](../guides/communication-policy.md#rules)
 
 ## Inputs

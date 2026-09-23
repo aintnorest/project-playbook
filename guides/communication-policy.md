@@ -2,7 +2,7 @@
 
 ## Scope
 
-Active shared policy for final messages, explanations, summaries, and standalone documents written for the developer, including product requirements, system designs, technical designs, implementation plans, reports, and decision records. It does not apply to code or internal reasoning; reasoning may take as much space as correctness requires, but that does not loosen these output rules.
+Active shared policy for final messages, explanations, summaries, and standalone documents written for the developer, including product requirements, system architecture, system designs, technical designs, implementation plans, and reports. It does not apply to code or internal reasoning; reasoning may take as much space as correctness requires, but that does not loosen these output rules.
 
 This file owns the communication rules. Task prompts and other guides reference it rather than maintain separate versions; the `## Rules` section is the self-contained payload they inline, so its lead and its `Before you send` check travel with every prompt. Document contents and workflow belong to the [product documentation process](product-documentation-process.md); technical specificity belongs to the [technical-writing standards](technical-writing-standards.md). The findings behind these rules are listed under [Evidence](#evidence).
 

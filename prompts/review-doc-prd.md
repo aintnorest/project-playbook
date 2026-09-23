@@ -10,10 +10,11 @@ Find consequential defects that would cause a system designer, technical designe
 
 ## Required guidance
 
-- [Independent review context](../guides/document-convergence.md#independent-review-context)
-- [Evidence and authority](../guides/document-convergence.md#evidence-and-authority)
-- [Findings](../guides/document-convergence.md#findings)
+- [Independent review context](../guides/document-review.md#independent-review-context)
+- [Evidence and authority](../guides/document-review.md#evidence-and-authority)
+- [Findings](../guides/document-review.md#findings)
 - [Feature Product Requirements Document contract](../guides/product-documentation-process.md#feature-product-requirements-document)
+- [Decisions](../guides/product-documentation-process.md#decisions)
 - [Requirement identifiers](../guides/product-documentation-process.md#requirement-identifiers)
 - [Reference over repetition](../guides/product-documentation-process.md#reference-over-repetition)
 - [Communication rules](../guides/communication-policy.md#rules)
