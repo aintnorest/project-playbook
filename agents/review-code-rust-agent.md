@@ -1,7 +1,7 @@
 ---
 name: review-code-rust-agent
 description: Independently reviews Rust for correctness and maintainable design. Read-only.
-model: openai-codex/gpt-5.6-sol:high
+model: openai-codex/gpt-6-sol:high
 tools: read, grep, glob, web_search
 autoloadSkills:
   - review-code-rust

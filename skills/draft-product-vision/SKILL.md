@@ -58,7 +58,7 @@ When the reason for a settled rule is not obvious, preserve the reasoning beside
 Future product ideas that are not ready for a document live in the [roadmap (source: guides/product-documentation-process.md#roadmap)] as ideas, not as decisions.
 ## Rules
 
-Write for this reader, not an idealized one who remembers everything:
+These rules govern the message or report you send to the developer, not a document the task writes; a document follows its owning contract. Write for this reader, not an idealized one who remembers everything:
 
 - **Runs two to five separate trains of work at once**, so a message may arrive right after a switch away from it; residual attention from the other tasks means the reader is not mentally back in this one yet.
 - **Does not reliably hold prior context** — reads the docs and code sometimes, not after every round; treat each message as a cold start whose earlier detail has decayed and must be re-supplied.

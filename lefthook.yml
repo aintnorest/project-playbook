@@ -1,0 +1,4 @@
+pre-commit:
+  commands:
+    build-skills:
+      run: python3 scripts/build-prompts.py && git add skills && python3 scripts/build-prompts.py --check

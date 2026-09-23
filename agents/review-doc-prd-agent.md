@@ -1,7 +1,7 @@
 ---
 name: review-doc-prd-agent
 description: Independently reviews a feature PRD's requirements, acceptance intent, and scope. Read-only.
-model: openai-codex/gpt-5.6-sol:high
+model: openai-codex/gpt-6-sol:high
 tools: read, grep, glob, web_search
 autoloadSkills:
   - review-doc-prd

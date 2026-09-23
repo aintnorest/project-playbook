@@ -1,7 +1,7 @@
 ---
 name: review-doc-dry-agent
 description: Finds competing normative ownership across documents, not superficial repetition.
-model: openai-codex/gpt-5.6-sol:high
+model: openai-codex/gpt-6-sol:high
 tools: read, grep, glob, web_search
 autoloadSkills:
   - review-doc-dry

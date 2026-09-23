@@ -2,13 +2,13 @@
 
 ## Scope
 
-Active shared policy for final messages, explanations, summaries, and standalone documents written for the developer, including product requirements, system architecture, system designs, technical designs, implementation plans, and reports. It does not apply to code or internal reasoning; reasoning may take as much space as correctness requires, but that does not loosen these output rules.
+Active shared policy for final messages, explanations, summaries, and reports written for the developer. It does not apply to code or internal reasoning, and it does not apply to the documents a task produces — product requirements, system architecture, system designs, technical designs, and implementation plans follow their owning contract in the [product documentation process](product-documentation-process.md). Reasoning may take as much space as correctness requires, but that does not loosen these output rules.
 
 This file owns the communication rules. Task prompts and other guides reference it rather than maintain separate versions; the `## Rules` section is the self-contained payload they inline, so its lead and its `Before you send` check travel with every prompt. Document contents and workflow belong to the [product documentation process](product-documentation-process.md); technical specificity belongs to the [technical-writing standards](technical-writing-standards.md). The findings behind these rules are listed under [Evidence](#evidence).
 
 ## Rules
 
-Write for this reader, not an idealized one who remembers everything:
+These rules govern the message or report you send to the developer, not a document the task writes; a document follows its owning contract. Write for this reader, not an idealized one who remembers everything:
 
 - **Runs two to five separate trains of work at once**, so a message may arrive right after a switch away from it; residual attention from the other tasks means the reader is not mentally back in this one yet.
 - **Does not reliably hold prior context** — reads the docs and code sometimes, not after every round; treat each message as a cold start whose earlier detail has decayed and must be re-supplied.

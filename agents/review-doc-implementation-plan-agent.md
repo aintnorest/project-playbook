@@ -1,7 +1,7 @@
 ---
 name: review-doc-implementation-plan-agent
 description: Independently reviews an implementation plan's task DAG, coverage, and verifiability. Read-only.
-model: openai-codex/gpt-5.6-sol:high
+model: openai-codex/gpt-6-sol:high
 tools: read, grep, glob, web_search
 autoloadSkills:
   - review-doc-implementation-plan

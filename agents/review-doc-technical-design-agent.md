@@ -1,7 +1,7 @@
 ---
 name: review-doc-technical-design-agent
 description: Independently reviews one slice or small-feature technical design against its contract. Read-only.
-model: openai-codex/gpt-5.6-sol:high
+model: openai-codex/gpt-6-sol:high
 tools: read, grep, glob, web_search
 autoloadSkills:
   - review-doc-technical-design

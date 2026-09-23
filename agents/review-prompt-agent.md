@@ -1,7 +1,7 @@
 ---
 name: review-prompt-agent
 description: Reviews a prompt against evidence records and suggests specific fixes; never executes the prompt.
-model: openai-codex/gpt-5.6-sol:high
+model: openai-codex/gpt-6-sol:high
 tools: read, grep, glob, web_search
 autoloadSkills:
   - review-prompt

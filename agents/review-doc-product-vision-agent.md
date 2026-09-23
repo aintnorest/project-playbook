@@ -1,7 +1,7 @@
 ---
 name: review-doc-product-vision-agent
 description: Independently reviews a product vision's users, problems, boundaries, and durable success signals. Read-only.
-model: openai-codex/gpt-5.6-sol:high
+model: openai-codex/gpt-6-sol:high
 tools: read, grep, glob, web_search
 autoloadSkills:
   - review-doc-product-vision

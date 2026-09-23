@@ -229,7 +229,7 @@ Use this form for a meaningful design choice:
 Use `[NEEDS YOUR CALL]` for consequential choices still awaiting the developer's input or unfinished research. Identify recommendations as proposals, not settled facts; the tag does not approve the whole document. Do not hide a cost because one option is common or modern, and do not invent competing options for choices without a meaningful tradeoff.
 ## Rules
 
-Write for this reader, not an idealized one who remembers everything:
+These rules govern the message or report you send to the developer, not a document the task writes; a document follows its owning contract. Write for this reader, not an idealized one who remembers everything:
 
 - **Runs two to five separate trains of work at once**, so a message may arrive right after a switch away from it; residual attention from the other tasks means the reader is not mentally back in this one yet.
 - **Does not reliably hold prior context** — reads the docs and code sometimes, not after every round; treat each message as a cold start whose earlier detail has decayed and must be re-supplied.

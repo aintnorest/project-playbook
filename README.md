@@ -10,15 +10,21 @@ Guides define the shared rules for the work. Agents route tasks and enforce thei
 
 ## Changing the playbook
 
-Edit task sources in `prompts/` or shared rules in `guides/`; never edit generated files in `skills/`. Regenerate skills after a change:
+Edit task sources in `prompts/` or shared rules in `guides/`; never edit generated files in `skills/`. A git pre-commit hook regenerates the skills, stages them, and runs the build check, so a commit can never carry a stale skill. Install the hook once per clone:
+
+```sh
+brew install lefthook
+lefthook install
+```
+
+Regenerate by hand when you want to inspect the result before committing:
 
 ```sh
 python3 scripts/build-prompts.py
 ```
 
-Before committing, check generated files and run the tests:
+Before pushing, run the tests:
 
 ```sh
-python3 scripts/build-prompts.py --check
 python3 -m unittest discover -s tests
 ```

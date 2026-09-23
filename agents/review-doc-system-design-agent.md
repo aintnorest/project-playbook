@@ -1,7 +1,7 @@
 ---
 name: review-doc-system-design-agent
 description: Independently reviews a feature's shared architecture and cross-slice contracts. Read-only.
-model: openai-codex/gpt-5.6-sol:high
+model: openai-codex/gpt-6-sol:high
 tools: read, grep, glob, web_search
 autoloadSkills:
   - review-doc-system-design
