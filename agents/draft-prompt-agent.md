@@ -3,6 +3,7 @@ name: draft-prompt-agent
 description: "Creates or materially revises one evidence-grounded prompt and its design record for a stated task and target models. Use when a developer asks to design a reusable prompt. Not for evaluating an existing prompt or its observed results (review-prompt-agent)."
 model: anthropic/claude-opus-5-5:high
 tools: read, grep, glob, edit, write, web_search, task
+read-summarize: false
 spawns: scout
 autoloadSkills:
   - draft-prompt

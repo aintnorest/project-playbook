@@ -32,6 +32,8 @@ Restart OMP. A new extension root is read at startup; `/reload-plugins` refreshe
 
 The generated skills are marked `hide: true`, so they deliberately do not appear in the global skill menu. Each surfaces only through the agent that autoloads it. An empty skill menu is expected, not a failed install.
 
+The `review-code-*` agents list `ast_grep` and `lsp` in their tools. `ast_grep` is off by default in OMP; set `astGrep.enabled: true` in the same configuration file so the code reviewers can use it. `lsp` needs the language server for the project on `PATH` (for example `rust-analyzer` or `typescript-language-server`).
+
 ## Templates
 
 OMP loads only `agents/` and `skills/`. Templates are plain files you copy by hand: to start a project's roadmap, copy `templates/roadmap.md` from this checkout to `docs/roadmap.md` in the project.
@@ -60,4 +62,4 @@ Apply the exception requirements owned by the [product documentation process](..
 
 ## Without OMP
 
-The prompt sources under `prompts/` remain authoritative and readable, and you can copy one and paste it yourself. Nothing outside this repository compiles a prompt source into a runnable artifact, so that path is no longer the intended use. A generated skill embeds its task and the guidance applied on every run, and carries the rest as reference files.
+The skill sources under `skill-sources/` remain authoritative and readable, and you can copy one and paste it yourself. Nothing outside this repository compiles a skill source into a runnable artifact, so that path is no longer the intended use. A generated skill embeds its task and the guidance applied on every run, and carries the rest as reference files.

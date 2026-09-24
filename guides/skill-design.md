@@ -2,9 +2,9 @@
 
 ## Scope and disclosure
 
-A Project Playbook skill is the generated task an agent autoloads, hidden from the global skill menu. Disclosure has three tiers: the [agent description](agents.md#description-contract) routes the request, `SKILL.md` supplies always-needed instructions, and `references/` supplies conditional guidance. [Routing cases](agents.md#routing-cases) and the [prompt source sections](prompt-design.md#design-the-common-task-contract) have separate owners.
+A Project Playbook skill is the generated task an agent autoloads, hidden from the global skill menu. Disclosure has three tiers: the [agent description](agents.md#description-contract) routes the request, `SKILL.md` supplies always-needed instructions, and `references/` supplies conditional guidance. [Routing cases](agents.md#routing-cases) and the [skill source sections](prompt-design.md#design-the-common-task-contract) have separate owners.
 
-The publisher owns `skills/<name>/`; authors edit `prompts/` and `guides/`, never generated files. A task links each reference from Instructions or Output at the point of need and states when to read it through `skill://<name>/references/<file>`. Reference files are one level deep, not independently discoverable as skills. The agent must read one when its condition holds.
+The publisher owns `skills/<name>/`; authors edit `skill-sources/` and `guides/`, never generated files. The directory is not named `prompts/` because OMP discovers an extension package's `prompts/` as slash prompt templates; if the package ever ships prompt templates deliberately, they go there and skill sources stay here. A task links each reference from Instructions or Output at the point of need and states when to read it through `skill://<name>/references/<file>`. Reference files are one level deep, not independently discoverable as skills. The agent must read one when its condition holds.
 
 ## Classify guidance
 
@@ -22,9 +22,9 @@ The skill frontmatter description is the first paragraph of the prompt's Purpose
 
 ## Failure-driven maintenance
 
-An optional `Gotchas` section in a prompt source records observed failures. Use bullets of the form `- **<failure in ≤8 words>** — <rule>. Evidence: <record id or date>.` Never emit an empty section. Keep entries append-mostly; cross-task rules belong in their shared guide.
+An optional `Gotchas` section in a skill source records observed failures. Use bullets of the form `- **<failure in ≤8 words>** — <rule>. Evidence: <record id or date>.` Never emit an empty section. Keep entries append-mostly; cross-task rules belong in their shared guide.
 
-The loop is manual and evidence-driven: run the agent on real work, record how it went as an evidence record (prompt revision, runtime, observed result), and after a few records dispatch `review-prompt` with them. Trace each finding to its editable owner: a task-specific procedural failure becomes a Gotchas entry, dispatch ambiguity tightens the agent description, and a mistaken activation boundary changes a routing case. Regenerate and inspect the affected skill, not its compiled copy. Check other consumers before changing shared guidance. Moved rules can change salience, and conditional reads may still be missed despite checked links; both are things to watch for in evidence records.
+The loop is manual and evidence-driven: run the agent on real work, record how it went as an evidence record, and after a few records dispatch `review-prompt` with them. An evidence record is a pointer plus a judgment: the path of the subagent's session transcript (`<session>/<AgentId>.jsonl`, whose `session_init` entry carries the exact system prompt, tools, output schema, and model that ran) or an `omp --export` of it, the playbook commit the skill was built from, and the developer's observed result. Do not paraphrase the prompt revision; the transcript is the revision. Trace each finding to its editable owner: a task-specific procedural failure becomes a Gotchas entry, dispatch ambiguity tightens the agent description, and a mistaken activation boundary changes a routing case. Regenerate and inspect the affected skill, not its compiled copy. Check other consumers before changing shared guidance. Moved rules can change salience, and conditional reads may still be missed despite checked links; both are things to watch for in evidence records.
 
 Bundled scripts are not used because read-only review agents cannot run `bash`.
 

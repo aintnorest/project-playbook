@@ -3,6 +3,7 @@ name: draft-product-vision-agent
 description: "Drafts or revises enduring product direction in a product vision. Use when a developer asks to write or update the product vision. Not for reviewing it (review-doc-product-vision-agent) or specifying one feature's requirements (draft-prd-agent)."
 model: anthropic/claude-opus-5-5:high
 tools: read, grep, glob, edit, write
+read-summarize: false
 autoloadSkills:
   - draft-product-vision
 ---

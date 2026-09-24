@@ -498,7 +498,7 @@ Once the feature's documents exist, trim its roadmap Now entry to the short summ
 
 Build tasks in dependency order, run narrow checks while iterating, and exercise the actual changed surface. Finish with the repository's required verification command.
 
-For subagent execution with an owned integration branch and isolated task worktrees, use [Orchestrate an implementation plan](../prompts/orchestrate-implementation-plan.md). The prompt owns the dispatch, validation, integration, and design-escalation procedure.
+For subagent execution with an owned integration branch and isolated task worktrees, use [Orchestrate an implementation plan](../skill-sources/orchestrate-implementation-plan.md). The skill owns the dispatch, validation, integration, and design-escalation procedure.
 
 ### 11. Close the milestone
 

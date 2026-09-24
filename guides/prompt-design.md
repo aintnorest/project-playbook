@@ -160,7 +160,7 @@ The evaluator never executes the prompt, generates new cases or outputs, asks an
 
 ### Report without editing
 
-Return:
+Deliver the report as structured data through the agent's output schema (`guides/findings-schemas.json`, family `prompt-review`) via the `yield` tool when present, not as prose; each element below maps to a named field. Return:
 
 - **Review basis:** exact source and generated-skill revisions, intended contract, editable-source and compiled-artifact provenance, evidence records, and relevant research consulted.
 - **Findings:** supported structural defects and observed successes or failures, each with a stable ID, exact source text, evidence, consequence, causal trace, smallest specific edit, and owning source or composition boundary. When shared guidance is implicated, include its known consumer scope, the behavior it serves, and the cross-prompt impact review required before correction.

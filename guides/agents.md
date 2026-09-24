@@ -4,7 +4,7 @@ An agent and its skill have separate jobs. Keep their instructions distinct so t
 
 ## Agent contract
 
-Agent frontmatter holds routing and runtime configuration: the name, description, model, tools, optional `spawns`, and `autoloadSkills`.
+Agent frontmatter holds routing and runtime configuration: the name, description, model, tools, `read-summarize: false` (so `read` returns verbatim file content rather than structural summaries; every playbook agent cites exact text), optional `spawns`, `autoloadSkills`, and for review agents the generated `output` schema described under [Structured output](#structured-output).
 
 The body contains only these elements, in this order:
 
@@ -18,7 +18,7 @@ Do not restate restrictions already enforced by the tool list. An agent may repe
 
 ### Description contract
 
-Write the agent frontmatter `description` as one double-quoted physical line of at most 400 characters. Use third person: say what the agent produces, then `Use when` in the developer's phrasing and `Not for` with its nearest sibling task or agents; a family reference such as “the other review-doc-* agents” is acceptable. Follow the prompt's Purpose, rather than describing only a first draft. Add `Read-only.` for a read-only agent. Do not use `MUST`, `ALWAYS`, `NEVER`, or `CRITICAL` as whole words in the description; soft routing language avoids over-triggering.
+Write the agent frontmatter `description` as one double-quoted physical line of at most 400 characters. Use third person: say what the agent produces, then `Use when` in the developer's phrasing and `Not for` with its nearest sibling task or agents; a family reference such as “the other review-doc-* agents” is acceptable. Follow the prompt's Purpose, rather than describing only a first draft. Add `Read-only.` for a read-only agent. Do not use `MUST`, `ALWAYS`, `NEVER`, or `CRITICAL` as whole words in the description; soft routing language avoids over-triggering. Do not use OMP's standalone magic keywords (`orchestrate`, `ultrathink`, `workflowz`, `jevify`) as bare words in a description or routing case; they change the calling session's behavior for that turn.
 
 For example: `"Reviews one feature PRD's requirements, acceptance intent, and scope against the playbook contract. Use when a developer asks to review or check a PRD before technical design. Not for drafting (draft-prd-agent) or reviewing other document types (the other review-doc-* agents). Read-only."`
 
@@ -51,8 +51,12 @@ Each `review-doc-*` agent needs a negative routed to another `review-doc-*` docu
 
 The skill owns everything else: the procedure, every conditional instruction, the output contract, and the definition of done. Conditional decisions belong only in the skill, including when to research, delegate, write, or stop early.
 
+## Structured output
+
+Review agents return their report as structured data, not prose. `guides/findings-schemas.json` holds one JSON Schema per review family (`document-review`, `code-review`, `prompt-review`) with the agent-name globs it applies to. The build writes each family's schema into the matching agents' `output:` frontmatter line, and the check rejects an agent whose line drifts from the file. Edit the JSON, run the build, and commit both. The prose report contracts in `guides/document-review.md`, `guides/code-review.md`, and `guides/prompt-design.md` say what each field must contain; the schema only fixes the shape.
+
 ## Build check
 
-`scripts/build-prompts.py --check` validates the agent-to-skill relationship, matching names, the standard body lines, obsolete completion wording, reviewer tool restrictions, `description-contract`, and `routing-cases`. The exact standard sentences are defined in `scripts/build-prompts.py`; do not copy their wording into this guide.
+`scripts/build-skills.py --check` validates the agent-to-skill relationship, matching names, the standard body lines, obsolete completion wording, reviewer tool restrictions, `verbatim-read`, `output-schema`, `description-contract`, and `routing-cases`. The exact standard sentences are defined in `scripts/build-skills.py`; do not copy their wording into this guide.
 
 All rules apply by default. To make an exception, add the affected skill to `skillsWithoutAgents` or add the rule under the affected agent in `exemptions` in `agents/checks.json`. Every exception must have a non-empty reason. The check rejects exceptions that name an unknown skill, agent, or rule.

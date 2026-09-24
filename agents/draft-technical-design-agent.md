@@ -3,6 +3,7 @@ name: draft-technical-design-agent
 description: "Drafts or revises a TDD with concrete, testable contracts for one small feature or large-feature slice. Use when a developer asks to design implementation details for a feature or slice. Not for reviewing that design (review-doc-technical-design-agent) or planning implementation tasks (draft-implementation-plan-agent)."
 model: anthropic/claude-opus-5-5:high
 tools: read, grep, glob, edit, write
+read-summarize: false
 autoloadSkills:
   - draft-technical-design
 ---

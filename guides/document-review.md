@@ -24,6 +24,8 @@ Review tasks are read-only. Report actionable defects, not praise, generic summa
 
 When independent reports reuse the same local finding ID, qualify it with a neutral report/source label and retain the original ID. Do not overwrite, merge, or lose different findings merely because both reviewers called one `R1-F1`.
 
+Deliver the report as structured data through the agent's output schema (`guides/findings-schemas.json`, family `document-review`) via the `yield` tool when present, not as prose. The opening facts, coverage, findings, questions, coverage limits, and next action each map to a named field; the finding count is the length of `findings`. Questions to the developer still go out as messages.
+
 ### Severity
 
 Use one severity vocabulary:

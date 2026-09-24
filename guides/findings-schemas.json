@@ -1,0 +1,127 @@
+{
+  "$comment": "Structured-output contracts for review agents. scripts/build-skills.py writes each family's schema into the matching agents' frontmatter as `output:` (OMP agent field; see omp://task-agent-discovery.md) and --check fails when an agent's line drifts. Edit this file, then run the build. The prose report contracts in guides/document-review.md, guides/code-review.md, and guides/prompt-design.md define what each field must contain.",
+  "families": {
+    "document-review": {
+      "agents": ["review-doc-*-agent"],
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["target", "revision", "scope", "coverage", "findings", "questions", "coverageLimits", "nextAction"],
+        "properties": {
+          "target": {"type": "string", "description": "Reviewed document path or candidate identity."},
+          "revision": {"type": "string", "description": "Exact revision, hash, or unambiguous candidate label."},
+          "scope": {"type": "string", "description": "Review scope, including the feature, slice, or DRY scope when applicable."},
+          "independent": {"type": "boolean", "description": "True for an independent first pass; false when prior review context was visible."},
+          "coverage": {"type": "string", "description": "Derived map, sources and evidence inspected, and checks limited by unavailable material."},
+          "findings": {
+            "type": "array",
+            "description": "Unique unresolved supported findings; the count is the array length.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "severity", "location", "evidence", "consequence", "correction"],
+              "properties": {
+                "id": {"type": "string", "pattern": "^R[0-9]+-F[0-9]+$"},
+                "severity": {"type": "string", "enum": ["Blocker", "Major", "Minor"]},
+                "location": {"type": "string", "description": "Exact location; both locations for an ownership conflict."},
+                "evidence": {"type": "string", "description": "Quoted candidate text, or for an omission the expected rule and the sections inspected."},
+                "governingEvidence": {"type": "string", "description": "Quoted governing source when the finding depends on it."},
+                "consequence": {"type": "string", "description": "Practical downstream consequence."},
+                "correction": {"type": "string", "description": "Smallest correction, disposition, or focused decision question."}
+              }
+            }
+          },
+          "questions": {"type": "array", "items": {"type": "string"}, "description": "Consequential unknowns not established as defects."},
+          "coverageLimits": {"type": "array", "items": {"type": "string"}, "description": "Unavailable evidence and exactly which checks it prevents."},
+          "nextAction": {"type": "string", "description": "One concrete revision, source retrieval, focused decision, or rereview step; never acceptance."}
+        }
+      }
+    },
+    "code-review": {
+      "agents": ["review-code-*-agent"],
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["technology", "candidate", "mode", "coverage", "findings", "checksRun", "checksNotRun", "questions", "coverageLimits"],
+        "properties": {
+          "technology": {"type": "string", "description": "Target technology and scope actually reviewed."},
+          "candidate": {"type": "string", "description": "Candidate revision, working-tree snapshot, or base..target."},
+          "mode": {"type": "string", "enum": ["change", "snapshot"]},
+          "coverage": {"type": "string", "description": "Target code and connected context actually inspected."},
+          "findings": {
+            "type": "array",
+            "description": "Supported findings in impact order; the count is the array length.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "severity", "category", "location", "evidence", "consequence", "correction"],
+              "properties": {
+                "id": {"type": "string", "pattern": "^R[0-9]+-F[0-9]+$"},
+                "severity": {"type": "string", "enum": ["Blocker", "Major", "Minor"]},
+                "category": {"type": "string", "enum": ["correctness", "maintainability"]},
+                "location": {"type": "string", "description": "Precise path and line, or symbol."},
+                "evidence": {"type": "string", "description": "Observed evidence and the contract or engineering rationale."},
+                "consequence": {"type": "string", "description": "Concrete consequence."},
+                "correction": {"type": "string", "description": "Smallest corrective direction with any meaningful tradeoff."}
+              }
+            }
+          },
+          "checksRun": {"type": "array", "items": {"type": "string"}, "description": "Checks actually executed, verbatim, with results."},
+          "checksNotRun": {"type": "array", "items": {"type": "string"}, "description": "Proposed or skipped verification, kept separate from executed checks."},
+          "questions": {"type": "array", "items": {"type": "string"}},
+          "coverageLimits": {"type": "array", "items": {"type": "string"}, "description": "Uninspected targets, features, or missing caller evidence."}
+        }
+      }
+    },
+    "prompt-review": {
+      "agents": ["review-prompt-agent"],
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sourceRevision", "skillRevision", "scope", "reviewBasis", "findings", "evidenceAccounting", "coverageLimits", "nextAction"],
+        "properties": {
+          "sourceRevision": {"type": "string", "description": "Exact editable source revision, hash, or unambiguous body label."},
+          "skillRevision": {"type": "string", "description": "Exact generated-skill revision or unambiguous body label."},
+          "scope": {"type": "string"},
+          "reviewBasis": {"type": "string", "description": "Intended contract, source and generated-skill provenance, evidence records, shared guidance, and research consulted."},
+          "findings": {
+            "type": "array",
+            "description": "Supported findings; the count is the array length.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "kind", "sourceText", "consequence", "edit", "owner"],
+              "properties": {
+                "id": {"type": "string", "pattern": "^R[0-9]+-F[0-9]+$"},
+                "kind": {"type": "string", "enum": ["structural", "behavioral"]},
+                "sourceText": {"type": "string", "description": "Exact prompt or included-guidance text."},
+                "evidenceRecord": {"type": "string", "description": "Evidence record and exact observed success or failure, for a behavioral finding."},
+                "causalTrace": {"type": "string", "description": "How the text caused or enabled the result, or why causation cannot be established."},
+                "consequence": {"type": "string", "description": "Practical consequence against the intended contract."},
+                "edit": {"type": "string", "description": "Smallest specific edit in the owning source."},
+                "owner": {"type": "string", "description": "Editable owner: source, shared guide, publisher, agent description or routing case, or adaptation."},
+                "sharedGuidanceImpact": {"type": "string", "description": "When shared guidance is implicated: known consumer scope, behavior served, and the cross-prompt impact review required."}
+              }
+            }
+          },
+          "evidenceAccounting": {
+            "type": "array",
+            "description": "Every material supplied observation and its disposition.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["observation", "disposition"],
+              "properties": {
+                "observation": {"type": "string"},
+                "disposition": {"type": "string", "enum": ["supports-finding", "confirms-behavior", "stale", "insufficient-provenance"]},
+                "note": {"type": "string"}
+              }
+            }
+          },
+          "coverageLimits": {"type": "array", "items": {"type": "string"}},
+          "nextAction": {"type": "string", "description": "One focused source correction, missing evidence request, or decision; never an edit."}
+        }
+      }
+    }
+  }
+}
