@@ -45,7 +45,7 @@ Keep developer-phrased routing examples in `agents/routing-cases.json`, keyed by
 
 Each agent needs at least three positives and two negatives. A negative must not expect its own agent; all non-null expectations name an existing agent. No request contains an agent name, and positive requests are unique across agents. Use the guides' `EXPORT` example when an illustrative feature is needed.
 
-Each `review-doc-*` agent needs a negative routed to another `review-doc-*` document type and, where one exists, its matching `draft-*` agent; `review-doc-dry` instead uses any draft agent. Each `draft-*` agent needs a negative for its reviewer, each `review-code-*` agent needs negatives for the other two languages, `orchestrate-*` needs `draft-implementation-plan-agent`, and draft-prompt and review-prompt need each other. Treat a description change as a routing behavior change and update its cases with the source.
+Each `review-doc-*` agent needs a negative routed to another `review-doc-*` document type and, where one exists, its matching `draft-*` agent; `review-doc-coherence` instead uses any draft agent. Each `draft-*` agent needs a negative for its reviewer. Each `review-code-*` agent needs negatives distinguishing its scope from at least one language or integration reviewer and at least one focused reviewer; a focused reviewer also distinguishes its standard from another focused standard. `orchestrate-*` needs `draft-implementation-plan-agent`, and draft-prompt and review-prompt need each other. Treat a description change as a routing behavior change and update its cases with the source.
 
 ## Skill contract
 

@@ -32,7 +32,16 @@ Restart OMP. A new extension root is read at startup; `/reload-plugins` refreshe
 
 The generated skills are marked `hide: true`, so they deliberately do not appear in the global skill menu. Each surfaces only through the agent that autoloads it. An empty skill menu is expected, not a failed install.
 
-The `review-code-*` agents list `ast_grep` and `lsp` in their tools. `ast_grep` is off by default in OMP; set `astGrep.enabled: true` in the same configuration file so the code reviewers can use it. `lsp` needs the language server for the project on `PATH` (for example `rust-analyzer` or `typescript-language-server`).
+The `review-code-*` agents list `ast_grep` and `lsp` in their tools, but OMP withholds both from spawned agents by default. Set these in the same configuration file, or run `omp config set astGrep.enabled true` and `omp config set task.enableLsp true`:
+
+```yaml
+astGrep:
+  enabled: true
+task:
+  enableLsp: true
+```
+
+`task.enableLsp` gives spawned agents LSP; agents with a `tools` list receive only its read-only actions. It costs extra tokens for every agent that lists `lsp`. `lsp` also needs each project's language server on `PATH`, for example `rust-analyzer` (`rustup component add rust-analyzer` for every toolchain the project uses) or `typescript-language-server`. Restart OMP after changing these settings.
 
 ## Templates
 
@@ -50,7 +59,7 @@ Pull the checkout:
 git -C ~/development/projects/project-playbook pull
 ```
 
-Agent and skill files are rediscovered on the next dispatch, so an update needs no restart. Restart only after changing the `extensions:` entry itself.
+Agents are rediscovered on the next dispatch, but an active session's skill registry can retain the old names. After adding or renaming a skill, run `/reload-plugins` or start a fresh OMP session before dispatching its agent; otherwise the new agent can be found while its `skill://` URI is still unknown. Restart after changing the `extensions:` entry itself.
 
 Pin a release by checking out a tag in that clone when a moving `main` is not acceptable.
 

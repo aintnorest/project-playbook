@@ -273,7 +273,7 @@ This document states each current feature-wide rule without a separate decision 
 - explicit non-goals;
 - entry state and exit state;
 - rejected inputs and failure behavior;
-- data-flow traces;
+- data-flow and control-flow traces;
 - concrete interfaces and data schemas;
 - state transitions and transaction boundaries;
 - security and operational assumptions;
@@ -288,6 +288,12 @@ This document states each current feature-wide rule without a separate decision 
 - copied feature-wide architecture;
 - work breakdown and dependency order;
 - speculative generalization for unapproved future features.
+
+**Control-flow clarity.** Design control flow so an implementer can trace each consequential operation from its trigger to completion or failure, identifying what executes next, what determines that choice, and which component owns each decision and handoff. Prefer the simplest flow that satisfies the requirements; justify indirection, distributed coordination, or multiple execution paths when their debugging or maintenance cost is material. Explaining a tangled flow does not substitute for simplifying it.
+
+Make the entry point, coordinating owner or ownership rule, major steps, branch conditions, side-effect ownership, and completion conditions explicit. Where asynchronous handoffs exist, identify what resumes execution and who owns pending work. Where applicable, define failure propagation and ownership of cancellation, retry, rollback, or cleanup. Do not introduce mechanisms merely to fill this checklist or require a centralized coordinator.
+
+Keep traces at component, interface, and state-boundary level, not every function call. A short sequence is sufficient for straightforward work; use a diagram or state-transition table when it makes branching or asynchronous interaction clearer. No particular heading or diagram is required. Reference existing contracts and acceptance rather than duplicating their normative definitions.
 
 ### Implementation plan
 

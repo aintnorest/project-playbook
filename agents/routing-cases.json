@@ -87,15 +87,30 @@
       {"request": "Review the task DAG before implementation begins", "expected": "review-doc-implementation-plan-agent"}
     ]
   },
+  "review-code-design-agent": {
+    "positive": [
+      "Review design and maintainability across the EXPORT TypeScript and Rust modules",
+      "Trace control and data flow complexity in the export pipeline and report concrete change costs",
+      "Check whether API boundaries and policy ownership in this feature impose avoidable maintenance costs"
+    ],
+    "negative": [
+      {"request": "Review Rust ownership and error behavior in the export code", "expected": "review-code-rust-agent"},
+      {"request": "Assess whether export tests catch regressions", "expected": "review-code-tests-agent"},
+      {"request": "Find obsolete export paths with no supported consumers", "expected": "review-code-unused-agent"}
+    ]
+  },
   "review-code-rust-agent": {
     "positive": [
       "Review the Rust code in the document export path for behavior defects",
       "Check Rust ownership and API invariants in this change",
-      "Find consequential Rust maintenance issues in the requested scope"
+      "Trace Rust errors, ownership correctness, and resource behavior in the requested scope"
     ],
     "negative": [
       {"request": "Review the Tauri host/frontend boundary for document export", "expected": "review-code-tauri-agent"},
-      {"request": "Review the TypeScript code for export behavior defects", "expected": "review-code-typescript-agent"}
+      {"request": "Review the TypeScript code for export behavior defects", "expected": "review-code-typescript-agent"},
+      {"request": "Assess whether the export tests establish the intended behavior", "expected": "review-code-tests-agent"},
+      {"request": "Identify unused code and stale Rust modules in the export path", "expected": "review-code-unused-agent"},
+      {"request": "Assess Rust API design and avoidable change amplification", "expected": "review-code-design-agent"}
     ]
   },
   "review-code-tauri-agent": {
@@ -106,29 +121,63 @@
     ],
     "negative": [
       {"request": "Review Rust ownership in this isolated module", "expected": "review-code-rust-agent"},
-      {"request": "Review a TypeScript-only export change", "expected": "review-code-typescript-agent"}
+      {"request": "Review a TypeScript-only export change", "expected": "review-code-typescript-agent"},
+      {"request": "Assess whether integration tests detect export IPC regressions", "expected": "review-code-tests-agent"},
+      {"request": "Identify unused integration hooks and superseded commands", "expected": "review-code-unused-agent"},
+      {"request": "Review design complexity across host and frontend code", "expected": "review-code-design-agent"}
+    ]
+  },
+  "review-code-tests-agent": {
+    "positive": [
+      "Review whether tests for document export would catch plausible behavior regressions",
+      "Check which export tests CI actually runs and whether their assertions prove the intended behavior",
+      "Assess test effectiveness across TypeScript, Rust, and Python for this feature"
+    ],
+    "negative": [
+      {"request": "Review TypeScript export behavior and runtime contracts", "expected": "review-code-typescript-agent"},
+      {"request": "Trace dead export modules and their consumers", "expected": "review-code-unused-agent"},
+      {"request": "Assess maintainability of the export API boundary", "expected": "review-code-design-agent"}
     ]
   },
   "review-code-typescript-agent": {
     "positive": [
       "Review the TypeScript document export code for correctness",
       "Check TypeScript contracts and behavior in this change",
-      "Find maintenance burdens in the requested TypeScript scope"
+      "Check TypeScript async cleanup and boundary validation for observable defects"
     ],
     "negative": [
       {"request": "Review the isolated Rust code for invariant violations", "expected": "review-code-rust-agent"},
-      {"request": "Check Tauri host/frontend integration for EXPORT", "expected": "review-code-tauri-agent"}
+      {"request": "Check Tauri host/frontend integration for EXPORT", "expected": "review-code-tauri-agent"},
+      {"request": "Review whether the export tests detect regressions", "expected": "review-code-tests-agent"},
+      {"request": "Find superseded TypeScript export paths no longer reached", "expected": "review-code-unused-agent"},
+      {"request": "Assess cohesion and API ergonomics across the export feature", "expected": "review-code-design-agent"}
     ]
   },
-  "review-doc-dry-agent": {
+  "review-code-unused-agent": {
+    "positive": [
+      "Find unused and obsolete code across TypeScript, Rust, and Python export paths",
+      "Trace whether the legacy export implementation still has production consumers",
+      "Review unreachable branches and superseded exports in the current repository snapshot"
+    ],
+    "negative": [
+      {"request": "Review Python and Rust tests for failure sensitivity", "expected": "review-code-tests-agent"},
+      {"request": "Review TypeScript export behavior for runtime defects", "expected": "review-code-typescript-agent"},
+      {"request": "Assess flow and ownership complexity in export", "expected": "review-code-design-agent"}
+    ]
+  },
+  "review-doc-coherence-agent": {
     "positive": [
       "Check whether the EXPORT PRD and TDD both claim authority over the same rule",
       "Find conflicting normative rules across this revision and its related documents",
-      "Review duplicate rule ownership without flagging useful reader context"
+      "Review duplicate rule ownership without flagging useful reader context",
+      "Check that all our product and technical documents stay in their lanes and at the right level",
+      "Review whether the vision, architecture, requirements, designs, and plans form one coherent contract",
+      "Check whether the document set gives a coding agent clear authority and complete handoffs"
     ],
     "negative": [
       {"request": "Review the EXPORT PRD's requirement testability", "expected": "review-doc-prd-agent"},
-      {"request": "Draft a technical design for the EXPORT slice", "expected": "draft-technical-design-agent"}
+      {"request": "Draft a technical design for the EXPORT slice", "expected": "draft-technical-design-agent"},
+      {"request": "Review the system architecture document's foundation accuracy", "expected": "review-doc-system-architecture-agent"}
     ]
   },
   "review-doc-implementation-plan-agent": {

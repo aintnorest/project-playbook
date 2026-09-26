@@ -2,6 +2,12 @@
 
 These are the shared rules for independent document reviews.
 
+## Choosing review scope
+
+Use the document-specific reviewer to assess one document against its own contract. Use [Review document-set coherence](../skill-sources/review-doc-coherence.md) to assess whether the authorized documents work together; that skill owns the cross-document procedure and coverage requirements, and uses the same document contracts as drafting.
+
+A whole-set pass establishes coverage across the supplied documents. After a governing decision changes or before implementation handoff, a focused pass can follow the affected parents, siblings, and dependents instead; neither mode substitutes for specialist review or certifies unread material.
+
 ## Independent review context
 
 For an independent first pass, give fresh reviewers the same candidate, governing sources, accepted decisions, explicit developer constraints, and review scope. Keep provider/model provenance for your own comparison, but omit author identity, self-praise, desired verdicts, prior reviewer findings/dispositions, previous issue totals, and prior review verdicts from the reviewer packet. Keep that history in the owner's continuation context; do not append it to the material forwarded to the reviewer.

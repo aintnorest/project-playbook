@@ -8,9 +8,9 @@
         "additionalProperties": false,
         "required": ["target", "revision", "scope", "coverage", "findings", "questions", "coverageLimits", "nextAction"],
         "properties": {
-          "target": {"type": "string", "description": "Reviewed document path or candidate identity."},
-          "revision": {"type": "string", "description": "Exact revision, hash, or unambiguous candidate label."},
-          "scope": {"type": "string", "description": "Review scope, including the feature, slice, or DRY scope when applicable."},
+          "target": {"type": "string", "description": "Reviewed document path, document-set identity, or candidate identity."},
+          "revision": {"type": "string", "description": "Exact revision, hash, or unambiguous candidate label; identify each member's revision for a document set."},
+          "scope": {"type": "string", "description": "Review scope, including the feature, slice, or whole-set or focused coherence scope when applicable."},
           "independent": {"type": "boolean", "description": "True for an independent first pass; false when prior review context was visible."},
           "coverage": {"type": "string", "description": "Derived map, sources and evidence inspected, and checks limited by unavailable material."},
           "findings": {
