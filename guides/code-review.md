@@ -39,6 +39,8 @@ Choose each finding's severity only after writing its evidence and consequence. 
 - `Major`: a reachable defect with material user, data, security, or operational consequence; or a test-evidence gap where that test is the only credible protection for a security, authorization, durable-data, cost, or release-gate contract against a common kind of change.
 - `Minor`: any other bounded, actionable defect, including a test-evidence gap whose undetected regression needs an unusual change, would be caught by another check, or has limited or recoverable consequence.
 
+A `Blocker` or `Major` finding's evidence must begin with the verbatim source line or lines that make it true, prefixed by their path and line. For an omission, quote the code where the missing check, handling, or assertion must occur. If the triggering code cannot be quoted from the inspected source, report the finding as `Minor` or omit it.
+
 A test-evidence gap alone is at most `Major` and is never a demonstrated production defect; if the production behavior is itself wrong, report that defect on its own evidence. Words such as "guarantee", "security", or "durable" in a test name or document do not raise severity by themselves, and neither do reviewer confidence, finding category, or several reports sharing one cause. Omit a concern with no credible trigger or meaningful consequence rather than reporting it as `Minor`.
 
 Finish with checks actually run or not run and specific questions or coverage limits when needed. No praise padding, scores, issue quotas, exhaustive checklist recitals, speculative rewrites, or claims of whole-application safety; separate uncertainty from supported findings.

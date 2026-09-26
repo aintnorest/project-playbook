@@ -60,7 +60,7 @@
                 "severity": {"type": "string", "enum": ["Blocker", "Major", "Minor"]},
                 "category": {"type": "string", "enum": ["correctness", "maintainability"]},
                 "location": {"type": "string", "description": "Precise path and line, or symbol."},
-                "evidence": {"type": "string", "description": "Observed evidence and the contract or engineering rationale."},
+                "evidence": {"type": "string", "description": "Observed evidence and the contract or engineering rationale; for Blocker or Major, begin with the verbatim triggering line(s) and their path:line."},
                 "consequence": {"type": "string", "description": "Concrete consequence."},
                 "correction": {"type": "string", "description": "Smallest corrective direction with any meaningful tradeoff."}
               }
