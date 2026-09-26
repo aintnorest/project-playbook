@@ -99,6 +99,20 @@
       {"request": "Find obsolete export paths with no supported consumers", "expected": "review-code-unused-agent"}
     ]
   },
+  "review-code-python-agent": {
+    "positive": [
+      "Review the Python code in the export service for behavior defects",
+      "Check Python async task ownership and cancellation in this change",
+      "Trace Python input validation and serialization at the export API boundary"
+    ],
+    "negative": [
+      {"request": "Review the TypeScript export client for runtime contract defects", "expected": "review-code-typescript-agent"},
+      {"request": "Review Rust ownership in the export worker", "expected": "review-code-rust-agent"},
+      {"request": "Assess whether the Python export tests catch regressions", "expected": "review-code-tests-agent"},
+      {"request": "Find obsolete Python modules no supported entry point reaches", "expected": "review-code-unused-agent"},
+      {"request": "Assess control-flow complexity in the Python export pipeline", "expected": "review-code-design-agent"}
+    ]
+  },
   "review-code-rust-agent": {
     "positive": [
       "Review the Rust code in the document export path for behavior defects",
@@ -110,7 +124,8 @@
       {"request": "Review the TypeScript code for export behavior defects", "expected": "review-code-typescript-agent"},
       {"request": "Assess whether the export tests establish the intended behavior", "expected": "review-code-tests-agent"},
       {"request": "Identify unused code and stale Rust modules in the export path", "expected": "review-code-unused-agent"},
-      {"request": "Assess Rust API design and avoidable change amplification", "expected": "review-code-design-agent"}
+      {"request": "Assess Rust API design and avoidable change amplification", "expected": "review-code-design-agent"},
+      {"request": "Review the Python export service for runtime defects", "expected": "review-code-python-agent"}
     ]
   },
   "review-code-tauri-agent": {
@@ -150,7 +165,8 @@
       {"request": "Check Tauri host/frontend integration for EXPORT", "expected": "review-code-tauri-agent"},
       {"request": "Review whether the export tests detect regressions", "expected": "review-code-tests-agent"},
       {"request": "Find superseded TypeScript export paths no longer reached", "expected": "review-code-unused-agent"},
-      {"request": "Assess cohesion and API ergonomics across the export feature", "expected": "review-code-design-agent"}
+      {"request": "Assess cohesion and API ergonomics across the export feature", "expected": "review-code-design-agent"},
+      {"request": "Review the Python export service for runtime defects", "expected": "review-code-python-agent"}
     ]
   },
   "review-code-unused-agent": {
