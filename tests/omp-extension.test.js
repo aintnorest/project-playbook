@@ -1,0 +1,90 @@
+import { afterEach, beforeEach, expect, test } from "bun:test";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import projectPlaybook from "../omp-extension.ts";
+
+let workspace;
+let repo;
+let tool;
+
+function git(...args) {
+  const result = spawnSync("git", args, { cwd: repo, encoding: "utf8" });
+  if (result.error || result.status !== 0) {
+    throw result.error ?? new Error(result.stderr);
+  }
+  return result.stdout.trim();
+}
+
+beforeEach(() => {
+  workspace = mkdtempSync(join(tmpdir(), "playbook-tool-test-"));
+  repo = join(workspace, "repo");
+  mkdirSync(repo);
+  const optional = { optional() { return this; } };
+  projectPlaybook({
+    zod: { object: fields => fields, enum: values => values, string: () => optional },
+    registerTool(definition) { tool = definition; },
+  });
+  writeFileSync(join(repo, "implementation-plan.md"),
+    "### T01 — Acceptance test\n" +
+    "- Depends on: none\n" +
+    "- Targets: `tests/test_accept.py` (create)\n" +
+    "- Protects: tests/test_accept.py\n" +
+    "- Change: Verify approved TDD scenario.\n" +
+    "- Done when: Missing behavior fails as specified.\n" +
+    "- Verify: Run acceptance test; expect specified failure.\n\n" +
+    "### T02 — Implementation\n" +
+    "- Depends on: T01\n" +
+    "  - T01 — supplies acceptance test.\n" +
+    "- Targets: `src/main.py` (create)\n" +
+    "- Change: Implement approved design.\n" +
+    "- Done when: Protected scenario passes.\n" +
+    "- Verify: Run acceptance test; expect pass.\n");
+  git("init", "-q");
+  git("-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+      "commit", "-q", "--allow-empty", "-m", "base");
+});
+
+afterEach(() => {
+  rmSync(workspace, { recursive: true, force: true });
+});
+
+test("registered tool admits ordinary changes but rejects protected edits", async () => {
+  expect(tool.name).toBe("check_implementation_plan");
+  mkdirSync(join(repo, "tests"));
+  writeFileSync(join(repo, "tests/test_accept.py"), "assert False\n");
+  git("add", "tests/test_accept.py");
+  git("-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+      "commit", "-q", "-m", "acceptance");
+  const base = git("rev-parse", "HEAD");
+
+  mkdirSync(join(repo, "src"));
+  writeFileSync(join(repo, "src/main.py"), "value = 1\n");
+  git("add", "src/main.py");
+  git("-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+      "commit", "-q", "-m", "implementation");
+  const allowedHead = git("rev-parse", "HEAD");
+  const parameters = { mode: "protected-diff", plan: "implementation-plan.md", repo,
+    base, head: allowedHead, task: "T02" };
+  const allowed = await tool.execute("test", parameters, undefined, undefined, { cwd: repo });
+  expect(allowed.isError).toBeUndefined();
+  expect(allowed.details.status).toBe("ok");
+
+  writeFileSync(join(repo, "tests/test_accept.py"), "assert True\n");
+  git("add", "tests/test_accept.py");
+  git("-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+      "commit", "-q", "-m", "alter protected test");
+  const forbiddenHead = git("rev-parse", "HEAD");
+  const violation = await tool.execute("test", { ...parameters, base: allowedHead,
+    head: forbiddenHead }, undefined, undefined, { cwd: repo });
+  expect(violation.isError).toBe(true);
+  expect(violation.details.status).toBe("error");
+  expect(violation.details.stderr).toContain("tests/test_accept.py");
+  expect(violation.details.stderr).toContain("T01");
+
+  const documentation = await tool.execute("test", { ...parameters, base: allowedHead,
+    head: forbiddenHead, task: undefined }, undefined, undefined, { cwd: repo });
+  expect(documentation.isError).toBe(true);
+  expect(documentation.details.stderr).toContain("tests/test_accept.py");
+});

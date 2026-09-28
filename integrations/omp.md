@@ -2,10 +2,11 @@
 
 The playbook installs once, at the root OMP configuration, and applies to every project. Nothing is copied into consuming repositories.
 
-Enabling this repository as an OMP extension package exposes its two capability directories:
+Enabling this repository as an OMP extension package exposes:
 
 - `agents/` — one agent per task, naming the model, tool boundary, and the skill it autoloads.
 - `skills/` — the generated skill directories (`SKILL.md` plus `references/` files read through `skill://<name>/references/<file>`) those agents load.
+- `check_implementation_plan` — a read-only registered tool for checking plan syntax, reading its parsed task DAG, and checking a task's protected diff. It runs the bundled Python validator, so `python3` must be on `PATH`.
 
 Two playbook agents spawn `scout` for independent repository research. `scout` ships with OMP and is not provided by this extension.
 
@@ -28,7 +29,7 @@ Restart OMP. A new extension root is read at startup; `/reload-plugins` refreshe
 
 ## Verify
 
-`/agents` lists the playbook agents. Dispatch one by name, or describe the task and let OMP select by description.
+`/agents` lists the playbook agents. Dispatch one by name, or describe the task and let OMP select by description. The draft, review, and orchestration implementation-plan agents each include `check_implementation_plan` in their task-agent tool list.
 
 The generated skills are marked `hide: true`, so they deliberately do not appear in the global skill menu. Each surfaces only through the agent that autoloads it. An empty skill menu is expected, not a failed install.
 
@@ -45,7 +46,7 @@ task:
 
 ## Templates
 
-OMP loads only `agents/` and `skills/`. Templates are plain files you copy by hand: to start a project's roadmap, copy `templates/roadmap.md` from this checkout to `docs/roadmap.md` in the project.
+OMP discovers `agents/` and `skills/` as capability directories; the extension factory registers the tool. Templates are plain files you copy by hand: to start a project's roadmap, copy `templates/roadmap.md` from this checkout to `docs/roadmap.md` in the project.
 
 ## Model roles
 

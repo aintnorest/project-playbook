@@ -22,6 +22,7 @@ Execute an existing `implementation-plan.md` against its approved design, preser
 - Repository path, implementation-plan path, and authorization to execute it against the approved Technical Design Document (TDD) and applicable system design.
 - Optional integration branch, base branch or commit, worktree location, concurrency limit, and execution constraints.
 - For a continuation: prior run state, branch and worktree identities, completed-task evidence, and unresolved decisions.
+- The `check_implementation_plan` tool, whose Python validator is resolved relative to the Playbook extension directory.
 
 ## Instructions
 
@@ -51,11 +52,11 @@ Do not silently omit local changes the implementation needs: have the developer 
 
 ### 3. Schedule the plan and retain run state
 
-Check every task ID, prerequisite reference, cycle, target, acceptance criterion, and verification prerequisite. Use `Depends on` as the authoritative directed acyclic graph (DAG); a prerequisite is satisfied only after its work is validated and integrated, not when its worker reports completion.
+Before any dispatch, run the `check_implementation_plan` tool's static check on the actual plan file; reject a malformed plan and stop for correction. If the tool, python3, or its Playbook script is unavailable, stop and request that prerequisite rather than guessing the graph. The validator enforces block shape and direct edges, not semantic quality: yourself check every target, acceptance criterion, verification prerequisite, and that every acceptance-test task declares all files carrying its approved TDD scenarios under `Protects` while no other task declares it. The grammar cannot infer task type. Schedule only from the ID-only `Depends on` lines; a prerequisite is satisfied only after its work is validated and integrated, not when its worker reports completion.
 
 Run ready, independent tasks concurrently within the supplied limit and harness capacity. Serialize shared-file or shared-contract ownership and exclusive resources; worktrees isolate files and indexes, not ports, databases, external services, or shared Git refs, so assign separate local resources or order their use.
 
-Keep one run ledger in the harness's durable task/artifact facility, or an orchestration-owned local file outside tracked source when no facility exists. Record the integration branch/path, starting and accepted SHAs, source revisions and approvals, task states, assignments, worker branches/worktrees, dispatch bases, returned commits, verification evidence, merges, cleanup, and blockers; keep plan dependencies in the plan rather than creating another editable DAG.
+Keep one run ledger in the harness's durable task/artifact facility, or an orchestration-owned local file outside tracked source when no facility exists. Record the integration branch/path, starting and accepted SHAs, source revisions and approvals, task states, assignments, worker branches/worktrees, dispatch bases, returned commits, verification evidence, merges, cleanup, blockers, and every repair attempt and outcome per task; keep plan dependencies in the plan and all run status outside it rather than creating another editable DAG.
 
 Use task states `pending`, `running`, `returned`, `validating`, `integrated`, and `blocked`; retain rejection reasons and attempts under the same task ID. Update the ledger at each handoff, acceptance, halt, and cleanup; after an interruption, reconcile actual Git and worker state before resuming, and never infer completion from the ledger alone.
 
@@ -64,6 +65,7 @@ Use task states `pending`, `running`, `returned`, `validating`, `integrated`, an
 Before launching a worker, capture the current accepted integration SHA and create a unique task branch and worktree from it, for example `git worktree add -b <task-branch> <task-path> <accepted-sha>`. Follow repository worktree conventions, otherwise use an orchestration-owned directory outside the checkout; never reset an existing branch or overwrite an existing directory to reuse a name.
 
 Verify the worktree's path, branch, and base SHA before handing it to the subagent. Provide approved setup commands and configuration references without copying secrets into prompts or commits; require the worker to use its assigned directory and task branch throughout.
+Assign each acceptance-test task to a worker distinct from the worker implementing the behavior it guards. The acceptance worker must create or edit every protected test file declared for its approved TDD scenarios under its task ID and demonstrate each scenario fails for its specified missing behavior before implementation. Later implementation workers must not edit protected tests; halt for design review if the oracle is wrong.
 
 Give each worker a self-contained packet; do not assume it inherits this conversation:
 
@@ -72,7 +74,7 @@ Task: stable plan ID, bounded outcome, and explicit non-goals
 Workspace: absolute worktree path, task branch, dispatch base SHA
 Authority: plan/TDD/system-design revisions and relevant sections; applicable repo instructions
 Prerequisites: integrated task outputs and commits the worker can consume
-Ownership: allowed files/symbols/contracts; shared boundaries and excluded work
+Ownership: allowed files/symbols/contracts; protected tests and excluded work
 Implementation: required behavior, existing patterns, acceptance, and verification commands
 Environment: setup, isolated resources, and any access constraints
 Escalation: report design conflicts or scope expansion immediately; do not choose a new design
@@ -89,10 +91,11 @@ Workers must not modify the integration checkout, merge their work into it, push
 Treat a returned report as a claim, not acceptance. Confirm the worker and its processes have stopped, inspect the actual commits and diff against the assigned base, and check scope, contracts, tests, documentation, and unexplained changes; reject an uncommitted, incomplete, or out-of-scope candidate and delegate the correction without editing it yourself.
 
 Serialize integration and freeze the candidate while validating it. If the integration branch advanced since dispatch, incorporate its current accepted tip into the task branch before acceptance: you may perform a mechanical Git merge, but abort conflicts and assign their resolution to a subagent in that task worktree, then review the new candidate and rerun affected checks.
+Before integrating **any** candidate, including acceptance tests, synchronized returns, repairs, and approved documentation updates in §6 or §7, run the `check_implementation_plan` tool's protected-diff check with the actual plan, repository path, current accepted integration tip as base, and candidate commit as head (`--protected-diff <plan> --repo <path> --base <rev> --head <rev> [--task <Tdigits>]`). Supply `--task` only when the candidate implements that actual plan task; omit it for candidates outside the plan, including documentation-only updates, so all protected files remain enforced. Stop on a check failure or unavailable tool; an acceptance task may change only its own declared protected files, and no later implementation candidate may edit them. Re-run on a changed candidate or base.
 
 Require the current accepted integration tip to be an ancestor of the candidate; validation of an older isolated result does not prove the combined result. Personally inspect the resulting diff and run the task's acceptance checks plus relevant cross-task checks against that exact candidate, exercising the actual changed surface when applicable; worker logs and reviewer opinions supplement but never replace your own validation.
-
-If a check fails, keep the task unaccepted and delegate diagnosis or repair in its worktree. Distinguish a verified pre-existing failure or missing environment from a regression, but do not weaken acceptance, silently skip a required check, or call incomplete validation a pass; report a blocking prerequisite when it cannot be resolved within authorized scope.
+For an acceptance-test task, the red check succeeds **only** when each protected approved TDD scenario fails because its specified behavior is missing, with no unrelated failure; a premature pass or unexpected failure rejects the candidate. For its implementation dependent, verify the applicable protected scenarios pass without editing their tests. A check "fails" when it misses the task-specific expected result, not merely because its command returns a nonzero status.
+If a check misses its expected result, keep the task unaccepted and delegate diagnosis or repair in its worktree. Distinguish a verified pre-existing failure or missing environment from a regression, but do not weaken acceptance, silently skip a required check, or call incomplete validation a pass; report a blocking prerequisite when it cannot be resolved within authorized scope.
 
 After acceptance, confirm both candidate and integration SHAs are unchanged and the integration checkout is clean, then advance it to the exact validated candidate, for example `git merge --ff-only <validated-sha>`. If either SHA changed, re-evaluate and revalidate instead of forcing the merge; preserve repository-mandated history conventions only if they still validate the exact candidate before advancing the branch.
 
@@ -102,17 +105,17 @@ Only after integration and its checks succeed, save the handback and validation 
 
 ### 6. Handle bounded issues; halt for significant design changes
 
-A small issue is a local implementation correction or plan clarification that preserves approved behavior, interfaces, invariants, and acceptance. Delegate it with explicit scope, keep its evidence under the affected task, and have a subagent update the owning documentation or plan when needed; read [reference rules](../guides/product-documentation-process.md#reference-rules) when updating any governing document or plan during issue resolution. Do not turn incidental cleanup into new product work.
+A small issue is a local implementation correction or plan clarification that preserves approved behavior, interfaces, invariants, and acceptance. Delegate it with explicit scope, keep its evidence under the affected task, and have a subagent update the owning documentation or plan when needed; read [reference rules](../guides/product-documentation-process.md#reference-rules) when updating any governing document or plan during issue resolution. Do not turn incidental cleanup into new product work. Record every repair attempt and result in the ledger; after three failed repairs for one task, halt the entire run and escalate the unresolved issue to the developer rather than retrying indefinitely.
 
-A significant issue changes a material TDD or system-design decision, product behavior, a shared interface/invariant, compatibility, security, or data ownership; also escalate an issue spanning multiple tasks when its resolution is complex or far-reaching. Examples include replacing the persistence strategy, changing an API consumed by several tasks, or discovering a shared transaction assumption is false; the number of changed files alone does not decide severity, and uncertainty about material impact is itself a reason to pause.
+A significant issue changes a material TDD or system-design decision, product behavior, a shared interface/invariant, compatibility, security, or data ownership; also escalate an issue spanning multiple tasks when its resolution is complex or far-reaching. A wrong acceptance-test oracle requires a developer-reviewed TDD revision, not a fix by an implementation worker. A repair that changes a produced interface or `Done when` outcome relied upon by dependent tasks halts the whole run for plan revision through the draft and review agents, even when that output has not yet been produced. Examples include replacing the persistence strategy, changing an API consumed by several tasks, or discovering a shared transaction assumption is false; the number of changed files alone does not decide severity, and uncertainty about material impact is itself a reason to pause.
 
 On a significant issue:
 
 1. Immediately stop new dispatch, acceptance, and merges for the entire run, including independent tasks; tell every active worker to stop and preserve its current work, and cancel/terminate through the harness if needed.
 2. Confirm each worker and its task processes are stopped; record any inability to stop as an unresolved safety blocker, reject late returns from automatic acceptance, and preserve all worktrees and commits without cleanup or destructive rollback.
 3. Present the evidence, conflicting document sections, affected tasks and already integrated work, viable resolutions and tradeoffs, and your recommendation; ask the developer for the consequential decision, not permission to keep silently redesigning.
-4. Wait for that decision before starting any further worker, including documentation workers. Once authorized, delegate updates to the owning TDD/system design and any affected requirements, decisions, and plan dependencies/acceptance; keep implementation paused while the developer reviews and explicitly approves the changed governing revisions.
-5. Integrate the approved documentation through the same validation gate, recheck the DAG and previously accepted work, and obtain explicit authorization to resume. Reassign affected tasks from the updated integration tip with new handoffs, repairing or replacing stale work through subagents rather than merging old-design returns unchanged.
+4. Wait for that decision before starting any further worker, including documentation workers. Once authorized, delegate updates to the owning TDD/system design and any affected requirements and decisions; have the draft-plan agent revise affected tasks, dependencies, and acceptance, then the independent review-plan agent review that revision. Keep implementation paused while the developer reviews and explicitly approves the changed governing revisions.
+5. Integrate the approved documentation through the same validation gate, rerun the `check_implementation_plan` static check on the revised plan, recheck previously accepted work, and obtain explicit authorization to resume. Reassign affected tasks from the updated integration tip with new handoffs, repairing or replacing stale work through subagents rather than merging old-design returns unchanged.
 
 ### 7. Verify the complete branch and deliver it
 

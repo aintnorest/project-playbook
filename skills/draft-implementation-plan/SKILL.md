@@ -32,7 +32,25 @@ hide: true
 - copied requirements or technical design sections;
 - placeholders that appear complete but leave behavior unimplemented.
 
-List tasks in topological order. A task is ready when its prerequisites finish, not when an arbitrary phase ends. Dependency IDs are the authoritative graph; diagrams and parallel-wave tables are optional derived views, not additional sources of truth.
+Use one task ID namespace per plan: headings are `### T<digits> — <title>`, with unique IDs and nonempty titles. Each task has exactly one unindented bullet for each mandatory label, in this order: `Depends on`, `Targets`, `Change`, `Done when`, `Verify`. Optional `Protects` and `Tests` bullets may each appear once: `Protects` immediately after `Targets`, and `Tests` between `Change` and `Done when`. Keep each mandatory field nonempty; `Targets`, `Change`, `Tests`, `Done when`, and `Verify` may continue on indented lines up to the next unindented label or task heading.
+
+Write `- Depends on: none` or a single physical line of comma-and-space-separated **direct IDs only**, with no prose or transitive prerequisites. Immediately below that line, give one indented `- T<digits> — <reason>` sub-bullet per direct ID, in the same order; each reason names the required output or hard ordering constraint. Give no reason sub-bullets for `none`. Every dependency must reference an earlier task: no dangling IDs, self-edges, or cycles. List task blocks in topological order; a task is ready when its prerequisites finish, not when an arbitrary phase ends. This line is the authoritative DAG; diagrams and parallel-wave tables are optional derived views, not additional sources of truth. Keep task status and execution ledgers outside the plan.
+Put acceptance-test tasks derived from the approved TDD's acceptance scenarios before their implementation dependents in the DAG, and assign them to a different worker from the implementation tasks. Every acceptance-test task must declare `- Protects: tests/test_feature.py; tests/test_other.py` immediately after `Targets`, listing **all** test files carrying its approved TDD scenarios; no other task may declare `Protects`. The label is optional in the task-block grammar because that grammar cannot identify acceptance-test tasks: review this requirement semantically. `Protects` is a semicolon-and-space-separated list of distinct, plain repository-relative test file paths. Each slash-separated segment uses only ASCII letters, digits, `.`, `_`, or `-`, and cannot be `.` or `..`; quoting and backslashes are not allowed. Name target files as `` `path` (create) `` or `` `path`::symbol (edit) `` (unquoted paths also parse). Once that task integrates, no later task may target its protected files, and candidate changes to them are rejected except when validating the task that declares them. A wrong acceptance test returns to the developer for a TDD revision; the implementer does not change the test to make its code pass.
+
+For example:
+
+```markdown
+### T07 — Reading order and outline
+- Depends on: T06
+  - T06 — supplies blocks and segment rendering.
+- Targets: `src/order.rs`::order (create); `src/lib.rs` (edit)
+- Change: Implement TDD §6.6 reading order and §6.8 outline.
+- Tests: Add ordering and outline regression cases.
+- Done when: Every stored block is visited once in stable order.
+- Verify: Run `cargo test order`; expect ordering and outline cases to pass.
+```
+
+The validator at `scripts/check-implementation-plans.py` checks task-block grammar, direct edges, and protected-file targets in another repository with `--check <plan-path...>`; `--json <plan-path...>` emits parsed tasks. For candidate changes, `--protected-diff <plan-path> --repo <repository-root> --base <base-revision> --head <candidate-revision> [--task <task-id>]` checks changed files against protected paths. Supply `--task` only for a candidate implementing that actual plan task; omit it for other candidates, including documentation-only updates, to enforce every `Protects` declaration. A Playbook checkout provides the script. It ignores fenced code and prose outside task blocks.
 
 If decomposition reveals an unresolved design choice, return the precise question to the owning document instead of hiding it inside a task. Planning does not authorize changing the design.
 ## Task
@@ -56,27 +74,18 @@ Turn an approved Technical Design Document (TDD) into a concise directed acyclic
 
 1. Read the TDD, applicable repository instructions, and existing plan. Follow upstream references only to resolve a concrete task contract; inspect affected files, callers, and verification conventions rather than ingesting unrelated documentation.
 2. If approval of this TDD revision or a consequential design decision is missing, return only the blocker and one focused question, not a plan or an intake checklist. Resolve searchable facts from available sources before asking. Do not conduct a document review or infer approval.
-3. Decompose the approved scope into bounded outcomes, not arbitrary phases or one task per file. Each task must be finishable and verifiable from its prerequisites. Include its needed tests/fixtures there or in a prerequisite, never only in a later task. Include integrated feature acceptance and required repository verification.
+3. Decompose the approved scope into bounded outcomes, not arbitrary phases or one task per file. List acceptance-test tasks first, before implementation tasks, and make implementation depend on the applicable acceptance-test handoff. Reference approved TDD scenarios; every acceptance-test task must declare under `Protects` all test files carrying those scenarios, and no other task may declare `Protects`. A distinct worker writes these tests, which later implementation cannot edit. Each task must be finishable and verifiable from its prerequisites: an acceptance-test task verifies its protected scenario fails for the specified missing behavior before implementation, and implementation verifies it passes. Include other needed tests/fixtures within their task or a prerequisite, plus integrated feature acceptance and required repository verification.
 4. Declare each direct prerequisite with the output or hard ordering constraint it supplies. Do not add edges for preferred order or ancestors needed only indirectly. Keep independent work independent; give shared files/contracts one owner or an explicit ordered handoff. Runtime loops in the TDD are not cycles in this implementation DAG.
 5. Ground existing targets and commands in inspected or supplied evidence. Mark approved new files/symbols as `create`; distinguish unverified locations from existing ones. Identify missing evidence that prevents an executable task rather than inventing it. Planning a verification command is not running it.
-6. Before returning, check unique IDs, resolved dependency IDs, no self-edges/cycles, complete TDD coverage, and acceptance runnable by task completion. Repair dependency errors without deleting necessary prerequisites. Preserve stable IDs and unrelated content when revising.
+6. Before returning, check the exact task-block shape against the implementation plan contract (see included section "Implementation plan"): unique IDs, ID-only direct prerequisites with matching reason sub-bullets, resolved earlier IDs, no self-edges/cycles, complete TDD coverage, and acceptance runnable by task completion. Put `- Protects: <repo-relative path>; <repo-relative path>` immediately after `Targets`, before `Change`, on every acceptance-test task, naming all test files carrying its approved scenarios; reject `Protects` on other tasks. This is a semantic review: the grammar permits the optional label but cannot identify acceptance-test tasks. Repair dependency errors without deleting necessary prerequisites. Preserve stable IDs and unrelated content when revising.
 
 ## Output
 
-Return concise Markdown: the source TDD path/revision, then task blocks in topological order using this shape:
+Return concise Markdown: the source TDD path/revision, then task blocks in topological order using the implementation plan contract (see included section "Implementation plan").
 
-```text
-### T01 — Deliverable
-- Depends on: none, or task IDs with a short prerequisite reason
-- Targets: file::symbol (edit/create)
-- Change: bounded result; TDD requirement/section reference
-- Done when: observable acceptance
-- Verify: narrow command or concrete exercise, with expected result
-```
+`Depends on` is the authoritative DAG. Do not impose wave barriers; include a derived Mermaid diagram only if requested. Check the format against the inlined guide as well as the tool when a plan file is available.
 
-`Depends on` is the authoritative DAG. A task becomes ready when its prerequisites finish; do not impose wave barriers. Include a derived Mermaid diagram only if requested.
-
-Write only the authorized plan file when file access is available; otherwise return the plan in chat. No TDD summary, review/disposition report, estimates, or narrated reasoning.
+Write only the authorized plan file when file access is available; run the `check_implementation_plan` tool's static check on that file before returning, repair reported errors, and rerun until it passes. If the tool is unavailable, report the precise blocker rather than claiming validation. Without file access, return the plan in chat and limit format checking to the guide; do not claim a tool pass. No TDD summary, review/disposition report, estimates, or narrated reasoning.
 Before writing any message, report, or question to the developer, read [communication rules](skill://draft-implementation-plan/references/communication-policy--rules.md).
 
 ## Supply inputs

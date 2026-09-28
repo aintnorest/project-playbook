@@ -25,8 +25,9 @@ Regenerate by hand when you want to inspect the result before committing:
 python3 scripts/build-skills.py
 ```
 
-Before pushing, run the tests:
+Before pushing, run the Python and OMP extension tests (the latter uses Bun, already used by OMP):
 
 ```sh
 python3 -m unittest discover -s tests
+bun test
 ```

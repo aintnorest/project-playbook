@@ -1,4 +1,8 @@
 {
   "skillsWithoutAgents": {},
-  "exemptions": {}
+  "exemptions": {
+    "review-doc-implementation-plan-agent": {
+      "reviewer-read-only": "The registered check_implementation_plan tool only runs the read-only implementation-plan validator and returns its results; the reviewer gains no write tool."
+    }
+  }
 }
