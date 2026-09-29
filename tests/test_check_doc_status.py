@@ -195,6 +195,22 @@ class CheckDocStatusTests(unittest.TestCase):
                     self.assertIn(relative, result.stderr)
                     self.assertIn("frozen", result.stderr)
 
+    def test_transition_to_done_preserves_active_document_contract(self):
+        for name, revision in (("prd.md", "prd-r2"), ("tdd.md", "tdd-r2"),
+                               ("implementation-plan.md", "plan-r2")):
+            with self.subTest(document=name):
+                repo = self.repository("transition-" + name)
+                relative = "docs/features/search/" + name
+                self.snapshot(repo, relative, "active", revision)
+                base = self.commit(repo)
+                self.snapshot(repo, relative, "done", revision, "Altered on delivery.\n")
+                invalid = self.frozen(repo, base, self.commit(repo))
+                self.assertEqual(invalid.returncode, 1, invalid.stderr)
+                self.assertIn(relative, invalid.stderr)
+                self.assertIn("unchanged body, revision, and approved date", invalid.stderr)
+                self.snapshot(repo, relative, "done", revision)
+                self.assertEqual(self.frozen(repo, base, self.commit(repo)).returncode, 0)
+
     def test_frozen_rejects_malformed_head_even_when_state_would_bypass_freeze(self):
         repo = self.repository("malformed")
         file = self.snapshot(repo, "docs/features/x/prd.md", "done", "prd-r2")

@@ -241,10 +241,17 @@ def check_frozen_diff(repo: Path, base: str, head: str) -> int:
                 head_row, head_body = checked_snapshot(name, kind, after, head_id)
             if before is None and after is None:
                 raise GitFailure(f"{name}: changed path missing from both commits")
-            if before is not None and kind != "system-design" and base_row["state"] == "done":
-                if after != before:
+            if kind != "system-design":
+                if before is not None and base_row["state"] == "done" and after != before:
                     raise GitFailure(f"{name}: done {kind} is frozen; deletion, rename, "
                                      "or byte modification is forbidden")
+                if after is not None and head_row["state"] == "done" and (
+                        before is None or base_row["state"] != "active"
+                        or base_body != head_body
+                        or base_row["revision"] != head_row["revision"]
+                        or base_row["approved"] != head_row["approved"]):
+                    raise GitFailure(f"{name}: transition to done requires an active {kind} "
+                                     "with unchanged body, revision, and approved date")
             if kind == "system-design" and before is not None and before != after:
                 if after is None:
                     raise GitFailure(f"{name}: system-design deletion or rename requires "
