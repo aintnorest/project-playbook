@@ -29,14 +29,14 @@ export default function projectPlaybook(pi: ExtensionAPI) {
   pi.registerTool({
     name: "check_implementation_plan",
     label: "Check Implementation Plan",
-    description: "Validate an implementation plan, read its parsed task DAG, or check a task's protected diff. Reads only; never changes files.",
+    description: "Validate a plan with mode=check, read its task DAG with mode=json, or check a candidate's protected diff with mode=protected-diff. For check/json, pass only mode and plan; repo/base/head/task are protected-diff only. Reads only; never changes files.",
     parameters: z.object({
       mode: z.enum(["check", "json", "protected-diff"]),
       plan: z.string(),
-      repo: z.string().optional(),
-      base: z.string().optional(),
-      head: z.string().optional(),
-      task: z.string().optional(),
+      repo: z.string().nullable().optional().describe("Protected-diff only: required repository root; omit or null for check/json."),
+      base: z.string().nullable().optional().describe("Protected-diff only: required base revision; omit or null for check/json."),
+      head: z.string().nullable().optional().describe("Protected-diff only: required candidate revision; omit or null for check/json."),
+      task: z.string().nullable().optional().describe("Protected-diff only: optional task ID; omit or null for check/json."),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, ctx) {
       const { mode, plan, repo, base, head, task } = params;
@@ -49,12 +49,12 @@ export default function projectPlaybook(pi: ExtensionAPI) {
       if (mode === "protected-diff" && task === "") {
         return failure(mode, "Protected-diff task must be non-empty when provided.");
       }
-      if (mode !== "protected-diff" && [repo, base, head, task].some(value => value !== undefined)) {
+      if (mode !== "protected-diff" && [repo, base, head, task].some(value => value != null && value !== "")) {
         return failure(mode, "Check and JSON modes do not accept repo, base, head, or task.");
       }
 
       const args = mode === "protected-diff"
-        ? [validator, "--protected-diff", plan, "--repo", repo!, "--base", base!, "--head", head!, ...(task === undefined ? [] : ["--task", task])]
+        ? [validator, "--protected-diff", plan, "--repo", repo!, "--base", base!, "--head", head!, ...(task == null ? [] : ["--task", task])]
         : [validator, mode === "json" ? "--json" : "--check", plan];
       let stdout = "";
       let stderr = "";

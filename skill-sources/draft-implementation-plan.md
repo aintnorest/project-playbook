@@ -37,4 +37,6 @@ Return concise Markdown: the source TDD path/revision, then task blocks in topol
 `Depends on` is the authoritative DAG. Do not impose wave barriers; include a derived Mermaid diagram only if requested. Check the format against the inlined guide as well as the tool when a plan file is available.
 
 Write only the authorized plan file when file access is available; run the `check_implementation_plan` tool's static check on that file before returning, repair reported errors, and rerun until it passes. If the tool is unavailable, report the precise blocker rather than claiming validation. Without file access, return the plan in chat and limit format checking to the guide; do not claim a tool pass. No TDD summary, review/disposition report, estimates, or narrated reasoning.
+
+For that static check call `check_implementation_plan` with `mode: "check"` and `plan: <path>` only; `repo`, `base`, `head`, and `task` belong to protected-diff checks, not plan validation.
 Before writing any message, report, or question to the developer, read [communication rules](../guides/communication-policy.md#rules).
