@@ -318,10 +318,12 @@ class CheckImplementationPlansTests(unittest.TestCase):
             return subprocess.run(["git", "-C", str(cwd), *args], check=True,
                                   capture_output=True, text=True).stdout.strip()
         git("init", "-q")
+        (repository / ".gitignore").write_text(".worktrees/\n", encoding="utf-8")
+        git("add", ".gitignore")
         git("-c", "user.name=Test", "-c", "user.email=test@example.invalid",
-            "commit", "-q", "--allow-empty", "-m", "base")
+            "commit", "-q", "-m", "ignore worktrees")
         base = git("rev-parse", "HEAD")
-        worktrees = self.path.parent / "allowed"
+        worktrees = repository / ".worktrees"
         worktrees.mkdir()
         location = worktrees / "T01"
         git("worktree", "add", "-q", "-b", "impl/T01", str(location), base)
@@ -341,7 +343,18 @@ class CheckImplementationPlansTests(unittest.TestCase):
                                    "--task", "T01", "--worktree-root", str(root)],
                                   capture_output=True, text=True, check=False)
         self.assertEqual(check().returncode, 0, check().stderr)
-        self.assertIn("outside --worktree-root", check(root=self.path.parent / "other").stderr)
+        self.assertIn("must be <repo-root>/.worktrees",
+                      check(root=self.path.parent / "other").stderr)
+        self.path.write_text(task("T01") +
+                             f"- Assigned worktree: {self.path.parent / 'elsewhere'}\n"
+                             "- Assigned branch: impl/T01\n", encoding="utf-8")
+        self.assertIn("outside --worktree-root", check().stderr)
+        self.path.write_text(task("T01") +
+                             f"- Assigned worktree: {location}\n- Assigned branch: impl/T01\n",
+                             encoding="utf-8")
+        (repository / ".gitignore").unlink()
+        self.assertIn("not ignored by Git", check().stderr)
+        (repository / ".gitignore").write_text(".worktrees/\n", encoding="utf-8")
         self.assertIn("candidate is not assigned worktree branch tip", check(candidate=base).stderr)
         self.assertIn("requires --worktree-root", subprocess.run(
             [sys.executable, str(VALIDATOR), "--protected-diff", str(self.path), "--repo",

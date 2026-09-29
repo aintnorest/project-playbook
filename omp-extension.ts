@@ -37,7 +37,7 @@ export default function projectPlaybook(pi: ExtensionAPI) {
       base: z.string().nullable().optional().describe("Protected-diff only: required base revision; omit or null for check/json."),
       head: z.string().nullable().optional().describe("Protected-diff only: required candidate revision; omit or null for check/json."),
       task: z.string().nullable().optional().describe("Protected-diff only: optional task ID; omit or null for check/json."),
-      worktreeRoot: z.string().nullable().optional().describe("Protected-diff only: permitted absolute task worktree directory for assigned candidates."),
+      worktreeRoot: z.string().nullable().optional().describe("Protected-diff only: required <repo-root>/.worktrees for assigned candidates."),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, ctx) {
       const { mode, plan, repo, base, head, task, worktreeRoot } = params;

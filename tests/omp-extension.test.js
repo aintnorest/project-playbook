@@ -74,8 +74,12 @@ test("static checks accept absent, null, and empty protected-diff fields", async
 });
 
 test("assigned candidate is checked in its recorded worktree through tool", async () => {
-  const worktreeRoot = join(workspace, "worktrees");
+  const worktreeRoot = join(repo, ".worktrees");
   const worktree = join(worktreeRoot, "T02");
+  writeFileSync(join(repo, ".gitignore"), ".worktrees/\n");
+  git("add", ".gitignore");
+  git("-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+    "commit", "-q", "-m", "ignore worktrees");
   mkdirSync(worktreeRoot);
   const base = git("rev-parse", "HEAD");
   git("worktree", "add", "-q", "-b", "impl/T02", worktree, base);
@@ -98,7 +102,7 @@ test("assigned candidate is checked in its recorded worktree through tool", asyn
   const rejected = await tool.execute("test", { ...params, worktreeRoot: join(workspace, "other") },
     undefined, undefined, { cwd: repo });
   expect(rejected.isError).toBe(true);
-  expect(rejected.details.stderr).toContain("outside --worktree-root");
+  expect(rejected.details.stderr).toContain("must be <repo-root>/.worktrees");
 });
 
 test("protected diff fails closed when repo is null", async () => {

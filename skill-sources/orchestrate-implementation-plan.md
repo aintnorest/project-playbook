@@ -20,7 +20,7 @@ Execute an existing `implementation-plan.md` against its approved design, preser
 ## Inputs
 
 - Repository path, implementation-plan path, and authorization to execute it against the approved Technical Design Document (TDD) and applicable system design.
-- Optional integration branch, base branch or commit, worktree location, concurrency limit, and execution constraints.
+- Optional integration branch, base branch or commit, concurrency limit, and execution constraints.
 - For a continuation: prior run state, branch and worktree identities, completed-task evidence, and unresolved decisions.
 - The `check_implementation_plan` tool, whose Python validator is resolved relative to the Playbook extension directory.
 
@@ -64,7 +64,7 @@ Use `pending`, `running`, `returned`, `validating`, `integrated`, and `blocked`;
 
 ### 4. Create each worktree and hand off bounded work
 
-At pickup choose a unique branch and absolute path under a supplied or conventional root. If inside the integration checkout, first confirm Git already ignores the proposed path (`git check-ignore`); never edit `.gitignore`. Otherwise use an orchestration-owned root outside the checkout. Retain the selected root for the `worktreeRoot` gate; never overwrite existing branches or paths. Add `Assigned worktree` and `Assigned branch` after `Verify`, check the plan, and commit only this metadata when tracked. Stop if unable to persist it. From the resulting accepted SHA create the task worktree (`git worktree add -b <branch> <path> <sha>`). If creation fails, preserve the assignment for reconciliation; do not dispatch.
+Before pickup, require `<repo-root>/.worktrees/` to be ignored by Git (`git check-ignore <repo-root>/.worktrees/`). If not ignored, stop before creating any task worktree and ask the developer to add `.worktrees/` to the repository's `.gitignore`; never edit `.gitignore` or `.git/info/exclude` yourself, or use another location. At pickup choose a unique branch and absolute path `<repo-root>/.worktrees/<name>`; use `<repo-root>/.worktrees` as `worktreeRoot` at the candidate gate. Never overwrite existing branches or paths. Add `Assigned worktree` and `Assigned branch` after `Verify`, check the plan, and commit only this metadata when tracked. Stop if unable to persist it. From the resulting accepted SHA create the task worktree (`git worktree add -b <branch> <path> <sha>`). If creation fails, preserve the assignment for reconciliation; do not dispatch.
 
 Verify registered path, branch, and base SHA before dispatch. Require work only in that worktree/branch: absolute paths for file tools, explicit worktree selection for shell/Git, never bare relative paths that may resolve against the parent's directory. Assign acceptance tests to a worker distinct from implementation; that worker edits every protected test and demonstrates the specified failure. Implementation workers cannot edit protected tests; a wrong oracle requires design review.
 
@@ -92,7 +92,7 @@ Workers must not modify the integration checkout, merge their work into it, push
 Treat a returned report as a claim, not acceptance. Confirm the worker and its processes have stopped, inspect the actual commits and diff against the assigned base, and check scope, contracts, tests, documentation, and unexplained changes; reject an uncommitted, incomplete, or out-of-scope candidate and delegate the correction without editing it yourself.
 
 Serialize integration and freeze the candidate while validating it. If the integration branch advanced since dispatch, incorporate its current accepted tip into the task branch before acceptance: you may perform a mechanical Git merge, but abort conflicts and assign their resolution to a subagent in that task worktree, then review the new candidate and rerun affected checks.
-Before integrating **any** candidate (tests, repairs, synchronized work, or documentation), run `check_implementation_plan` protected-diff with the actual plan/repo, accepted integration tip as base, and candidate commit as head. Supply `task` and `worktreeRoot` for assigned plan tasks; omit both for out-of-plan candidates, enforcing all protected tests. Stop on failure; repeat after merges or repairs. The permitted root comes from the run's selected worktree location, not from the plan.
+Before integrating **any** candidate (tests, repairs, synchronized work, or documentation), run `check_implementation_plan` protected-diff with the actual plan/repo, accepted integration tip as base, and candidate commit as head. Supply `task` and `worktreeRoot: <repo-root>/.worktrees` for assigned plan tasks; omit both for out-of-plan candidates, enforcing all protected tests. Stop on failure; repeat after merges or repairs.
 
 Pass `mode: "protected-diff"`, `plan`, `repo`, `base`, `head`, and, for assigned tasks, `task` and `worktreeRoot`. This checks the registered worktree's location, branch, clean tip, and candidate ancestry. Git cannot prove which checkout authored a commit or prevent outside writes: that remains a prompt/harness-permission boundary.
 
@@ -104,7 +104,7 @@ After acceptance, confirm both candidate and integration SHAs are unchanged and 
 
 Verify the integration branch reached the accepted commit and run the relevant post-integration smoke check before releasing dependents. A post-integration failure blocks further dispatch and integration until a subagent repair is accepted; retain the failed-task evidence and worktree rather than deleting them or hiding the failure with a destructive reset.
 
-Only after integration and its checks succeed, save the handback and validation evidence outside the disposable worktree, confirm no worker/process remains and no uncommitted or untracked work would be lost—including valuable ignored files—and use `git worktree remove <task-path>`. Delete only this run's task branch after confirming its tip is contained in the integration branch, using safe deletion rather than force; preserve and report dirty, failed, or unmerged worktrees, and never delete the integration branch or the developer's checkout.
+Only after the task's work is merged into the integration branch (or main, if that is the integration branch) and post-integration checks succeed, save evidence outside its worktree. Confirm no worker/process remains and no uncommitted, untracked, or valuable ignored work would be lost, then `git worktree remove <task-path>` and `git branch -d <task-branch>` (never `-D`). Record both cleanup results in the ledger. Never remove an unmerged worktree or force-delete its branch; preserve and report dirty, failed, or unmerged worktrees, and never delete the integration branch or developer's checkout.
 
 ### 6. Handle bounded issues; halt for significant design changes
 

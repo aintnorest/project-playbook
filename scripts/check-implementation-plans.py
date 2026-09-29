@@ -299,10 +299,16 @@ def protected_diff(tasks: List[dict], repo: Path, base: str, head: str,
         if worktree_root is None:
             return [(selected["line"], "assigned task requires --worktree-root")]
         permitted = worktree_root.resolve()
+        expected_root = repo.resolve() / ".worktrees"
         actual = location.resolve()
-        if not worktree_root.is_absolute() or actual == permitted or permitted not in actual.parents:
+        if not worktree_root.is_absolute() or permitted != expected_root:
+            return [(selected["line"], "--worktree-root must be <repo-root>/.worktrees")]
+        if actual == permitted or permitted not in actual.parents:
             return [(selected["line"], "assigned worktree is outside --worktree-root")]
         try:
+            if subprocess.run(["git", "-C", str(repo), "check-ignore", "-q", "--",
+                               str(repo / ".worktrees")], capture_output=True).returncode:
+                return [(selected["line"], "<repo-root>/.worktrees/ is not ignored by Git")]
             if actual not in registered_worktrees(repo):
                 return [(selected["line"], "assigned worktree is not registered")]
             if git(location, "symbolic-ref", "--quiet", "--short", "HEAD") != assignment["Assigned branch"]:
@@ -340,7 +346,7 @@ def main(arguments: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--base", help="base commit")
     parser.add_argument("--head", help="candidate commit")
     parser.add_argument("--task", help="plan task ID whose own protected files may change (omit for non-task candidates)")
-    parser.add_argument("--worktree-root", type=Path, help="permitted task worktree directory for assigned candidates")
+    parser.add_argument("--worktree-root", type=Path, help="required <repo-root>/.worktrees for assigned candidates")
     parser.add_argument("paths", nargs="*", type=Path, help="implementation-plan Markdown files")
     args = parser.parse_args(arguments)
     diff_flags = (args.repo, args.base, args.head)
