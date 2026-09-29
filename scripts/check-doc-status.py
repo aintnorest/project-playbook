@@ -4,20 +4,22 @@
 import argparse
 import datetime
 import json
+import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
 
 STATES = {
-    "vision": {"draft", "approved", "active", "superseded"},
-    "architecture": {"draft", "approved", "active", "superseded"},
+    "vision": {"draft", "active", "superseded"},
+    "architecture": {"draft", "active", "superseded"},
     "roadmap": {"draft", "active", "superseded"},
-    "prd": {"draft", "approved", "superseded"},
-    "system-design": {"draft", "approved", "superseded"},
-    "tdd": {"draft", "approved", "superseded"},
-    "implementation-plan": {"draft", "approved", "active", "done", "superseded"},
+    "prd": {"draft", "active", "done", "superseded"},
+    "system-design": {"draft", "active", "done", "superseded"},
+    "tdd": {"draft", "active", "done", "superseded"},
+    "implementation-plan": {"draft", "active", "done", "superseded"},
     "guide": {"active", "superseded"},
 }
 PREFIX = {"vision": "vision", "architecture": "arch", "prd": "prd",
@@ -145,11 +147,11 @@ def check_document(path: Path, kind: str, text: str) -> Tuple[Optional[dict], Li
             fail(positions["revision"], "invalid revision; expected " + PREFIX[kind] + "-r<N>")
     elif revision is not None:
         fail(positions["revision"], "revision is forbidden for " + kind)
-    if state in ("approved", "active"):
+    if state in ("active", "done"):
         if approved is None:
             fail(1, "missing approved; add approved: YYYY-MM-DD for " + state)
     elif approved is not None:
-        fail(positions["approved"], "approved is forbidden unless state is approved or active")
+        fail(positions["approved"], "approved is forbidden unless state is active or done")
     if approved is not None:
         if not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", approved):
             fail(positions["approved"], "invalid approved date; expected YYYY-MM-DD")
@@ -162,13 +164,134 @@ def check_document(path: Path, kind: str, text: str) -> Tuple[Optional[dict], Li
             "revision": revision, "approved": approved}, errors
 
 
+class GitFailure(Exception):
+    """A Git object or comparison could not be inspected safely."""
+
+
+def git_bytes(repo: Path, *arguments: str) -> bytes:
+    command = ["git", "-C", str(repo), *arguments]
+    try:
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                check=False)
+    except OSError as error:
+        raise GitFailure(f"cannot run git: {error}") from error
+    if result.returncode:
+        detail = result.stderr.decode("utf-8", errors="replace").strip()
+        raise GitFailure(f"git {' '.join(arguments[:2])} failed: {detail or result.returncode}")
+    return result.stdout
+
+
+def commit_id(repo: Path, revision: str) -> str:
+    object_id = git_bytes(repo, "rev-parse", "--verify", "--end-of-options",
+                          revision + "^{commit}").strip()
+    if not re.fullmatch(rb"[0-9a-fA-F]{40,64}", object_id):
+        raise GitFailure(f"invalid commit object for {revision!r}")
+    return object_id.decode("ascii")
+
+
+def tree_paths(repo: Path, commit: str) -> set:
+    listing = git_bytes(repo, "ls-tree", "-r", "-z", "--name-only", commit,
+                        "--", "docs/features/")
+    return {os.fsdecode(name) for name in listing.split(b"\0") if name}
+
+
+def document_at(repo: Path, commit: str, name: str) -> bytes:
+    return git_bytes(repo, "show", f"{commit}:{name}")
+
+
+def checked_snapshot(name: str, kind: str, content: bytes, commit: str) -> Tuple[dict, bytes]:
+    try:
+        text = content.decode("utf-8")
+    except UnicodeError as error:
+        raise GitFailure(f"{name}: {commit}: document is not UTF-8") from error
+    if any((byte < 32 and byte not in (9, 10, 13)) or byte == 127
+           for byte in content):
+        raise GitFailure(f"{name}: {commit}: binary document contains control bytes")
+    row, problems = check_document(Path(name), kind, text)
+    if problems:
+        raise GitFailure("; ".join(f"{commit}: {problem['path']}:{problem['line']}: "
+                                   f"{problem['message']}" for problem in problems))
+    if row is None:
+        raise GitFailure(f"{name}: {commit}: missing document status")
+    lines = content.splitlines(keepends=True)
+    closing = next((index for index, line in enumerate(lines[1:], 1)
+                    if line.rstrip(b"\r\n") == b"---"), None)
+    if closing is None:
+        raise GitFailure(f"{name}: {commit}: missing closing frontmatter")
+    return row, b"".join(lines[closing + 1:])
+
+
+def check_frozen_diff(repo: Path, base: str, head: str) -> int:
+    try:
+        base_id, head_id = commit_id(repo, base), commit_id(repo, head)
+        base_paths, head_paths = tree_paths(repo, base_id), tree_paths(repo, head_id)
+        changes = git_bytes(repo, "diff", "--no-ext-diff", "--no-textconv", "--no-renames",
+                            "--name-only", "-z", base_id, head_id, "--", "docs/features/")
+        names = {os.fsdecode(name) for name in changes.split(b"\0") if name}
+        for name in sorted(names):
+            kind = document_type(Path(name))
+            if kind not in ("prd", "tdd", "implementation-plan", "system-design"):
+                continue
+            before = after = None
+            if name in base_paths:
+                before = document_at(repo, base_id, name)
+                base_row, base_body = checked_snapshot(name, kind, before, base_id)
+            if name in head_paths:
+                after = document_at(repo, head_id, name)
+                head_row, head_body = checked_snapshot(name, kind, after, head_id)
+            if before is None and after is None:
+                raise GitFailure(f"{name}: changed path missing from both commits")
+            if before is not None and kind != "system-design" and base_row["state"] == "done":
+                if after != before:
+                    raise GitFailure(f"{name}: done {kind} is frozen; deletion, rename, "
+                                     "or byte modification is forbidden")
+            if kind == "system-design" and before is not None and before != after:
+                if after is None:
+                    raise GitFailure(f"{name}: system-design deletion or rename requires "
+                                     "a new revision at this path")
+                old_revision = base_row["revision"][4:]
+                new_revision = head_row["revision"][4:]
+                same_revision = base_row["revision"] == head_row["revision"]
+                same_body = base_body == head_body
+                acceptance = (base_row["state"] == "draft"
+                              and head_row["state"] == "active"
+                              and base_row["approved"] is None
+                              and head_row["approved"] is not None)
+                completion = (base_row["state"] == "active"
+                              and head_row["state"] == "done"
+                              and base_row["approved"] == head_row["approved"])
+                if same_revision and same_body and (acceptance or completion):
+                    continue
+                if (len(new_revision), new_revision) <= (len(old_revision), old_revision):
+                    raise GitFailure(f"{name}: system-design change requires revision "
+                                     f"greater than sd-r{old_revision}; got sd-r{new_revision}")
+                if head_row["state"] != "draft" or head_row["approved"] is not None:
+                    raise GitFailure(f"{name}: new system-design revision sd-r{new_revision} "
+                                     "must be draft without approved date")
+    except GitFailure as error:
+        print(f"frozen-diff: {error}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def main(arguments: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--check", action="store_true", help="report status errors")
     mode.add_argument("--json", action="store_true", help="emit JSON status records and errors")
-    parser.add_argument("paths", nargs="+", type=Path, help="document paths")
+    mode.add_argument("--frozen-diff", action="store_true",
+                      help="check frozen documents and system-design revisions between commits")
+    parser.add_argument("--repo", type=Path, help="Git repository for --frozen-diff")
+    parser.add_argument("--base", help="base commit for --frozen-diff")
+    parser.add_argument("--head", help="head commit for --frozen-diff")
+    parser.add_argument("paths", nargs="*", type=Path, help="document paths")
     args = parser.parse_args(arguments)
+    if args.frozen_diff:
+        if args.paths or args.repo is None or args.base is None or args.head is None:
+            parser.error("--frozen-diff requires --repo, --base, --head and no file paths")
+        return check_frozen_diff(args.repo, args.base, args.head)
+    if not args.paths or any(value is not None for value in (args.repo, args.base, args.head)):
+        parser.error("--check/--json require file paths and do not accept --repo/--base/--head")
     rows: List[dict] = []
     errors: List[dict] = []
     for path in args.paths:

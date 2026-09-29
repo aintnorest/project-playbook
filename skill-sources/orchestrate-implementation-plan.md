@@ -6,7 +6,7 @@ You alone own the integration branch. Read the repository context, delegate all 
 
 ## Purpose
 
-Execute an existing `implementation-plan.md` against its approved design, preserving task dependencies and human control over significant design changes. Deliver a verified working branch and concrete steps for the developer to validate it.
+Execute an existing active `implementation-plan.md` against its active design, preserving task dependencies and human control over significant design changes. Deliver a verified working branch and concrete steps for the developer to validate it.
 
 ## Required guidance
 
@@ -20,20 +20,20 @@ Execute an existing `implementation-plan.md` against its approved design, preser
 
 ## Inputs
 
-- Repository path, implementation-plan path, and authorization to execute it against the approved Technical Design Document (TDD) and applicable system design.
+- Repository path, active implementation-plan path, and authorization to execute it against the active Technical Design Document (TDD) and applicable active system design.
 - Optional integration branch, base branch or commit, concurrency limit, and execution constraints.
 - For a continuation: prior run state, branch and worktree identities, completed-task evidence, and unresolved decisions.
-- The `check_implementation_plan` tool, whose Python validator is resolved relative to the Playbook extension directory.
+- The `check_implementation_plan` and `check_doc_status` tools, whose Python validators are resolved relative to the Playbook extension directory.
 
 ## Instructions
 
 ### 1. Establish context before dispatch
 
-Read the root instructions and README, all applicable nested agent instructions, the complete plan and its source TDD, applicable system design, and governing product requirements and decisions. Inspect the repository structure, package/build configuration, CI checks, test conventions, setup instructions, and the code and callers needed to understand every planned task and shared boundary before implementation starts.
+Read root and nested instructions, README, the plan, active TDD, applicable system design, and governing requirements and decisions. Inspect repository structure, tooling, CI, tests, setup, affected code and callers across the plan before dispatch.
 
 Build a compact context map with authoritative paths/revisions, contracts, ownership, commands, and unresolved evidence. Cover the whole plan rather than only the first task; retrieve deeper implementation details as needed, without bulk-reading dependencies, generated output, binaries, unrelated history, or secret values.
 
-Resolve searchable facts yourself; ask only for unavailable decisions or prerequisites. Do not infer design approval from a completed plan: if execution authorization, approval of the governing revision, or a material contract is missing or contradictory, stop before dispatch and name the exact gate.
+Resolve searchable facts yourself. Before dispatch require execution authorization and `active` plan, TDD, and applicable system design with actual `approved` dates; stop on a missing or contradictory gate rather than inferring developer acceptance.
 
 Confirm the harness can dispatch workers, stop them, and retain assigned worktrees until acceptance; disable automatic application, merging, or removal of worker changes. If it can launch a worker in the assigned directory, use that. Otherwise dispatch the assigned absolute path and branch, requiring every worker command to select that worktree explicitly (`cd <worktree> && …` for each shell command, `git -C <worktree> …` for Git), and every read/edit/write to use paths within it. A relative tool path may resolve against the parent's directory, not the worktree. Stop if the harness cannot retain worker changes for the protected-diff gate; never implement inline.
 
@@ -51,12 +51,9 @@ Use a clean integration checkout dedicated to this run. If the branch is already
 
 Do not silently omit local changes the implementation needs: have the developer make them available in the agreed base before dispatch. Only you advance the integration branch; never push, merge to the default/release branch, or rewrite published history without separate authorization.
 
-Before dispatch, have a documentation worker read [document state and revision](../guides/product-documentation-process.md#document-state-and-revision) and move the plan from `approved` to `active`, carrying `approved` and keeping `revision`. Run `check_doc_status` and integrate the change before task pickup; if blocked, stop. Do not infer approval or edit this yourself.
-
-
 ### 3. Schedule the plan and retain run state
 
-Before any dispatch, run the `check_implementation_plan` tool's static check on the actual plan file; reject a malformed plan and stop for correction. If the tool, python3, or its Playbook script is unavailable, stop and request that prerequisite rather than guessing the graph. The validator enforces block shape and direct edges, not semantic quality: yourself check every target, acceptance criterion, verification prerequisite, and that every acceptance-test task declares all files carrying its approved TDD scenarios under `Protects` while no other task declares it. The grammar cannot infer task type. Schedule only from the ID-only `Depends on` lines; a prerequisite is satisfied only after its work is validated and integrated, not when its worker reports completion.
+Before dispatch, statically check the active plan with `check_implementation_plan`; stop if the tool, Python, or script is missing or the plan is malformed. The checker verifies task grammar, not meaning: confirm targets, acceptance, verification prerequisites, and `Protects` coverage for every acceptance-test task (and no other task). Schedule by direct `Depends on` edges; prerequisites finish only after validated integration, never on worker report.
 
 For the static check call `check_implementation_plan` with `mode: "check"` and `plan: <path>` only; `repo`, `base`, `head`, and `task` are for protected-diff candidates.
 
@@ -96,9 +93,9 @@ Workers must not modify the integration checkout, merge their work into it, push
 Treat a returned report as a claim, not acceptance. Confirm the worker and its processes have stopped, inspect the actual commits and diff against the assigned base, and check scope, contracts, tests, documentation, and unexplained changes; reject an uncommitted, incomplete, or out-of-scope candidate and delegate the correction without editing it yourself.
 
 Serialize integration and freeze the candidate while validating it. If the integration branch advanced since dispatch, incorporate its current accepted tip into the task branch before acceptance: you may perform a mechanical Git merge, but abort conflicts and assign their resolution to a subagent in that task worktree, then review the new candidate and rerun affected checks.
-Before integrating **any** candidate (tests, repairs, synchronized work, or documentation), run `check_implementation_plan` protected-diff with the actual plan/repo, accepted integration tip as base, and candidate commit as head. Supply `task` and `worktreeRoot: <repo-root>/.worktrees` for assigned plan tasks; omit both for out-of-plan candidates, enforcing all protected tests. Stop on failure; repeat after merges or repairs.
+Before integrating **any** candidate, run `check_doc_status` frozen-diff and `check_implementation_plan` protected-diff against the accepted tip and candidate commit. Pass assigned task and worktreeRoot only to protected-diff for assigned tasks; omit both for out-of-plan candidates. Stop if either tool is unavailable or fails; repeat after merge or repair.
 
-Pass `mode: "protected-diff"`, `plan`, `repo`, `base`, `head`, and, for assigned tasks, `task` and `worktreeRoot`. This checks the registered worktree's location, branch, clean tip, and candidate ancestry. Git cannot prove which checkout authored a commit or prevent outside writes: that remains a prompt/harness-permission boundary.
+Call `check_doc_status` with `mode: "frozen-diff"`, `repo`, `base`, `head`; call `check_implementation_plan` with `mode: "protected-diff"`, `plan`, `repo`, `base`, `head`, plus `task` and `worktreeRoot` for assigned tasks. The first guards done documents and system-design revision increments; the second guards protected tests, worktree identity, clean tip, and ancestry. Personally check delivered system-design slice sections: the tool cannot infer ownership. Git cannot prove where a commit originated or prevent outside writes.
 
 Require the current accepted integration tip to be an ancestor of the candidate; validation of an older isolated result does not prove the combined result. Personally inspect the resulting diff and run the task's acceptance checks plus relevant cross-task checks against that exact candidate, exercising the actual changed surface when applicable; worker logs and reviewer opinions supplement but never replace your own validation.
 For an acceptance-test task, the red check succeeds **only** when each protected approved TDD scenario fails because its specified behavior is missing, with no unrelated failure; a premature pass or unexpected failure rejects the candidate. For its implementation dependent, verify the applicable protected scenarios pass without editing their tests. A check "fails" when it misses the task-specific expected result, not merely because its command returns a nonzero status.
@@ -121,14 +118,14 @@ On a significant issue:
 1. Immediately stop new dispatch, acceptance, and merges for the entire run, including independent tasks; tell every active worker to stop and preserve its current work, and cancel/terminate through the harness if needed.
 2. Confirm each worker and its task processes are stopped; record any inability to stop as an unresolved safety blocker, reject late returns from automatic acceptance, and preserve all worktrees and commits without cleanup or destructive rollback.
 3. Present the evidence, conflicting document sections, affected tasks and already integrated work, viable resolutions and tradeoffs, and your recommendation; ask the developer for the consequential decision, not permission to keep silently redesigning.
-4. Wait for that decision before starting any further worker, including documentation workers. Once authorized, delegate updates to the owning TDD/system design and any affected requirements and decisions; have the draft-plan agent revise affected tasks, dependencies, and acceptance, then the independent review-plan agent review that revision. Keep implementation paused while the developer reviews and explicitly approves the changed governing revisions.
-5. Integrate the approved documentation through the same validation gate, rerun the `check_implementation_plan` static check on the revised plan, recheck previously accepted work, and obtain explicit authorization to resume. Reassign affected tasks from the updated integration tip with new handoffs, repairing or replacing stale work through subagents rather than merging old-design returns unchanged.
+4. Wait for the developer's decision before dispatch, including documentation workers. Preserve done PRD/TDD/plan documents; bugfix or redo work gets a new slice TDD and plan. Keep delivered system-design slice sections unchanged; reopening a done design for a new slice requires a draft revision without `approved`. Delegate authorized document changes, draft or revise the unfinished plan, then independently review it. Pause implementation until the developer accepts changed drafts as `active` with the actual date.
+5. Integrate the developer-accepted active documentation through both candidate validation gates, rerun the `check_implementation_plan` static check on the revised plan, recheck previously accepted work, and obtain explicit authorization to resume. Reassign affected tasks from the updated integration tip with new handoffs, repairing or replacing stale work through subagents rather than merging old-design returns unchanged.
 
 ### 7. Verify the complete branch and deliver it
 
 After all planned outcomes are integrated, run the repository's required final verification and integrated feature acceptance on the final branch tip, including the actual CLI, UI, service, or other changed surface. Delegate every discovered fix and repeat affected acceptance and final checks after integration; no task count, green worker report, or successful merge substitutes for working end-to-end behavior.
 
-After integrated acceptance and final verification pass, have a documentation worker read [document state and revision](../guides/product-documentation-process.md#document-state-and-revision) and move the plan to `done`, removing `approved` and keeping `revision`. Run `check_doc_status`, validate, and integrate the change. Delegate other required delivery material; clean up safe worktrees and report any blockers.
+After integrated acceptance and final verification, read [document state and revision](../guides/product-documentation-process.md#document-state-and-revision) and delegate metadata-only transitions: active plan to `done` with its revision and `approved` date; TDD when its plan is done; PRD when its feature finishes; system design when all slices finish. Run `check_doc_status`, validate the candidate through both gates, and integrate. Delegate other delivery material; clean up safe worktrees and report blockers.
 
 ## Output
 

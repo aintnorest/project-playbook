@@ -1,13 +1,13 @@
 {
   "draft-implementation-plan-agent": {
     "positive": [
-      "Turn the approved EXPORT TDD into an implementation plan",
-      "Write a task DAG from the approved technical design for document export",
+      "Turn the active EXPORT TDD into an implementation plan",
+      "Write a task DAG from the active technical design for document export",
       "Revise the EXPORT implementation plan so each task has a verifiable exit state"
     ],
     "negative": [
       {"request": "Review the EXPORT implementation plan for blocked tasks", "expected": "review-doc-implementation-plan-agent"},
-      {"request": "Execute the approved EXPORT implementation plan", "expected": "orchestrate-implementation-plan-agent"}
+      {"request": "Execute the active EXPORT implementation plan", "expected": "orchestrate-implementation-plan-agent"}
     ]
   },
   "draft-prd-agent": {
@@ -73,17 +73,17 @@
     ],
     "negative": [
       {"request": "Review the document export slice TDD", "expected": "review-doc-technical-design-agent"},
-      {"request": "Turn the approved EXPORT TDD into a task plan", "expected": "draft-implementation-plan-agent"}
+      {"request": "Turn the active EXPORT TDD into a task plan", "expected": "draft-implementation-plan-agent"}
     ]
   },
   "orchestrate-implementation-plan-agent": {
     "positive": [
-      "Execute the approved document export implementation plan",
-      "Implement the approved EXPORT task DAG and integrate the results",
-      "Run the approved plan through isolated workers and validate the working branch"
+      "Execute the active document export implementation plan",
+      "Implement the active EXPORT task DAG and integrate the results",
+      "Run the active plan through isolated workers and validate the working branch"
     ],
     "negative": [
-      {"request": "Draft an implementation plan from the approved EXPORT TDD", "expected": "draft-implementation-plan-agent"},
+      {"request": "Draft an implementation plan from the active EXPORT TDD", "expected": "draft-implementation-plan-agent"},
       {"request": "Review the task DAG before implementation begins", "expected": "review-doc-implementation-plan-agent"}
     ]
   },
@@ -199,12 +199,12 @@
   "review-doc-implementation-plan-agent": {
     "positive": [
       "Review the EXPORT implementation plan's task dependencies",
-      "Check whether the plan covers the approved document export design",
+      "Check whether the plan covers the active document export design",
       "Find unverifiable exit states in the implementation task DAG"
     ],
     "negative": [
       {"request": "Review the EXPORT TDD's technical contracts", "expected": "review-doc-technical-design-agent"},
-      {"request": "Write the implementation plan from the approved design", "expected": "draft-implementation-plan-agent"}
+      {"request": "Write the implementation plan from the active design", "expected": "draft-implementation-plan-agent"}
     ]
   },
   "review-doc-prd-agent": {

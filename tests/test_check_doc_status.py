@@ -34,18 +34,18 @@ class CheckDocStatusTests(unittest.TestCase):
 
     def test_valid_document_types_and_json_rows(self):
         samples = [
-            ("docs/product-vision.md", "vision", "vision", "approved"),
+            ("docs/product-vision.md", "vision", "vision", "active"),
             ("docs/architecture.md", "architecture", "arch", "active"),
             ("docs/features/search/prd.md", "prd", "prd", "draft"),
-            ("docs/features/search/system-design.md", "system-design", "sd", "approved"),
+            ("docs/features/search/system-design.md", "system-design", "sd", "done"),
             ("docs/features/search/tdd.md", "tdd", "tdd", "draft"),
             ("docs/features/search/implementation-plan.md", "implementation-plan", "plan", "done"),
-            ("docs/features/search/slices/browse/tdd.md", "tdd", "tdd", "approved"),
+            ("docs/features/search/slices/browse/tdd.md", "tdd", "tdd", "done"),
             ("docs/features/search/slices/browse/implementation-plan.md", "implementation-plan", "plan", "active"),
         ]
         paths = []
         for relative, kind, prefix, state in samples:
-            date = "approved: 2024-02-29\n" if state in ("approved", "active") else ""
+            date = "approved: 2024-02-29\n" if state in ("active", "done") else ""
             paths.append(self.path(relative, f"---\nstate: {state}\nrevision: {prefix}-r12\n{date}---\n"
                                    "# Document\n\n## Status\n\nDetails about the document.\n"))
         paths.extend([
@@ -62,12 +62,12 @@ class CheckDocStatusTests(unittest.TestCase):
         self.assertEqual([row["type"] for row in rows],
                          [s[1] for s in samples] + ["roadmap", "roadmap", "guide"])
         self.assertEqual(rows[5], {"path": str(paths[5]), "type": "implementation-plan",
-                                   "state": "done", "revision": "plan-r12", "approved": None})
+                                   "state": "done", "revision": "plan-r12", "approved": "2024-02-29"})
         self.assertIsNone(rows[-1]["revision"])
 
     def test_missing_state_unknown_state_and_missing_revision(self):
         self.assert_error("docs/product-vision.md", "---\nrevision: vision-r1\n---\n", "missing state")
-        self.assert_error("docs/features/a/prd.md", "---\nstate: active\nrevision: prd-r1\n---\n",
+        self.assert_error("docs/features/a/prd.md", "---\nstate: approved\nrevision: prd-r1\n---\n",
                           "invalid state for prd")
         self.assert_error("docs/architecture.md", "---\nstate: draft\n---\n", "missing revision")
 
@@ -75,9 +75,9 @@ class CheckDocStatusTests(unittest.TestCase):
         self.assert_error("docs/features/a/tdd.md", "---\nstate: draft\nrevision: tdd-r1\n"
                           "approved: 2024-01-01\n---\n", "approved is forbidden")
         self.assert_error("docs/features/a/implementation-plan.md", "---\nstate: done\n"
-                          "revision: plan-r1\napproved: 2024-01-01\n---\n", "approved is forbidden")
+                          "revision: plan-r1\n---\n", "missing approved")
         self.assert_error("docs/product-vision.md", "---\nstate: approved\n"
-                          "revision: vision-r1\n---\n", "missing approved")
+                          "revision: vision-r1\n---\n", "invalid state for vision")
         self.assert_error("guides/help.md", "---\nstate: active\napproved: 2023-02-29\n---\n"
                           "## Status\nDetails.\n", "real calendar date")
         self.assert_error("docs/roadmap.md", "---\nstate: active\n---\n", "missing approved")
@@ -138,6 +138,168 @@ class CheckDocStatusTests(unittest.TestCase):
         self.assertEqual([row["path"] for row in payload["rows"]], [str(valid), str(invalid)])
         self.assertEqual([error["path"] for error in payload["errors"]], [str(invalid), str(missing)])
         self.assertIn("cannot read document", payload["errors"][-1]["message"])
+
+    def git(self, repo, *args):
+        result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True,
+                                text=True, check=False)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return result.stdout.strip()
+
+    def repository(self, label):
+        repo = self.root / label
+        repo.mkdir()
+        self.git(repo, "init", "-q")
+        return repo
+
+    def commit(self, repo):
+        self.git(repo, "add", "-A")
+        self.git(repo, "-c", "user.name=Test", "-c", "user.email=test@example.org",
+                 "commit", "-qm", "snapshot", "--allow-empty")
+        return self.git(repo, "rev-parse", "HEAD")
+
+    def snapshot(self, repo, relative, state, revision, body="Original body.\n",
+                 approved="2025-01-01"):
+        file = repo / relative
+        file.parent.mkdir(parents=True, exist_ok=True)
+        date = f"approved: {approved}\n" if state in ("active", "done") else ""
+        file.write_text(f"---\nstate: {state}\nrevision: {revision}\n{date}---\n{body}",
+                        encoding="utf-8")
+        return file
+
+    def frozen(self, repo, base, head, *extra):
+        return subprocess.run([sys.executable, str(CHECKER), "--frozen-diff",
+                               "--repo", str(repo), "--base", base, "--head", head,
+                               *extra], capture_output=True, text=True, check=False)
+
+    def test_frozen_done_documents_reject_mutation_deletion_and_rename(self):
+        documents = [("prd.md", "prd-r1"), ("tdd.md", "tdd-r1"),
+                     ("implementation-plan.md", "plan-r1"),
+                     ("slices/design work/tdd.md", "tdd-r1"),
+                     ("slices/design work/implementation-plan.md", "plan-r1")]
+        for index, (name, revision) in enumerate(documents):
+            for operation in ("modify", "delete", "rename"):
+                with self.subTest(name=name, operation=operation):
+                    repo = self.repository(f"repo-{index}-{operation}")
+                    relative = "docs/features/feature name/" + name
+                    file = self.snapshot(repo, relative, "done", revision)
+                    base = self.commit(repo)
+                    if operation == "modify":
+                        file.write_bytes(file.read_bytes() + b"Extra line.\n")
+                    elif operation == "delete":
+                        file.unlink()
+                    else:
+                        file.rename(file.with_name("old-" + file.name))
+                    head = self.commit(repo)
+                    result = self.frozen(repo, base, head)
+                    self.assertEqual(result.returncode, 1, result.stderr)
+                    self.assertIn(relative, result.stderr)
+                    self.assertIn("frozen", result.stderr)
+
+    def test_frozen_rejects_malformed_head_even_when_state_would_bypass_freeze(self):
+        repo = self.repository("malformed")
+        file = self.snapshot(repo, "docs/features/x/prd.md", "done", "prd-r2")
+        base = self.commit(repo)
+        file.write_text("---\nstate: made-up\nrevision: prd-r2\n---\nChanged.\n")
+        result = self.frozen(repo, base, self.commit(repo))
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("invalid state for prd", result.stderr)
+
+    def test_system_design_body_changes_need_higher_revision_and_reopening(self):
+        repo = self.repository("system-revisions")
+        relative = "docs/features/design space/system-design.md"
+        self.snapshot(repo, relative, "active", "sd-r2")
+        base = self.commit(repo)
+        self.snapshot(repo, relative, "active", "sd-r2", "Changed body.\n")
+        unchanged_revision = self.commit(repo)
+        result = self.frozen(repo, base, unchanged_revision)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("revision greater than sd-r2", result.stderr)
+        self.snapshot(repo, relative, "active", "sd-r3", "Changed body.\n")
+        stale_acceptance = self.commit(repo)
+        result = self.frozen(repo, base, stale_acceptance)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("must be draft without approved date", result.stderr)
+        self.snapshot(repo, relative, "draft", "sd-r3", "Changed body.\n")
+        revised = self.commit(repo)
+        self.assertEqual(self.frozen(repo, base, revised).returncode, 0)
+        self.snapshot(repo, relative, "active", "sd-r3", "Changed body.\n",
+                      approved="2025-02-01")
+        accepted = self.commit(repo)
+        self.assertEqual(self.frozen(repo, revised, accepted).returncode, 0)
+        self.snapshot(repo, relative, "done", "sd-r3", "Changed body.\n",
+                      approved="2025-02-01")
+        done = self.commit(repo)
+        self.assertEqual(self.frozen(repo, accepted, done).returncode, 0)
+        self.snapshot(repo, relative, "draft", "sd-r4", "New slice design.\n")
+        reopened = self.commit(repo)
+        self.assertEqual(self.frozen(repo, done, reopened).returncode, 0)
+        self.snapshot(repo, relative, "draft", "sd-r3", "New slice design.\n")
+        failed_reopen = self.commit(repo)
+        self.assertIn("revision greater than sd-r3",
+                      self.frozen(repo, done, failed_reopen).stderr)
+
+    def test_system_design_done_transition_requires_only_metadata_change(self):
+        repo = self.repository("system-metadata")
+        relative = "docs/features/x/system-design.md"
+        self.snapshot(repo, relative, "active", "sd-r7")
+        base = self.commit(repo)
+        self.snapshot(repo, relative, "done", "sd-r7")
+        head = self.commit(repo)
+        self.assertEqual(self.frozen(repo, base, head).returncode, 0)
+        self.snapshot(repo, relative, "done", "sd-r7", "Modified content.\n")
+        changed = self.commit(repo)
+        result = self.frozen(repo, base, changed)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("revision greater than sd-r7", result.stderr)
+        self.snapshot(repo, relative, "done", "sd-r7", approved="2025-02-01")
+        changed_date = self.commit(repo)
+        self.assertEqual(self.frozen(repo, base, changed_date).returncode, 1)
+
+    def test_system_design_deletion_and_rename_fail_closed(self):
+        for operation in ("delete", "rename"):
+            with self.subTest(operation=operation):
+                repo = self.repository("design-" + operation)
+                relative = "docs/features/x/system-design.md"
+                file = self.snapshot(repo, relative, "done", "sd-r2")
+                base = self.commit(repo)
+                if operation == "delete":
+                    file.unlink()
+                else:
+                    file.rename(file.with_name("renamed-system-design.md"))
+                result = self.frozen(repo, base, self.commit(repo))
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("system-design deletion or rename", result.stderr)
+
+    def test_new_feature_document_must_have_valid_status(self):
+        repo = self.repository("new-document")
+        base = self.commit(repo)
+        file = repo / "docs/features/x/slices/y/tdd.md"
+        file.parent.mkdir(parents=True)
+        file.write_text("No frontmatter.\n", encoding="utf-8")
+        result = self.frozen(repo, base, self.commit(repo))
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("missing status frontmatter", result.stderr)
+
+    def test_frozen_unchanged_documents_and_non_feature_changes_are_allowed(self):
+        repo = self.repository("unchanged")
+        self.snapshot(repo, "docs/features/x/prd.md", "done", "prd-r1")
+        self.snapshot(repo, "docs/features/x/slices/y/tdd.md", "done", "tdd-r2")
+        base = self.commit(repo)
+        (repo / "notes.txt").write_text("Unrelated change.\n", encoding="utf-8")
+        head = self.commit(repo)
+        self.assertEqual(self.frozen(repo, base, head).returncode, 0)
+        self.assertEqual(self.frozen(repo, head, head).returncode, 0)
+        self.assertNotEqual(self.frozen(repo, base, "nonexistent-revision").returncode, 0)
+        self.assertNotEqual(self.frozen(repo, base, head, "docs/features/x/prd.md").returncode, 0)
+
+    def test_frozen_rejects_binary_changed_document(self):
+        repo = self.repository("binary")
+        file = self.snapshot(repo, "docs/features/x/tdd.md", "active", "tdd-r1")
+        base = self.commit(repo)
+        file.write_bytes(file.read_bytes() + b"\0")
+        result = self.frozen(repo, base, self.commit(repo))
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("binary document", result.stderr)
 
 
 if __name__ == "__main__":

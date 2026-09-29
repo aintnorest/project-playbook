@@ -81,13 +81,13 @@ test("document status tool reads metadata and rejects legacy prose", async () =>
   const docs = join(repo, "docs");
   mkdirSync(docs);
   const path = join(docs, "product-vision.md");
-  writeFileSync(path, "---\nstate: approved\nrevision: vision-r2\napproved: 2026-09-28\n---\n"
+  writeFileSync(path, "---\nstate: active\nrevision: vision-r2\napproved: 2026-09-28\n---\n"
     + "# Product vision\n\n## Status\n\nReviewed against product research.\n");
   const parsed = await statusTool.execute("test", { mode: "json", path },
     undefined, undefined, { cwd: repo });
   expect(parsed.isError).toBeUndefined();
   expect(parsed.details.documents).toEqual([
-    { path, type: "vision", state: "approved", revision: "vision-r2", approved: "2026-09-28" },
+    { path, type: "vision", state: "active", revision: "vision-r2", approved: "2026-09-28" },
   ]);
 
   writeFileSync(path, "# Product vision\n\n## Status\n\nApproved.\n");
@@ -95,6 +95,33 @@ test("document status tool reads metadata and rejects legacy prose", async () =>
     undefined, undefined, { cwd: repo });
   expect(invalid.isError).toBe(true);
   expect(invalid.details.stderr).toContain("missing status frontmatter");
+});
+
+test("document frozen-diff tool rejects edits to a delivered PRD", async () => {
+  const feature = join(repo, "docs", "features", "search");
+  mkdirSync(feature, { recursive: true });
+  const path = join(feature, "prd.md");
+  writeFileSync(path, "---\nstate: done\nrevision: prd-r3\napproved: 2026-09-28\n---\n"
+    + "# Search\n\nThe delivered contract.\n");
+  git("add", "docs/features/search/prd.md");
+  git("-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+    "commit", "-q", "-m", "deliver feature");
+  const base = git("rev-parse", "HEAD");
+
+  writeFileSync(path, readFileSync(path, "utf8") + "\nA new requirement.\n");
+  git("add", "docs/features/search/prd.md");
+  git("-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+    "commit", "-q", "-m", "alter delivered feature");
+  const head = git("rev-parse", "HEAD");
+  const violation = await statusTool.execute("test", { mode: "frozen-diff", repo, base, head },
+    undefined, undefined, { cwd: repo });
+  expect(violation.isError).toBe(true);
+  expect(violation.details.stderr).toContain("docs/features/search/prd.md");
+
+  const check = await statusTool.execute("test", { mode: "frozen-diff", repo, base, head: base },
+    undefined, undefined, { cwd: repo });
+  expect(check.isError).toBeUndefined();
+  expect(check.details.status).toBe("ok");
 });
 
 test("assigned candidate is checked in its recorded worktree through tool", async () => {

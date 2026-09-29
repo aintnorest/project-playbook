@@ -13,7 +13,7 @@ const statusValidator = fileURLToPath(new URL("./scripts/check-doc-status.py", i
 const MAX_STREAM_BYTES = 16 * 1024 * 1024;
 const VALIDATOR_TIMEOUT_MS = 120_000;
 
-type Mode = "check" | "json" | "protected-diff";
+type Mode = "check" | "json" | "protected-diff" | "frozen-diff";
 
 interface ValidatorResult {
   stdout: string;
@@ -172,20 +172,31 @@ export default function projectPlaybook(pi: ExtensionAPI) {
   pi.registerTool({
     name: "check_doc_status",
     label: "Check Document Status",
-    description: "Validate a document's YAML frontmatter with mode=check or read its state, revision, and approval date with mode=json. Pass a document path; reads only.",
+    description: "Validate YAML document status with mode=check, read metadata with mode=json, or reject edits to delivered documents and unversioned system-design changes with mode=frozen-diff. For check/json pass path; for frozen-diff pass repo, base, and head. Reads only.",
     parameters: z.object({
-      mode: z.enum(["check", "json"]),
-      path: z.string(),
+      mode: z.enum(["check", "json", "frozen-diff"]),
+      path: z.string().nullable().optional().describe("Check/JSON only: document path."),
+      repo: z.string().nullable().optional().describe("Frozen-diff only: repository root."),
+      base: z.string().nullable().optional().describe("Frozen-diff only: accepted base commit."),
+      head: z.string().nullable().optional().describe("Frozen-diff only: candidate commit."),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, ctx) {
-      const { mode, path } = params;
+      const { mode, path, repo, base, head } = params;
       if (!existsSync(statusValidator)) {
         return failure(mode, `Document-status validator is missing: ${statusValidator}`);
       }
+      if (mode === "frozen-diff" && (!repo || !base || !head || (path != null && path !== ""))) {
+        return failure(mode, "Frozen-diff mode requires repo, base, and head, and does not accept path.");
+      }
+      if (mode !== "frozen-diff" && (!path || [repo, base, head].some(value => value != null && value !== ""))) {
+        return failure(mode, "Check and JSON modes require path and do not accept repo, base, or head.");
+      }
+      const args = mode === "frozen-diff"
+        ? [statusValidator, "--frozen-diff", "--repo", repo!, "--base", base!, "--head", head!]
+        : [statusValidator, mode === "json" ? "--json" : "--check", path!];
       let result: ValidatorResult;
       try {
-        result = await runValidator([statusValidator, mode === "json" ? "--json" : "--check", path],
-          ctx.cwd, signal, "Document-status validator");
+        result = await runValidator(args, ctx.cwd, signal, "Document-status validator");
       } catch (error) {
         const message = error instanceof Error && "code" in error && error.code === "ENOENT"
           ? "python3 is missing from PATH; cannot check document status."
@@ -216,7 +227,7 @@ export default function projectPlaybook(pi: ExtensionAPI) {
         return failure(mode, "Document-status validator produced unexpected stdout.", exitCode, stderr, stdout);
       }
       return {
-        content: [{ type: "text" as const, text: "Document status valid." }],
+        content: [{ type: "text" as const, text: mode === "frozen-diff" ? "Frozen documents unchanged." : "Document status valid." }],
         details: { status: "ok", mode, exitCode, stderr, stdout },
       };
     },

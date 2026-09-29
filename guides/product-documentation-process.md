@@ -71,11 +71,11 @@ Slice `02-<slice-name>` has no implementation plan yet because its technical des
 
 ### Feature level
 
-Every full feature lives under `docs/features/<feature-name>/` and starts with `prd.md`, the Product Requirements Document. Use the small-feature shape unless the feature meets the [slice criteria](#when-a-feature-needs-slices); then use the large-feature shape. Create an implementation plan only when its technical design is approved and ready to build.
+Every full feature lives under `docs/features/<feature-name>/` and starts with `prd.md`, the Product Requirements Document. Use the small-feature shape unless the feature meets the [slice criteria](#when-a-feature-needs-slices); then use the large-feature shape. Create an implementation plan only when its technical design is `active` and ready to build.
 
 ### Lightweight path for minor changes
 
-For a minor fix or change, update the existing document that owns the changed product fact or technical contract, if one exists, and verify the actual changed behavior. Do not create a Product Requirements Document, technical design, system design, or implementation plan merely to satisfy this process.
+For a minor fix or change, update the existing living document that owns the changed product fact or technical contract, if one exists, and verify the actual changed behavior. A `done` feature document is historical and must not be revised; later fixes or repeated work use a new slice as [document state and revision](#document-state-and-revision) specifies. Do not create a Product Requirements Document, technical design, system design, or implementation plan merely to satisfy this process.
 
 Use the full-feature workflow instead when the change introduces a material requirement or non-goal, a new or changed cross-boundary interface, an unresolved product or architecture decision, a separately reviewable delivery, or work that needs ordered task decomposition. Record a concise decision in the owning document when the boundary is not obvious.
 
@@ -99,18 +99,22 @@ The first lines of every product document listed below are a YAML frontmatter bl
 
 | Document | Allowed `state` values | `revision` |
 | --- | --- | --- |
-| `docs/product-vision.md` | `draft`, `approved`, `active`, `superseded` | Required: `vision-r<N>` |
-| `docs/architecture.md` | `draft`, `approved`, `active`, `superseded` | Required: `arch-r<N>` |
-| `docs/features/<feature>/prd.md` | `draft`, `approved`, `superseded` | Required: `prd-r<N>` |
-| `docs/features/<feature>/system-design.md` | `draft`, `approved`, `superseded` | Required: `sd-r<N>` |
-| Feature or slice `tdd.md` | `draft`, `approved`, `superseded` | Required: `tdd-r<N>` |
-| Feature or slice `implementation-plan.md` | `draft`, `approved`, `active`, `done`, `superseded` | Required: `plan-r<N>` |
+| `docs/product-vision.md` | `draft`, `active`, `superseded` | Required: `vision-r<N>` |
+| `docs/architecture.md` | `draft`, `active`, `superseded` | Required: `arch-r<N>` |
 | `docs/roadmap.md` | `draft`, `active`, `superseded` | Absent |
+| `docs/features/<feature>/prd.md` | `draft`, `active`, `done`, `superseded` | Required: `prd-r<N>` |
+| `docs/features/<feature>/system-design.md` | `draft`, `active`, `done`, `superseded` | Required: `sd-r<N>` |
+| Feature or slice `tdd.md` | `draft`, `active`, `done`, `superseded` | Required: `tdd-r<N>` |
+| Feature or slice `implementation-plan.md` | `draft`, `active`, `done`, `superseded` | Required: `plan-r<N>` |
 | Playbook process guide with a `## Status` section | `active`, `superseded` | Absent |
 
-`<N>` is a positive decimal integer with no leading zero; new revisioned documents start at `r1`. When a change alters a revisioned document's contract, increment its `revision`, set `state: draft`, and remove `approved`, even if the previous revision was approved or active. The developer must approve the new revision before its state becomes `approved` or `active`; never infer approval from a review result or invent an earlier revision to claim historical approval. An editorial fix that leaves the contract unchanged (such as a typo, broken link, or formatting correction) keeps the revision and state. A lifecycle-only state transition also keeps the revision: approval records the actual date; moving an approved document to active carries that date; completing an active plan sets `done` and removes `approved`. `approved: YYYY-MM-DD` is required for `approved` or `active`, and forbidden for `draft`, `done`, or `superseded`. A new roadmap starts as `draft`, then becomes `active` with an actual approval date. The roadmap's Done section describes finished features, not the roadmap's document state. `superseded` means the document no longer governs; the replacement owns the current rule.
+`<N>` is a positive decimal integer with no leading zero; new revisioned documents start at `r1`. There is no `approved` state. Developer acceptance changes `state: draft` to `state: active` and records the actual acceptance date as `approved: YYYY-MM-DD`; never infer acceptance from a review. `approved` is required for `active` and `done`, and forbidden for `draft` and `superseded`. A lifecycle-only state transition keeps the revision and document body. For a living document, a contract change increments its revision (if it has one), sets `state: draft`, and removes `approved` until that revision is accepted. An editorial fix that leaves a living document's contract unchanged (such as a typo or repaired link) preserves revision and state, except that **every body change to a system design** requires a higher revision and new acceptance. A metadata-only system-design transition from `active` to `done` keeps its body, revision, and `approved` date. Do not invent historical revision IDs or acceptance dates.
 
-Use `python3 scripts/check-doc-status.py --check <path...>` to check accessible files and `--json <path...>` to read their parsed `{path, type, state, revision, approved}` metadata. The read-only extension tool `check_doc_status` accepts `mode: "check"` or `"json"` and `path: <document path>` for one document at a time. Unrecognized paths and old prose-only statuses fail with diagnostics rather than being interpreted.
+Product vision, architecture, and roadmap are living documents: edit their current rules as the product changes. Feature PRDs, technical designs, and implementation plans are living only until delivery, then `done` and historical rather than kept in sync with the current repository. Mark a PRD `done` when its feature finishes, a TDD `done` when its small-feature or slice plan is done, and a plan `done` only after verified execution. A `done` PRD, TDD, or plan is **frozen**: do not edit it again, including metadata; later bug fixes or repeated work require a new slice with its own TDD and plan. `superseded` means an undelivered document was replaced and no longer governs.
+
+A feature system design stays `active` while any slice is undelivered. Revise only rules for undelivered slices; sections describing delivered slices remain unchanged. Mark the system design `done` when every slice is done. A later bug fix or redo may add a slice: reopen the system design with a higher revision, `state: draft`, and no `approved`, then return it to `active` on developer acceptance. The prohibition on editing delivered-slice sections is a drafting/review obligation, not a claim that the checker can infer which sections describe delivered work.
+
+Use `python3 scripts/check-doc-status.py --check <path...>` to check files and `--json <path...>` to read `{path, type, state, revision, approved}` metadata. Old prose-only statuses fail with diagnostics. Before integrating candidates, `python3 scripts/check-doc-status.py --frozen-diff --repo <root> --base <commit> --head <commit>` rejects changes to `done` PRDs, TDDs, and plans and system-design body changes without a higher revision (except a metadata-only `active` → `done` transition). The read-only extension tool `check_doc_status` exposes `mode: "check"` / `"json"` with `path`, and `mode: "frozen-diff"` with `repo`, `base`, and `head`.
 
 ### Product vision
 
@@ -321,7 +325,7 @@ Keep traces at component, interface, and state-boundary level, not every functio
 
 **File:** `implementation-plan.md`
 
-**Purpose:** Divide an approved technical design into bounded, independently verifiable implementation tasks.
+**Purpose:** Divide an active technical design into bounded, independently verifiable implementation tasks.
 
 **Contains:**
 
@@ -347,7 +351,7 @@ Use one task ID namespace per plan: headings are `### T<digits> — <title>`, wi
 Write `- Depends on: none` or a single physical line of comma-and-space-separated **direct IDs only**, with no prose or transitive prerequisites. Immediately below that line, give one indented `- T<digits> — <reason>` sub-bullet per direct ID, in the same order; each reason names the required output or hard ordering constraint. Give no reason sub-bullets for `none`. Every dependency must reference an earlier task: no dangling IDs, self-edges, or cycles. List task blocks in topological order; a task is ready when its prerequisites finish, not when an arbitrary phase ends. This line is the authoritative DAG; diagrams and parallel-wave tables are optional derived views, not additional sources of truth.
 
 At pickup the execution owner adds `- Assigned worktree: <absolute path>` and `- Assigned branch: <branch name>` immediately after `Verify`, as a pair. Every task worktree goes under `<repo-root>/.worktrees/`; before any pickup the execution owner confirms Git ignores `.worktrees/` and, if not, stops and asks the developer to add it to the repository's `.gitignore`. The execution owner never edits `.gitignore` or `.git/info/exclude`, and never uses another root. Do not write assignment fields while drafting: an unstarted task has neither. Both remain after integration and safe cleanup as assignment history. The validator rejects a partial pair, duplicate path or branch across tasks, relative paths, and malformed branch names. Task status, attempts, verification, and cleanup stay in the separate run ledger. Static validation cannot infer whether a task is running; the execution owner reconciles the ledger and plan. Existing unassigned plans remain valid.
-Put acceptance-test tasks derived from the approved TDD's acceptance scenarios before their implementation dependents in the DAG, and assign them to a different worker from the implementation tasks. Every acceptance-test task must declare `- Protects: tests/test_feature.py; tests/test_other.py` immediately after `Targets`, listing **all** test files carrying its approved TDD scenarios; no other task may declare `Protects`. The label is optional in the task-block grammar because that grammar cannot identify acceptance-test tasks: review this requirement semantically. `Protects` is a semicolon-and-space-separated list of distinct, plain repository-relative test file paths. Each slash-separated segment uses only ASCII letters, digits, `.`, `_`, or `-`, and cannot be `.` or `..`; quoting and backslashes are not allowed. Name target files as `` `path` (create) `` or `` `path`::symbol (edit) `` (unquoted paths also parse). Once that task integrates, no later task may target its protected files, and candidate changes to them are rejected except when validating the task that declares them. A wrong acceptance test returns to the developer for a TDD revision; the implementer does not change the test to make its code pass.
+Put acceptance-test tasks derived from the active TDD's acceptance scenarios before their implementation dependents in the DAG, and assign them to a different worker from the implementation tasks. Every acceptance-test task must declare `- Protects: tests/test_feature.py; tests/test_other.py` immediately after `Targets`, listing **all** test files carrying its active TDD scenarios; no other task may declare `Protects`. The label is optional in the task-block grammar because that grammar cannot identify acceptance-test tasks: review this requirement semantically. `Protects` is a semicolon-and-space-separated list of distinct, plain repository-relative test file paths. Each slash-separated segment uses only ASCII letters, digits, `.`, `_`, or `-`, and cannot be `.` or `..`; quoting and backslashes are not allowed. Name target files as `` `path` (create) `` or `` `path`::symbol (edit) `` (unquoted paths also parse). Once that task integrates, no later task may target its protected files, and candidate changes to them are rejected except when validating the task that declares them. A wrong acceptance test returns to the developer for a TDD revision; the implementer does not change the test to make its code pass.
 
 For example:
 
@@ -532,13 +536,13 @@ Create one `tdd.md` for a small feature or one per slice for a large feature. Re
 
 Use Gherkin as the default notation for observable acceptance, or justify and name the single authoritative alternate notation. Add technical contracts for internal invariants and identify the verification that will prove each contract.
 
-### 8. Approve the design
+### 8. Accept the design
 
-Resolve interface confidence according to [the technical-writing standards](technical-writing-standards.md#label-interface-confidence-in-ai-written-specifications) before approving the design. Resolve every `[NEEDS YOUR CALL]` decision and give every requirement an owner before creating the implementation plan; planned work must establish proposed interfaces before dependent tasks use them.
+Resolve interface confidence according to [the technical-writing standards](technical-writing-standards.md#label-interface-confidence-in-ai-written-specifications), resolve every `[NEEDS YOUR CALL]` decision, and give every requirement an owner before creating an implementation plan. Developer acceptance makes the TDD `active` with its actual `approved` date; planned work must establish proposed interfaces before dependent tasks use them.
 
 ### 9. Create the implementation plan
 
-Create `implementation-plan.md` from the approved technical design using the [implementation plan contract](#implementation-plan). Each task identifies its direct prerequisites and the scenario, contract, or technical criterion it implements.
+Create `implementation-plan.md` from the active technical design using the [implementation plan contract](#implementation-plan). Each task identifies its direct prerequisites and the scenario, contract, or technical criterion it implements. Execute the plan only after the developer has accepted that plan as `active`.
 
 Once the feature's documents exist, trim its roadmap Now entry to the short summary, start date, and link that the [roadmap](#roadmap) contract describes.
 
@@ -550,4 +554,4 @@ For subagent execution with an owned integration branch and isolated task worktr
 
 ### 11. Close the milestone
 
-Update document status and requirement coverage. When the feature is finished, move it from the roadmap's Now section to Done with its finish date. When the milestone superseded a decision, revise it in its owning document as [Decisions](#decisions) describes rather than leaving conflicting current contracts.
+Apply [document state and revision](#document-state-and-revision) on delivery: mark a verified plan `done`, then its TDD `done`; mark the PRD `done` when the feature finishes, and the system design `done` when all slices finish. Keep their actual `approved` dates; do not revise frozen documents. Move the finished feature from the roadmap's Now section to Done with its finish date. Revise superseded decisions in the living document that owns them rather than leaving conflicting current contracts.
