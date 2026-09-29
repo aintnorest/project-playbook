@@ -11,6 +11,7 @@ Draft or revise a Technical Design Document (TDD) with concrete, testable local 
 ## Required guidance
 
 - [Technical Design Document contract](../guides/product-documentation-process.md#technical-design-document)
+- [Document state and revision](../guides/product-documentation-process.md#document-state-and-revision)
 - [Behavioral acceptance](../guides/product-documentation-process.md#behavioral-acceptance)
 - [Technical contracts and verification](../guides/product-documentation-process.md#technical-contracts-and-verification)
 - [Define boundaries through failure behavior](../guides/technical-writing-standards.md#define-boundaries-through-failure-behavior)
@@ -44,6 +45,8 @@ Draft or revise a Technical Design Document (TDD) with concrete, testable local 
 6. Do not foreclose the project's goals for local fit. Check each local contract against the parent requirements, the shared system rules, and the product vision's durable direction; where a slice-local choice would become costly to reverse or a de facto global constraint — persisted data, an exported or shared interface, a wire or event format, or a name other work will depend on — keep it reversible by hiding the likely-to-change decision behind the local boundary, record it as an explicit tradeoff naming what it forecloses, or defer it to the last responsible moment as `[NEEDS YOUR CALL]` with the evidence needed. Preserve this optionality through the boundary, not through speculative generalization, which remains excluded.
 7. Label each concrete interface `[EXISTS]` when supplied or inspected source verifies it, or `[PROPOSED]` when the design introduces it. If an interface cannot be verified and the distinction matters, verify it or raise it as an open decision tagged `[NEEDS YOUR CALL]`; if it does not matter, leave it unlabeled. Put observable boundary behavior in Gherkin by default, or a justified alternative as its sole normative home. Exclude implementation tasks, dependency order, copied requirement text or feature-wide architecture, and speculative future generalization.
 8. On revision, preserve unrelated content, stable identifiers, and user intent. In an agent, write only the authorized target; in chat, return the complete document.
+
+Read and apply the [document state and revision](../guides/product-documentation-process.md#document-state-and-revision) table when writing top-of-file YAML frontmatter. Start a new document with the table's revision prefix at `r1`. A substantive contract revision increments the revision, resets the state to `draft`, and removes `approved`; a non-contract typo, formatting, or link fix preserves both revision and state. Change state only with developer authority and actual approval where required, without incrementing the revision. A `## Status` section, if present, contains prose only, not duplicate metadata. After writing an accessible file, run `check_doc_status` if available, correct reported errors, and report the check result or its unavailability; for chat-only output state that the static check was not run.
 
 ## Output
 

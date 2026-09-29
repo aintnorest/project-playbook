@@ -17,6 +17,7 @@ Find consequential defects that would cause a task executor to start blocked, bu
 
 ## Reference guidance
 
+- [Document state and revision](../guides/product-documentation-process.md#document-state-and-revision)
 - [Reference over repetition](../guides/product-documentation-process.md#reference-over-repetition)
 - [Communication rules](../guides/communication-policy.md#rules)
 
@@ -28,6 +29,8 @@ Find consequential defects that would cause a task executor to start blocked, bu
 - For a follow-up, prior findings and dispositions. Omit them for an independent first pass.
 
 ## Instructions
+
+Before checking status, read [document state and revision](../guides/product-documentation-process.md#document-state-and-revision). For an accessible candidate file, run `check_doc_status` as well as `check_implementation_plan`; include frontmatter errors as exact review evidence, not a substitute for substantive review. If the status tool is unavailable or the candidate is chat-only, state that its check was not run and the resulting coverage limit. `## Status`, if present, is prose only; metadata belongs in top-of-file YAML frontmatter.
 
 1. **Establish the review basis.** Identify the exact plan candidate and its source TDD path and revision. With file access, read the plan, the TDD, and only the repository evidence needed to verify concrete task targets, symbols, and verification commands. In chat, use supplied source content; a path or link alone is not evidence. Treat an unavailable source as a precise coverage limit, not as a candidate defect. Confirm the TDD approval the plan depends on rather than inferring it.
 2. **Derive a bounded coverage map.** Before judging defects, enumerate the TDD's applicable requirements, acceptance scenarios, and technical contracts, and enumerate the plan's tasks with their identifiers, targets, and direct prerequisites. Map only obligations the approved TDD establishes. Do not import unapproved future work, generic engineering tasks, or requirements the TDD does not carry.

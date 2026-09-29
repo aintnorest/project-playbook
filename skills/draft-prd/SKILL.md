@@ -31,6 +31,24 @@ hide: true
 - function signatures;
 - implementation order;
 - design choices that do not change product behavior.
+### Document state and revision
+
+The first lines of every product document listed below are a YAML frontmatter block. This block is the **only** authority for the document's state, revision, and approval date. Use exactly these lowercase keys in order: `state`, `revision` where required, then `approved` where required. Write one nonempty, unquoted flat `key: value` scalar per line between opening and closing `---`; no additional keys, duplicates, arrays, nesting, or YAML aliases. The `## Status` section, where present, remains in its existing position and may describe reviews, changes, and parent contracts, but must not restate or contradict any frontmatter value. An old free-text status without this block is non-conforming, not an inferred state.
+
+| Document | Allowed `state` values | `revision` |
+| --- | --- | --- |
+| `docs/product-vision.md` | `draft`, `approved`, `active`, `superseded` | Required: `vision-r<N>` |
+| `docs/architecture.md` | `draft`, `approved`, `active`, `superseded` | Required: `arch-r<N>` |
+| `docs/features/<feature>/prd.md` | `draft`, `approved`, `superseded` | Required: `prd-r<N>` |
+| `docs/features/<feature>/system-design.md` | `draft`, `approved`, `superseded` | Required: `sd-r<N>` |
+| Feature or slice `tdd.md` | `draft`, `approved`, `superseded` | Required: `tdd-r<N>` |
+| Feature or slice `implementation-plan.md` | `draft`, `approved`, `active`, `done`, `superseded` | Required: `plan-r<N>` |
+| `docs/roadmap.md` | `draft`, `active`, `superseded` | Absent |
+| Playbook process guide with a `## Status` section | `active`, `superseded` | Absent |
+
+`<N>` is a positive decimal integer with no leading zero; new revisioned documents start at `r1`. When a change alters a revisioned document's contract, increment its `revision`, set `state: draft`, and remove `approved`, even if the previous revision was approved or active. The developer must approve the new revision before its state becomes `approved` or `active`; never infer approval from a review result or invent an earlier revision to claim historical approval. An editorial fix that leaves the contract unchanged (such as a typo, broken link, or formatting correction) keeps the revision and state. A lifecycle-only state transition also keeps the revision: approval records the actual date; moving an approved document to active carries that date; completing an active plan sets `done` and removes `approved`. `approved: YYYY-MM-DD` is required for `approved` or `active`, and forbidden for `draft`, `done`, or `superseded`. A new roadmap starts as `draft`, then becomes `active` with an actual approval date. The roadmap's Done section describes finished features, not the roadmap's document state. `superseded` means the document no longer governs; the replacement owns the current rule.
+
+Use `python3 scripts/check-doc-status.py --check <path...>` to check accessible files and `--json <path...>` to read their parsed `{path, type, state, revision, approved}` metadata. The read-only extension tool `check_doc_status` accepts `mode: "check"` or `"json"` and `path: <document path>` for one document at a time. Unrecognized paths and old prose-only statuses fail with diagnostics rather than being interpreted.
 ## Task
 
 # Draft a feature Product Requirements Document
@@ -62,6 +80,8 @@ Draft or revise a feature PRD at `docs/features/<feature-name>/prd.md`.
 5. Once requirements are stable enough for technical design, define one feature prefix and assign opaque permanent IDs. Preserve existing IDs, never reuse retired IDs, and leave unstable draft requirements unassigned rather than inventing permanence. Reference product direction and other authorities instead of copying their owned content.
    Once requirements are stable enough to assign IDs, read [requirement identifiers](skill://draft-prd/references/product-documentation-process--requirement-identifiers.md).
 6. On revision, preserve unrelated material, stable IDs, and user intent. In an agent, write only the authorized target; in chat, return the complete document.
+
+Read and apply the document state and revision (see included section "Document state and revision") table when writing top-of-file YAML frontmatter. Start a new document with the table's revision prefix at `r1`. A substantive contract revision increments the revision, resets the state to `draft`, and removes `approved`; a non-contract typo, formatting, or link fix preserves both revision and state. Change state only with developer authority and actual approval where required, without incrementing the revision. A `## Status` section, if present, contains prose only, not duplicate metadata. After writing an accessible file, run `check_doc_status` if available, correct reported errors, and report the check result or its unavailability; for chat-only output state that the static check was not run.
 
 ## Output
 

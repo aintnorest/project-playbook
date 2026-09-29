@@ -8,6 +8,7 @@ import projectPlaybook from "../omp-extension.ts";
 let workspace;
 let repo;
 let tool;
+let statusTool;
 
 function git(...args) {
   const result = spawnSync("git", args, { cwd: repo, encoding: "utf8" });
@@ -24,7 +25,10 @@ beforeEach(() => {
   const optional = { optional() { return this; }, nullable() { return this; }, describe() { return this; } };
   projectPlaybook({
     zod: { object: fields => fields, enum: values => values, string: () => optional },
-    registerTool(definition) { tool = definition; },
+    registerTool(definition) {
+      if (definition.name === "check_implementation_plan") tool = definition;
+      if (definition.name === "check_doc_status") statusTool = definition;
+    },
   });
   writeFileSync(join(repo, "implementation-plan.md"),
     "### T01 — Acceptance test\n" +
@@ -71,6 +75,26 @@ test("static checks accept absent, null, and empty protected-diff fields", async
     undefined, undefined, { cwd: repo });
   expect(rejected.isError).toBe(true);
   expect(rejected.details.message).toBe("Check and JSON modes do not accept repo, base, head, task, or worktreeRoot.");
+});
+
+test("document status tool reads metadata and rejects legacy prose", async () => {
+  const docs = join(repo, "docs");
+  mkdirSync(docs);
+  const path = join(docs, "product-vision.md");
+  writeFileSync(path, "---\nstate: approved\nrevision: vision-r2\napproved: 2026-09-28\n---\n"
+    + "# Product vision\n\n## Status\n\nReviewed against product research.\n");
+  const parsed = await statusTool.execute("test", { mode: "json", path },
+    undefined, undefined, { cwd: repo });
+  expect(parsed.isError).toBeUndefined();
+  expect(parsed.details.documents).toEqual([
+    { path, type: "vision", state: "approved", revision: "vision-r2", approved: "2026-09-28" },
+  ]);
+
+  writeFileSync(path, "# Product vision\n\n## Status\n\nApproved.\n");
+  const invalid = await statusTool.execute("test", { mode: "check", path },
+    undefined, undefined, { cwd: repo });
+  expect(invalid.isError).toBe(true);
+  expect(invalid.details.stderr).toContain("missing status frontmatter");
 });
 
 test("assigned candidate is checked in its recorded worktree through tool", async () => {

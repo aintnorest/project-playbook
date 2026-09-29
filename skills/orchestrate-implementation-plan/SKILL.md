@@ -100,6 +100,9 @@ Use a clean integration checkout dedicated to this run. If the branch is already
 
 Do not silently omit local changes the implementation needs: have the developer make them available in the agreed base before dispatch. Only you advance the integration branch; never push, merge to the default/release branch, or rewrite published history without separate authorization.
 
+Before dispatch, have a documentation worker read [document state and revision](skill://orchestrate-implementation-plan/references/product-documentation-process--document-state-and-revision.md) and move the plan from `approved` to `active`, carrying `approved` and keeping `revision`. Run `check_doc_status` and integrate the change before task pickup; if blocked, stop. Do not infer approval or edit this yourself.
+
+
 ### 3. Schedule the plan and retain run state
 
 Before any dispatch, run the `check_implementation_plan` tool's static check on the actual plan file; reject a malformed plan and stop for correction. If the tool, python3, or its Playbook script is unavailable, stop and request that prerequisite rather than guessing the graph. The validator enforces block shape and direct edges, not semantic quality: yourself check every target, acceptance criterion, verification prerequisite, and that every acceptance-test task declares all files carrying its approved TDD scenarios under `Protects` while no other task declares it. The grammar cannot infer task type. Schedule only from the ID-only `Depends on` lines; a prerequisite is satisfied only after its work is validated and integrated, not when its worker reports completion.
@@ -174,7 +177,7 @@ On a significant issue:
 
 After all planned outcomes are integrated, run the repository's required final verification and integrated feature acceptance on the final branch tip, including the actual CLI, UI, service, or other changed surface. Delegate every discovered fix and repeat affected acceptance and final checks after integration; no task count, green worker report, or successful merge substitutes for working end-to-end behavior.
 
-Have subagents update required document status and other repository-required delivery material, then validate and integrate those changes too. Finish with a clean integration checkout, no active workers, saved evidence, and all safely removable task worktrees removed; if completion or cleanup is blocked, report the exact remaining state rather than claiming success.
+After integrated acceptance and final verification pass, have a documentation worker read [document state and revision](skill://orchestrate-implementation-plan/references/product-documentation-process--document-state-and-revision.md) and move the plan to `done`, removing `approved` and keeping `revision`. Run `check_doc_status`, validate, and integrate the change. Delegate other required delivery material; clean up safe worktrees and report any blockers.
 
 ## Output
 
@@ -190,7 +193,7 @@ At completion, return one work-up:
 - **Your validation steps:** exact checkout/location and setup instructions, prerequisites/configuration names without secrets, commands or UI actions, and expected observable results; state which steps you already exercised and which require the developer's environment, without moving your own acceptance obligations into this list.
 - **Handoff state:** worktree/branch cleanup, any retained paths and why, and whether anything was pushed or merged outside the integration branch; default to neither.
 
-Use concrete repository commands discovered during the run, not placeholders or assumed framework flags, in the final report. Preserve commands actually exercised verbatim; label any necessary unexercised setup or manual steps rather than presenting them as tested. Keep evidence retrievable after worktree removal and put unresolved decisions or skipped verification in `Caveats / needs your call` when non-empty.
+Report commands actually exercised verbatim; label unexercised setup or manual steps. Keep evidence retrievable after worktree removal. Put unresolved decisions or skipped verification in `Caveats / needs your call` when non-empty.
 
 ## Supply inputs
 Provide the target, exact revision label, source material, relevant context, and the action-specific request.

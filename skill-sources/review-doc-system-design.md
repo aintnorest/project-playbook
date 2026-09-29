@@ -17,6 +17,7 @@ Find consequential defects that would cause a slice designer, implementer, or ta
 
 ## Reference guidance
 
+- [Document state and revision](../guides/product-documentation-process.md#document-state-and-revision)
 - [Decisions](../guides/product-documentation-process.md#decisions)
 - [When a feature needs slices](../guides/product-documentation-process.md#when-a-feature-needs-slices)
 - [Reference over repetition](../guides/product-documentation-process.md#reference-over-repetition)
@@ -31,6 +32,8 @@ Find consequential defects that would cause a slice designer, implementer, or ta
 - For a follow-up, prior findings and dispositions. Omit them for an independent first pass.
 
 ## Instructions
+
+Before checking status, read [document state and revision](../guides/product-documentation-process.md#document-state-and-revision). For an accessible candidate file, run `check_doc_status` and include its frontmatter errors as exact review evidence; do not substitute the static check for substantive review. If the tool is unavailable or the candidate is chat-only, state that the status check was not run and the resulting coverage limit. `## Status`, if present, is prose only; metadata belongs in top-of-file YAML frontmatter.
 
 1. **Establish the review basis.** Identify the exact candidate and the feature it governs. With file access, read the candidate, its applicable governing sources, and only the repository evidence needed to check concrete claims and boundaries. In chat, use supplied source content; a path or link alone is not evidence. Treat an unavailable source as a precise coverage limit, not as a candidate defect.
 2. **Derive a bounded coverage map.** Before judging defects, identify the parent requirement IDs the feature owns; the slice set with entry, exit, and persisted handoff states; the durable direction the architecture must serve; and accepted decisions or exceptions. Map only obligations that govern this system design. Do not import example identifiers, generic quality attributes, or requirements the supplied sources do not establish.

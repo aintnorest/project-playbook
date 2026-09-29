@@ -19,6 +19,7 @@ Review whether the supplied documents stay within their roles and levels of deta
 
 ## Reference guidance
 
+- [Document state and revision](../guides/product-documentation-process.md#document-state-and-revision)
 - [Product vision contract](../guides/product-documentation-process.md#product-vision)
 - [System architecture contract](../guides/product-documentation-process.md#system-architecture)
 - [Roadmap contract](../guides/product-documentation-process.md#roadmap)
@@ -41,6 +42,8 @@ Review whether the supplied documents stay within their roles and levels of deta
 - For a follow-up, prior findings and dispositions. Omit them for an independent first pass.
 
 ## Instructions
+
+Before checking status, read [document state and revision](../guides/product-documentation-process.md#document-state-and-revision). Run `check_doc_status` on every accessible eligible document in the authorized set, including roadmap and implementation plans; report its frontmatter errors as evidence alongside substantive cross-document findings. For inaccessible/chat-only members or an unavailable tool, identify each unperformed status check as a coverage limit. `## Status`, if present, is prose only; metadata belongs in top-of-file YAML frontmatter.
 
 1. **Establish the set and review basis.** Inventory the authorized documents, their roles, revisions, statuses, and links. For a whole-set review, inspect every document in scope; for a focused change, follow affected parents, siblings, and dependents within the authorized scope. Do not substitute a sample of documents for a requested whole-set review. Track unread or inaccessible sources as coverage limits, and bound conclusions accordingly. A missing future document is not a defect merely because the hierarchy permits it.
 2. **Read the governing contracts before judging.** For each represented role, read its linked contract: [product vision](../guides/product-documentation-process.md#product-vision), [system architecture](../guides/product-documentation-process.md#system-architecture), [roadmap](../guides/product-documentation-process.md#roadmap), [PRD](../guides/product-documentation-process.md#feature-product-requirements-document), [feature system design](../guides/product-documentation-process.md#feature-system-design), [TDD](../guides/product-documentation-process.md#technical-design-document), or [implementation plan](../guides/product-documentation-process.md#implementation-plan). These reads are mandatory for represented roles, not optional background. Before assessing technical documents, read [technical-writing standards](../guides/technical-writing-standards.md) and apply them only at the boundary their document owns. Use the same shared guidance as drafting, not a private replacement rubric or prior review verdict. If guidance conflicts or authority is unresolved, report the exact conflict rather than inventing precedence.

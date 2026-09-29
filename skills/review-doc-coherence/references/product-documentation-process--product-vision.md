@@ -21,7 +21,7 @@ Use this title and top-level section order:
 
 **Contains:**
 
-- document status and an existing revision identifier when one is used;
+- document state and revision in frontmatter, with optional review context under `## Status`;
 - a concise statement of why the product exists and the future it should create;
 - durable target users and their underlying problems;
 - product principles that guide choices across features;

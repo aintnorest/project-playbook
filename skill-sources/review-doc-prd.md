@@ -18,6 +18,7 @@ Find consequential defects that would cause a system designer, technical designe
 
 ## Reference guidance
 
+- [Document state and revision](../guides/product-documentation-process.md#document-state-and-revision)
 - [Decisions](../guides/product-documentation-process.md#decisions)
 - [Reference over repetition](../guides/product-documentation-process.md#reference-over-repetition)
 - [Communication rules](../guides/communication-policy.md#rules)
@@ -30,6 +31,8 @@ Find consequential defects that would cause a system designer, technical designe
 - For a follow-up, prior findings and dispositions. Omit them for an independent first pass.
 
 ## Instructions
+
+Before checking status, read [document state and revision](../guides/product-documentation-process.md#document-state-and-revision). For an accessible candidate file, run `check_doc_status` and include its frontmatter errors as exact review evidence; do not substitute the static check for substantive review. If the tool is unavailable or the candidate is chat-only, state that the status check was not run and the resulting coverage limit. `## Status`, if present, is prose only; metadata belongs in top-of-file YAML frontmatter.
 
 1. **Establish the review basis.** Identify the exact candidate and the feature it specifies. With file access, read the candidate, its applicable governing sources, and only the evidence needed to check a claim the PRD presents as settled. In chat, use supplied source content; a path or link alone is not evidence. Treat an unavailable source as a precise coverage limit, not as a candidate defect.
 2. **Derive a bounded coverage map.** Before judging defects, identify the problem the feature solves, its users and stories, the individually identified requirements, the explicit non-goals, the product-level acceptance intent, and the constraints and unresolved decisions the PRD carries. Map only obligations this PRD owns. Do not import example requirement identifiers, generic acceptance criteria, or requirements the supplied sources do not establish.

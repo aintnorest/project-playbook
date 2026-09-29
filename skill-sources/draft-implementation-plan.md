@@ -11,6 +11,7 @@ Turn an approved Technical Design Document (TDD) into a concise directed acyclic
 ## Required guidance
 
 - [Implementation plan contract](../guides/product-documentation-process.md#implementation-plan)
+- [Document state and revision](../guides/product-documentation-process.md#document-state-and-revision)
 
 ## Reference guidance
 
@@ -29,6 +30,8 @@ Turn an approved Technical Design Document (TDD) into a concise directed acyclic
 4. Declare each direct prerequisite with the output or hard ordering constraint it supplies. Do not add edges for preferred order or ancestors needed only indirectly. Keep independent work independent; give shared files/contracts one owner or an explicit ordered handoff. Runtime loops in the TDD are not cycles in this implementation DAG.
 5. Ground existing targets and commands in inspected or supplied evidence. Mark approved new files/symbols as `create`; distinguish unverified locations from existing ones. Identify missing evidence that prevents an executable task rather than inventing it. Planning a verification command is not running it.
 6. Before returning, check the exact task-block shape against the [implementation plan contract](../guides/product-documentation-process.md#implementation-plan): unique IDs, ID-only direct prerequisites with matching reason sub-bullets, resolved earlier IDs, no self-edges/cycles, complete TDD coverage, and acceptance runnable by task completion. Put `- Protects: <repo-relative path>; <repo-relative path>` immediately after `Targets`, before `Change`, on every acceptance-test task, naming all test files carrying its approved scenarios; reject `Protects` on other tasks. This is a semantic review: the grammar permits the optional label but cannot identify acceptance-test tasks. Repair dependency errors without deleting necessary prerequisites. Preserve stable IDs and unrelated content when revising.
+
+Read and apply the [document state and revision](../guides/product-documentation-process.md#document-state-and-revision) table when writing top-of-file YAML frontmatter. Start a new document with the table's revision prefix at `r1`. A substantive contract revision increments the revision, resets the state to `draft`, and removes `approved`; a non-contract typo, formatting, or link fix preserves both revision and state. Change state only with developer authority and actual approval where required, without incrementing the revision; do not mark a plan done before execution completes. A `## Status` section, if present, contains prose only, not duplicate metadata. After writing an accessible file, run `check_doc_status` if available, correct reported errors, and report the check result or its unavailability; for chat-only output state that the static check was not run.
 
 ## Output
 

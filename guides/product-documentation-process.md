@@ -1,3 +1,8 @@
+---
+state: active
+approved: 2026-09-29
+---
+
 # Product documentation process
 
 This process keeps product intent, system architecture, technical design, and implementation work separate while preserving a traceable path from vision to verified code.
@@ -8,9 +13,7 @@ This is the full-feature workflow for material product work. The [lightweight pa
 
 ## Status
 
-Active working agreement for new or revised product documentation.
-
-Independent document reviews follow the shared rules in [document review](document-review.md).
+Working agreement for new or revised product documentation; independent document reviews follow the shared rules in [document review](document-review.md).
 
 ## Governing principles
 
@@ -90,6 +93,25 @@ Do not create slices merely because the code crosses directories, crates, compon
 
 ## Document contracts
 
+### Document state and revision
+
+The first lines of every product document listed below are a YAML frontmatter block. This block is the **only** authority for the document's state, revision, and approval date. Use exactly these lowercase keys in order: `state`, `revision` where required, then `approved` where required. Write one nonempty, unquoted flat `key: value` scalar per line between opening and closing `---`; no additional keys, duplicates, arrays, nesting, or YAML aliases. The `## Status` section, where present, remains in its existing position and may describe reviews, changes, and parent contracts, but must not restate or contradict any frontmatter value. An old free-text status without this block is non-conforming, not an inferred state.
+
+| Document | Allowed `state` values | `revision` |
+| --- | --- | --- |
+| `docs/product-vision.md` | `draft`, `approved`, `active`, `superseded` | Required: `vision-r<N>` |
+| `docs/architecture.md` | `draft`, `approved`, `active`, `superseded` | Required: `arch-r<N>` |
+| `docs/features/<feature>/prd.md` | `draft`, `approved`, `superseded` | Required: `prd-r<N>` |
+| `docs/features/<feature>/system-design.md` | `draft`, `approved`, `superseded` | Required: `sd-r<N>` |
+| Feature or slice `tdd.md` | `draft`, `approved`, `superseded` | Required: `tdd-r<N>` |
+| Feature or slice `implementation-plan.md` | `draft`, `approved`, `active`, `done`, `superseded` | Required: `plan-r<N>` |
+| `docs/roadmap.md` | `draft`, `active`, `superseded` | Absent |
+| Playbook process guide with a `## Status` section | `active`, `superseded` | Absent |
+
+`<N>` is a positive decimal integer with no leading zero; new revisioned documents start at `r1`. When a change alters a revisioned document's contract, increment its `revision`, set `state: draft`, and remove `approved`, even if the previous revision was approved or active. The developer must approve the new revision before its state becomes `approved` or `active`; never infer approval from a review result or invent an earlier revision to claim historical approval. An editorial fix that leaves the contract unchanged (such as a typo, broken link, or formatting correction) keeps the revision and state. A lifecycle-only state transition also keeps the revision: approval records the actual date; moving an approved document to active carries that date; completing an active plan sets `done` and removes `approved`. `approved: YYYY-MM-DD` is required for `approved` or `active`, and forbidden for `draft`, `done`, or `superseded`. A new roadmap starts as `draft`, then becomes `active` with an actual approval date. The roadmap's Done section describes finished features, not the roadmap's document state. `superseded` means the document no longer governs; the replacement owns the current rule.
+
+Use `python3 scripts/check-doc-status.py --check <path...>` to check accessible files and `--json <path...>` to read their parsed `{path, type, state, revision, approved}` metadata. The read-only extension tool `check_doc_status` accepts `mode: "check"` or `"json"` and `path: <document path>` for one document at a time. Unrecognized paths and old prose-only statuses fail with diagnostics rather than being interpreted.
+
 ### Product vision
 
 **File:** `docs/product-vision.md`
@@ -110,7 +132,7 @@ Use this title and top-level section order:
 
 **Contains:**
 
-- document status and an existing revision identifier when one is used;
+- document state and revision in frontmatter, with optional review context under `## Status`;
 - a concise statement of why the product exists and the future it should create;
 - durable target users and their underlying problems;
 - product principles that guide choices across features;

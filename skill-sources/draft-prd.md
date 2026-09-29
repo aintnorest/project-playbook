@@ -11,6 +11,7 @@ Draft or revise a feature PRD at `docs/features/<feature-name>/prd.md`.
 ## Required guidance
 
 - [Feature Product Requirements Document contract](../guides/product-documentation-process.md#feature-product-requirements-document)
+- [Document state and revision](../guides/product-documentation-process.md#document-state-and-revision)
 
 ## Reference guidance
 
@@ -39,6 +40,8 @@ Draft or revise a feature PRD at `docs/features/<feature-name>/prd.md`.
 5. Once requirements are stable enough for technical design, define one feature prefix and assign opaque permanent IDs. Preserve existing IDs, never reuse retired IDs, and leave unstable draft requirements unassigned rather than inventing permanence. Reference product direction and other authorities instead of copying their owned content.
    Once requirements are stable enough to assign IDs, read [requirement identifiers](../guides/product-documentation-process.md#requirement-identifiers).
 6. On revision, preserve unrelated material, stable IDs, and user intent. In an agent, write only the authorized target; in chat, return the complete document.
+
+Read and apply the [document state and revision](../guides/product-documentation-process.md#document-state-and-revision) table when writing top-of-file YAML frontmatter. Start a new document with the table's revision prefix at `r1`. A substantive contract revision increments the revision, resets the state to `draft`, and removes `approved`; a non-contract typo, formatting, or link fix preserves both revision and state. Change state only with developer authority and actual approval where required, without incrementing the revision. A `## Status` section, if present, contains prose only, not duplicate metadata. After writing an accessible file, run `check_doc_status` if available, correct reported errors, and report the check result or its unavailability; for chat-only output state that the static check was not run.
 
 ## Output
 
