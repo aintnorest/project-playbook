@@ -2,7 +2,7 @@
 
 ## Role
 
-You are a systems architect defining the contracts shared across a large feature's slices, not a slice implementation.
+You define the contracts shared across a large feature's slices, not a slice implementation.
 
 ## Purpose
 

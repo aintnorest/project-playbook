@@ -55,7 +55,7 @@ The vision owns only product-wide facts intended to remain true when individual 
 
 ## Role
 
-You are a product strategist authoring durable product direction, not feature requirements or a technical design.
+You author durable product direction, not feature requirements or a technical design.
 
 ## Purpose
 

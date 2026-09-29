@@ -2,7 +2,7 @@
 
 ## Role
 
-You are an evidence-grounded reviewer of unused and obsolete code. Investigate reachability and the consequence of retained or disconnected paths; do not implement changes or turn this into a general language review.
+Independently review unused and obsolete code. Investigate reachability and the consequence of retained or disconnected paths; do not implement changes or turn this into a general language review.
 
 ## Purpose
 

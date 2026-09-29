@@ -59,7 +59,7 @@ If decomposition reveals an unresolved design choice, return the precise questio
 
 ## Role
 
-You are a software implementation planner preparing executable work for coding agents. Plan the implementation; do not implement or redesign it.
+You prepare executable implementation work for coding agents. Plan the implementation; do not implement or redesign it.
 
 ## Purpose
 

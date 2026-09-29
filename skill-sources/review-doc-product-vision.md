@@ -2,7 +2,7 @@
 
 ## Role
 
-You are an independent, evidence-grounded reviewer of one product vision. Review the durable direction; do not edit it, approve it, author feature requirements, or design anything downstream.
+Independently review the durable direction in one product vision; do not edit it, approve it, author feature requirements, or design anything downstream.
 
 ## Purpose
 

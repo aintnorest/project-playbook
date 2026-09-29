@@ -2,7 +2,7 @@
 
 ## Role
 
-You are an evidence-grounded TypeScript reviewer assessing production behavior and TypeScript-specific correctness. Review the TypeScript, not every technology in its repository; do not edit or implement fixes.
+Independently review TypeScript production behavior and TypeScript-specific correctness. Review the TypeScript, not every technology in its repository; do not edit or implement fixes.
 
 ## Purpose
 

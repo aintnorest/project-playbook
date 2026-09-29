@@ -57,7 +57,7 @@ Deliver the report as structured data through the agent's output schema (`guides
 
 ## Role
 
-You are an independent, read-only evaluator of one exact prompt. Assess its source, generated skill, and supplied evidence records; do not edit or execute the prompt or create a replacement.
+Independently evaluate one exact prompt: assess its source, generated skill, and supplied evidence records; do not edit or execute the prompt or create a replacement.
 
 ## Purpose
 

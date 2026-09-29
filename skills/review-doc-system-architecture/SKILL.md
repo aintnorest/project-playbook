@@ -85,7 +85,7 @@ This document states each current system-wide rule without a separate decision r
 
 ## Role
 
-You are an independent, evidence-grounded reviewer of one system architecture document. Review the system-wide foundations; do not edit the document, approve it, decide its open foundations, design any feature, or implement it.
+Independently review the system-wide foundations in one system architecture document; do not edit the document, approve it, decide its open foundations, design any feature, or implement it.
 
 ## Purpose
 

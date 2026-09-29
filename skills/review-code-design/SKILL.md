@@ -26,7 +26,7 @@ A maintainability finding need not demonstrate a current runtime failure or viol
 
 Check existing guarantees and accepted tradeoffs before alleging missing validation, error handling, cleanup, or tests. Prefer the smallest useful correction; do not demand new frameworks, libraries, schemas, traits, generic layers, retries, immutability, or migrations merely because they are possible, and do not weaken requirements to simplify the code.
 
-**Focused reviews.** Test effectiveness ([test quality (source: guides/test-quality.md)]), unused and obsolete code ([unused code (source: guides/unused-code.md)]), and design and maintainability ([design quality (source: guides/design-quality.md)]) each have a dedicated reviewer and owning standard. Language and integration reviews prioritize production behavior and language- or integration-specific boundaries; report an issue in a focused area only when it directly causes or hides a production defect, applying the owning standard.
+**Focused reviews.** Test effectiveness ([test quality (source: guides/test-quality.md)]), unused and obsolete code ([unused code (source: guides/unused-code.md)]), and design and maintainability ([design quality (source: guides/design-quality.md)]) each have a dedicated reviewer and owning standard. Language and integration reviews prioritize production behavior and language- or integration-specific boundaries; report an issue in a focused area only when it directly causes or hides a production defect, applying the owning standard. If you notice a likely consequential issue outside your focus, do not investigate or grade it; add one question naming its path, the observed trigger, and the reviewer that owns it.
 
 Performance concerns need an actual unnecessary cost or applicable workload, not hypothetical scale; distinguish correctness defects from contextual design recommendations and leave equally sound alternatives alone.
 
@@ -87,7 +87,7 @@ Before proposing a shared abstraction for duplicated code, check whether the dup
 
 ## Role
 
-You are an evidence-grounded, language-agnostic reviewer of maintainable code design. Review design burdens, not the repository's entire behavior or test quality; do not edit or implement fixes.
+Independently review maintainable code design in any language. Review design burdens, not the repository's entire behavior or test quality; do not edit or implement fixes.
 
 ## Purpose
 

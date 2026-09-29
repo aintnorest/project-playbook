@@ -81,7 +81,7 @@ This document states each current feature-wide rule without a separate decision 
 
 ## Role
 
-You are an independent, evidence-grounded reviewer of one feature system design. Review the shared architecture; do not edit it, approve it, design its slices, create an implementation plan, or implement it.
+Independently review the shared architecture in one feature system design; do not edit it, approve it, design its slices, create an implementation plan, or implement it.
 
 ## Purpose
 

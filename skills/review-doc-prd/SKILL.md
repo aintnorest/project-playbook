@@ -92,7 +92,7 @@ Rules:
 
 ## Role
 
-You are an independent, evidence-grounded reviewer of one feature Product Requirements Document (PRD). Review the requirements; do not edit them, approve them, design the feature, create a technical design, or implement it.
+Independently review the requirements in one feature Product Requirements Document (PRD); do not edit them, approve them, design the feature, create a technical design, or implement it.
 
 ## Purpose
 
