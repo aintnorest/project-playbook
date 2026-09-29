@@ -6,9 +6,11 @@ Enabling this repository as an OMP extension package exposes:
 
 - `agents/` — one agent per task, naming the model, tool boundary, and the skill it autoloads.
 - `skills/` — the generated skill directories (`SKILL.md` plus `references/` files read through `skill://<name>/references/<file>`) those agents load.
-- `check_implementation_plan` — a read-only registered tool for checking plan syntax, reading its parsed task DAG, and checking a task's protected diff. It runs the bundled Python validator, so `python3` must be on `PATH`.
+- `check_implementation_plan` — a read-only registered tool for checking plan syntax, reading its task DAG, and checking protected diffs. For assigned tasks, protected-diff also checks the recorded worktree, branch, clean candidate tip, and allowed worktree root; it cannot prove where commits originated. It runs the bundled Python validator, so `python3` and Git must be on `PATH`.
 
 Two playbook agents spawn `scout` for independent repository research. `scout` ships with OMP and is not provided by this extension.
+
+OMP's task `isolated` setting creates a temporary workspace, applies its patch or cherry-picks its branch back into the parent checkout, then removes the workspace. It cannot pin a worker to the orchestrator's chosen persistent worktree, so leave it off for plan execution. An ordinary task inherits the parent's working directory; it has no per-item directory setting. The orchestration skill therefore hands the worker an absolute worktree path and branch and requires explicit worktree paths for every file operation and command. The protected-diff gate checks the candidate's registered worktree, branch, tip, and protected files, but cannot prevent a worker from editing another directory.
 
 ## Install
 

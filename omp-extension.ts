@@ -29,7 +29,7 @@ export default function projectPlaybook(pi: ExtensionAPI) {
   pi.registerTool({
     name: "check_implementation_plan",
     label: "Check Implementation Plan",
-    description: "Validate a plan with mode=check, read its task DAG with mode=json, or check a candidate's protected diff with mode=protected-diff. For check/json, pass only mode and plan; repo/base/head/task are protected-diff only. Reads only; never changes files.",
+    description: "Validate a plan with mode=check, read its task DAG with mode=json, or check a candidate's protected diff and assigned worktree with mode=protected-diff. For check/json pass only mode and plan; repo/base/head/task/worktreeRoot are protected-diff only. Reads only; never changes files.",
     parameters: z.object({
       mode: z.enum(["check", "json", "protected-diff"]),
       plan: z.string(),
@@ -37,9 +37,10 @@ export default function projectPlaybook(pi: ExtensionAPI) {
       base: z.string().nullable().optional().describe("Protected-diff only: required base revision; omit or null for check/json."),
       head: z.string().nullable().optional().describe("Protected-diff only: required candidate revision; omit or null for check/json."),
       task: z.string().nullable().optional().describe("Protected-diff only: optional task ID; omit or null for check/json."),
+      worktreeRoot: z.string().nullable().optional().describe("Protected-diff only: permitted absolute task worktree directory for assigned candidates."),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, ctx) {
-      const { mode, plan, repo, base, head, task } = params;
+      const { mode, plan, repo, base, head, task, worktreeRoot } = params;
       if (!existsSync(validator)) {
         return failure(mode, `Implementation-plan validator is missing: ${validator}`);
       }
@@ -49,12 +50,12 @@ export default function projectPlaybook(pi: ExtensionAPI) {
       if (mode === "protected-diff" && task === "") {
         return failure(mode, "Protected-diff task must be non-empty when provided.");
       }
-      if (mode !== "protected-diff" && [repo, base, head, task].some(value => value != null && value !== "")) {
-        return failure(mode, "Check and JSON modes do not accept repo, base, head, or task.");
+      if (mode !== "protected-diff" && [repo, base, head, task, worktreeRoot].some(value => value != null && value !== "")) {
+        return failure(mode, "Check and JSON modes do not accept repo, base, head, task, or worktreeRoot.");
       }
 
       const args = mode === "protected-diff"
-        ? [validator, "--protected-diff", plan, "--repo", repo!, "--base", base!, "--head", head!, ...(task == null ? [] : ["--task", task])]
+        ? [validator, "--protected-diff", plan, "--repo", repo!, "--base", base!, "--head", head!, ...(task == null ? [] : ["--task", task]), ...(worktreeRoot == null ? [] : ["--worktree-root", worktreeRoot])]
         : [validator, mode === "json" ? "--json" : "--check", plan];
       let stdout = "";
       let stderr = "";

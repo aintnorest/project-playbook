@@ -1,5 +1,6 @@
 """Behavioral contracts for the implementation-plan DAG validator."""
 
+import importlib.util
 import json
 import os
 import subprocess
@@ -284,6 +285,108 @@ class CheckImplementationPlansTests(unittest.TestCase):
             "`tests/test_accept.py`::case (edit)", "rewrite tests/test_accept.py"))
         self.assertNotEqual(malformed.returncode, 0)
         self.assertIn("malformed Targets", malformed.stderr)
+
+    def test_assignment_pair_is_optional_but_atomic_unique_and_ordered(self):
+        location = str(self.path.parent / "tasks" / "T01")
+        assigned = task("T01") + f"- Assigned worktree: {location}\n- Assigned branch: impl/T01\n"
+        parsed = self.run_validator(assigned, "--json")
+        self.assertEqual(parsed.returncode, 0, parsed.stderr)
+        self.assertEqual(json.loads(parsed.stdout)[0]["fields"]["Assigned worktree"], location)
+        for body, error in (
+            (assigned.replace("- Assigned branch: impl/T01\n", ""), "must appear together"),
+            (assigned.replace(location, "tasks/T01"), "absolute normalized"),
+            (assigned.replace("impl/T01", "impl/../T01"), "malformed Assigned branch"),
+            (assigned.replace("- Assigned branch: impl/T01\n", "- Assigned branch: impl/T01\n"
+                              "- Assigned branch: impl/T02\n"), "duplicate task label"),
+            (assigned.replace("- Assigned worktree:", "- Assigned branch: impl/T01\n- Assigned worktree:"),
+             "task label out of order"),
+            (assigned + "\n" + task("T02") +
+             f"- Assigned worktree: {location}\n- Assigned branch: impl/T02\n", "multiple tasks"),
+            (assigned + "\n" + task("T02") +
+             f"- Assigned worktree: {self.path.parent / 'tasks' / 'T02'}\n"
+             "- Assigned branch: impl/T01\n", "multiple tasks"),
+        ):
+            with self.subTest(error=error, body=body):
+                result = self.run_validator(body)
+                self.assertEqual(result.returncode, 1)
+                self.assertIn(error, result.stderr)
+
+    def test_assigned_candidate_must_match_registered_clean_worktree_and_tip(self):
+        repository = self.path.with_name("assigned-repo")
+        repository.mkdir()
+        def git(*args, cwd=repository):
+            return subprocess.run(["git", "-C", str(cwd), *args], check=True,
+                                  capture_output=True, text=True).stdout.strip()
+        git("init", "-q")
+        git("-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+            "commit", "-q", "--allow-empty", "-m", "base")
+        base = git("rev-parse", "HEAD")
+        worktrees = self.path.parent / "allowed"
+        worktrees.mkdir()
+        location = worktrees / "T01"
+        git("worktree", "add", "-q", "-b", "impl/T01", str(location), base)
+        self.addCleanup(lambda: git("worktree", "remove", "--force", str(location))
+                        if location.exists() else None)
+        (location / "output.txt").write_text("first\n", encoding="utf-8")
+        git("add", "output.txt", cwd=location)
+        git("-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+            "commit", "-q", "-m", "worker output", cwd=location)
+        head = git("rev-parse", "HEAD", cwd=location)
+        self.path.write_text(task("T01") +
+                             f"- Assigned worktree: {location}\n- Assigned branch: impl/T01\n",
+                             encoding="utf-8")
+        def check(candidate=head, root=worktrees, plan=self.path, start=base):
+            return subprocess.run([sys.executable, str(VALIDATOR), "--protected-diff", str(plan),
+                                   "--repo", str(repository), "--base", start, "--head", candidate,
+                                   "--task", "T01", "--worktree-root", str(root)],
+                                  capture_output=True, text=True, check=False)
+        self.assertEqual(check().returncode, 0, check().stderr)
+        self.assertIn("outside --worktree-root", check(root=self.path.parent / "other").stderr)
+        self.assertIn("candidate is not assigned worktree branch tip", check(candidate=base).stderr)
+        self.assertIn("requires --worktree-root", subprocess.run(
+            [sys.executable, str(VALIDATOR), "--protected-diff", str(self.path), "--repo",
+             str(repository), "--base", base, "--head", head, "--task", "T01"],
+            capture_output=True, text=True).stderr)
+        (location / "untracked.txt").write_text("dirty\n", encoding="utf-8")
+        self.assertIn("uncommitted changes", check().stderr)
+        (location / "untracked.txt").unlink()
+        source = self.path.with_name("submodule-source")
+        source.mkdir()
+        git("init", "-q", cwd=source)
+        (source / "tracked.txt").write_text("original\n", encoding="utf-8")
+        git("add", "tracked.txt", cwd=source)
+        git("-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+            "commit", "-q", "-m", "submodule base", cwd=source)
+        git("-c", "protocol.file.allow=always", "submodule", "add", "-q",
+            str(source), "nested", cwd=location)
+        git("-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+            "commit", "-q", "-am", "add submodule", cwd=location)
+        submodule_head = git("rev-parse", "HEAD", cwd=location)
+        git("config", "submodule.nested.ignore", "all", cwd=location)
+        (location / "nested" / "tracked.txt").write_text("modified\n", encoding="utf-8")
+        self.assertEqual(git("status", "--porcelain", "--untracked-files=all", cwd=location), "")
+        self.assertIn("uncommitted changes", check(candidate=submodule_head).stderr)
+        (location / "nested" / "tracked.txt").write_text("original\n", encoding="utf-8")
+        git("branch", "-m", "impl/renamed", cwd=location)
+        self.assertIn("branch differs", check(candidate=submodule_head).stderr)
+
+    def test_registered_worktree_paths_preserve_embedded_newlines(self):
+        repository = self.path.with_name("newline-repo")
+        repository.mkdir()
+        def git(*args):
+            return subprocess.run(["git", "-C", str(repository), *args], check=True,
+                                  capture_output=True, text=True).stdout.strip()
+        git("init", "-q")
+        git("-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+            "commit", "-q", "--allow-empty", "-m", "base")
+        location = self.path.parent / "with\nnewline"
+        git("worktree", "add", "-q", "-b", "impl/newline", str(location))
+        self.addCleanup(lambda: git("worktree", "remove", "--force", str(location))
+                        if location.exists() else None)
+        spec = importlib.util.spec_from_file_location("plan_validator", VALIDATOR)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.assertIn(location.resolve(), module.registered_worktrees(repository))
 
     def test_protected_diff_checks_git_changes_and_own_task_exception(self):
         repository = self.path.with_name("candidate")

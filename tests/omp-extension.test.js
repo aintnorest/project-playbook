@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import projectPlaybook from "../omp-extension.ts";
@@ -70,7 +70,35 @@ test("static checks accept absent, null, and empty protected-diff fields", async
     { mode: "check", plan, repo: ".", base: "", head: "", task: "" },
     undefined, undefined, { cwd: repo });
   expect(rejected.isError).toBe(true);
-  expect(rejected.details.message).toBe("Check and JSON modes do not accept repo, base, head, or task.");
+  expect(rejected.details.message).toBe("Check and JSON modes do not accept repo, base, head, task, or worktreeRoot.");
+});
+
+test("assigned candidate is checked in its recorded worktree through tool", async () => {
+  const worktreeRoot = join(workspace, "worktrees");
+  const worktree = join(worktreeRoot, "T02");
+  mkdirSync(worktreeRoot);
+  const base = git("rev-parse", "HEAD");
+  git("worktree", "add", "-q", "-b", "impl/T02", worktree, base);
+  const run = (...args) => {
+    const result = spawnSync("git", ["-C", worktree, ...args], { encoding: "utf8" });
+    if (result.status !== 0) throw new Error(result.stderr);
+    return result.stdout.trim();
+  };
+  writeFileSync(join(worktree, "src.py"), "value = 1\n");
+  run("add", "src.py");
+  run("-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+    "commit", "-q", "-m", "implementation");
+  const head = run("rev-parse", "HEAD");
+  const plan = join(repo, "implementation-plan.md");
+  writeFileSync(plan, readFileSync(plan, "utf8").trimEnd() +
+    `\n- Assigned worktree: ${worktree}\n- Assigned branch: impl/T02\n`);
+  const params = { mode: "protected-diff", plan, repo, base, head, task: "T02", worktreeRoot };
+  const valid = await tool.execute("test", params, undefined, undefined, { cwd: repo });
+  expect(valid.details.status).toBe("ok");
+  const rejected = await tool.execute("test", { ...params, worktreeRoot: join(workspace, "other") },
+    undefined, undefined, { cwd: repo });
+  expect(rejected.isError).toBe(true);
+  expect(rejected.details.stderr).toContain("outside --worktree-root");
 });
 
 test("protected diff fails closed when repo is null", async () => {

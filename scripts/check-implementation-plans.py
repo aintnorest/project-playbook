@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import os
 import posixpath
 import re
 import subprocess
@@ -22,11 +23,24 @@ REASON = re.compile(r"^[ \t]+- (T[0-9]+) — (\S(?:.*\S)?)$")
 SUB_BULLET = re.compile(r"^[ \t]+- ")
 FENCE_OPEN = re.compile(r"^ {0,3}(`{3,}|~{3,})(?:.*)$")
 MANDATORY = ("Depends on", "Targets", "Change", "Done when", "Verify")
-ORDER = ("Depends on", "Targets", "Protects", "Change", "Tests", "Done when", "Verify")
+ORDER = ("Depends on", "Targets", "Protects", "Change", "Tests", "Done when", "Verify", "Assigned worktree", "Assigned branch")
 PROTECTED_PATH = re.compile(r"^[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*$")
 TARGET_ITEM = re.compile(
     r"^(?:`([^`:\n]+)`|([^\s`;():]+))(?:\s*::[^\n;]+)?\s+\((?:edit|create)\)$"
 )
+BRANCH = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_./-]*$")
+
+
+def git(repo: Path, *args: str) -> str:
+    return subprocess.run(["git", "-C", str(repo), *args], capture_output=True,
+                          check=True, text=True).stdout.strip()
+
+def registered_worktrees(repo: Path) -> List[Path]:
+    """Parse Git's NUL-delimited worktree records without splitting path newlines."""
+    result = subprocess.run(["git", "-C", str(repo), "worktree", "list", "--porcelain", "-z"],
+                            capture_output=True, check=True).stdout
+    return [Path(os.fsdecode(field[len(b"worktree "):])).resolve()
+            for field in result.split(b"\0") if field.startswith(b"worktree ")]
 
 
 def visible_lines(text: str) -> List[Optional[str]]:
@@ -153,6 +167,31 @@ def parse_plan(path: Path, text: str) -> Tuple[List[dict], List[Tuple[int, str]]
             if name in seen and not task["fields"].get(name, "").strip():
                 errors.append((seen[name], "empty task field: " + name))
 
+    assignments: Dict[str, str] = {}
+    branches: Dict[str, str] = {}
+    for task in tasks:
+        path = task["fields"].get("Assigned worktree")
+        branch = task["fields"].get("Assigned branch")
+        if (path is None) != (branch is None):
+            errors.append((task["line"], "Assigned worktree and Assigned branch must appear together"))
+            continue
+        if path is None:
+            continue
+        if not Path(path).is_absolute() or posixpath.normpath(path) != path or any(c in path for c in "\r\n\0"):
+            errors.append((task["line"], "Assigned worktree must be an absolute normalized path"))
+        elif str(Path(path).resolve()) in assignments:
+            errors.append((task["line"], "worktree assigned to multiple tasks: " + path))
+        else:
+            assignments[str(Path(path).resolve())] = task["id"]
+        if not BRANCH.fullmatch(branch) or subprocess.run(
+            ["git", "check-ref-format", "--branch", branch], capture_output=True
+        ).returncode:
+            errors.append((task["line"], "malformed Assigned branch"))
+        elif branch in branches:
+            errors.append((task["line"], "branch assigned to multiple tasks: " + branch))
+        else:
+            branches[branch] = task["id"]
+
     by_id: Dict[str, int] = {}
     for position, task in enumerate(tasks):
         identifier = task["id"]
@@ -231,24 +270,17 @@ def parse_plan(path: Path, text: str) -> Tuple[List[dict], List[Tuple[int, str]]
 
 
 def protected_diff(tasks: List[dict], repo: Path, base: str, head: str,
-                   task_id: Optional[str]) -> List[Tuple[int, str]]:
-    """Compare a candidate's Git changes with other tasks' (or all) protected files."""
-    if task_id is not None and not any(task["id"] == task_id for task in tasks):
+                   task_id: Optional[str], worktree_root: Optional[Path] = None) -> List[Tuple[int, str]]:
+    """Check protected paths and, for assigned tasks, live worktree/branch identity."""
+    selected = next((task for task in tasks if task["id"] == task_id), None)
+    if task_id is not None and selected is None:
         return [(1, "unknown task ID: " + task_id)]
     try:
-        root = subprocess.run(
-            ["git", "-C", str(repo), "rev-parse", "--show-toplevel"],
-            capture_output=True, check=True, text=True,
-        ).stdout.strip()
+        root = git(repo, "rev-parse", "--show-toplevel")
         if Path(root).resolve() != repo.resolve():
             return [(1, "--repo must name the Git repository root")]
-        revisions = []
-        for name in (base, head):
-            revisions.append(subprocess.run(
-                ["git", "-C", str(repo), "rev-parse", "--verify", "--end-of-options",
-                 name + "^{commit}"],
-                capture_output=True, check=True, text=True,
-            ).stdout.strip())
+        revisions = [git(repo, "rev-parse", "--verify", "--end-of-options", name + "^{commit}")
+                     for name in (base, head)]
         changed = subprocess.run(
             ["git", "-C", str(repo), "diff", "--name-only", "--no-ext-diff",
              "--no-renames", "-z", *revisions, "--"],
@@ -261,6 +293,33 @@ def protected_diff(tasks: List[dict], repo: Path, base: str, head: str,
         if isinstance(detail, bytes):
             detail = detail.decode("utf-8", errors="replace")
         return [(1, "cannot inspect protected diff: " + (detail or str(error)).strip())]
+    if selected is not None and "Assigned worktree" in selected["fields"]:
+        assignment = selected["fields"]
+        location = Path(assignment["Assigned worktree"])
+        if worktree_root is None:
+            return [(selected["line"], "assigned task requires --worktree-root")]
+        permitted = worktree_root.resolve()
+        actual = location.resolve()
+        if not worktree_root.is_absolute() or actual == permitted or permitted not in actual.parents:
+            return [(selected["line"], "assigned worktree is outside --worktree-root")]
+        try:
+            if actual not in registered_worktrees(repo):
+                return [(selected["line"], "assigned worktree is not registered")]
+            if git(location, "symbolic-ref", "--quiet", "--short", "HEAD") != assignment["Assigned branch"]:
+                return [(selected["line"], "assigned worktree branch differs from plan")]
+            if git(location, "rev-parse", "HEAD") != revisions[1]:
+                return [(selected["line"], "candidate is not assigned worktree branch tip")]
+            if subprocess.run(["git", "-C", str(location), "status", "--porcelain",
+                               "--untracked-files=all", "--ignore-submodules=none"],
+                              capture_output=True, check=True).stdout:
+                return [(selected["line"], "assigned worktree has uncommitted changes")]
+            subprocess.run(["git", "-C", str(repo), "merge-base", "--is-ancestor",
+                            revisions[0], revisions[1]], capture_output=True, check=True)
+        except (OSError, subprocess.CalledProcessError) as error:
+            return [(selected["line"], "cannot verify assigned worktree or candidate ancestry: " + str(error))]
+    elif worktree_root is not None and selected is None:
+        return [(1, "--worktree-root requires --task")]
+
     changed_paths = set(changed.decode("utf-8", errors="surrogateescape").split("\0"))
     return [
         (task["line"], f"candidate {task_id or '(no task)'} changes {item} protected by {task['id']}")
@@ -281,6 +340,7 @@ def main(arguments: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--base", help="base commit")
     parser.add_argument("--head", help="candidate commit")
     parser.add_argument("--task", help="plan task ID whose own protected files may change (omit for non-task candidates)")
+    parser.add_argument("--worktree-root", type=Path, help="permitted task worktree directory for assigned candidates")
     parser.add_argument("paths", nargs="*", type=Path, help="implementation-plan Markdown files")
     args = parser.parse_args(arguments)
     diff_flags = (args.repo, args.base, args.head)
@@ -288,8 +348,10 @@ def main(arguments: Optional[Sequence[str]] = None) -> int:
         if args.paths or any(value is None for value in diff_flags):
             parser.error("--protected-diff requires --repo, --base, --head and no other plan paths")
         args.paths = [args.protected_diff]
-    elif not args.paths or args.task is not None or any(value is not None for value in diff_flags):
+    elif not args.paths or args.task is not None or args.worktree_root is not None or any(value is not None for value in diff_flags):
         parser.error("--check/--json require plan paths and cannot use diff flags")
+    if args.protected_diff and args.worktree_root is not None and not args.worktree_root.is_absolute():
+        parser.error("--worktree-root must be absolute")
     all_tasks: List[dict] = []
     failures = False
     for path in args.paths:
@@ -308,7 +370,7 @@ def main(arguments: Optional[Sequence[str]] = None) -> int:
         return 1
     if args.protected_diff:
         path = args.protected_diff
-        errors = protected_diff(all_tasks, args.repo, args.base, args.head, args.task)
+        errors = protected_diff(all_tasks, args.repo, args.base, args.head, args.task, args.worktree_root)
         for line, message in errors:
             print(f"{path}:{line}: {message}", file=sys.stderr)
         if errors:
