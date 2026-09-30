@@ -1,6 +1,6 @@
 ---
 state: draft
-revision: vision-r4
+revision: vision-r5
 ---
 
 # Product vision: Project Playbook
@@ -17,7 +17,7 @@ The Playbook assumes the OMP harness. It should also be able to improve itself o
 
 ## Target users and underlying problems
 
-The Playbook serves one developer: its author, who builds software projects with AI in OMP. The developer runs several projects at once and is often tired or switching between them. Even at their best, they cannot hold as much context as the AI can.
+The Playbook serves one developer: its author, who directs AI coding agents on software projects in OMP. The developer runs two to five trains of work at once. They do not reliably hold prior context between sessions, and they often work tired and under heavy cognitive load.
 
 The underlying problems:
 
@@ -35,7 +35,7 @@ The underlying problems:
 - **The developer holds the vision and makes the decisions.** The developer keeps a strong product vision in view, both the document and the idea behind it, and thinks ahead about where the product is going so they can guide its architecture. That direction is the context the AI needs to make its own decisions well.
 - **Force infrastructure over memory.** Push policy, sequencing, and verification into deterministic code wherever possible. A check that runs every time does not depend on a model remembering to do it.
 - **Harness over prompt.** A better harness improves outcomes more than a better prompt, which is why the Playbook is built for OMP. Prompts define intent, but infrastructure is what allows prompt engineering to compound into repeatable reliability.
-- **Context is a shared responsibility.** The developer shows the AI what matters in the context. The AI reminds the developer of the context and does the legwork of gathering it, so that every request can be answered cold. Each side holds what the other lacks.
+- **Context is a shared responsibility.** The developer shows the AI what matters in the context. The AI reminds the developer of the context they may have forgotten and does the legwork of gathering it, so that every request can be answered cold.
 - **Frame decisions by product first and maintainability second.** When the AI asks for a decision, it offers distinct options with their strengths and weaknesses and recommends one. It weighs each option first by how well it serves the product as the developer intended, then by maintainability. Maintainability is what keeps a project able to grow.
 - **Every fact has one home, and every document earns its place.** Documents exist to give the AI the context a job needs, never only to satisfy a process. A fact with one home cannot drift into contradicting copies.
 - **Give each agent one narrow job with the right context.** A narrow focus leaves the model nothing important to drop.
