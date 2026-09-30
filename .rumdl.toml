@@ -1,0 +1,4 @@
+[global]
+# Prose uses semantic (paragraph) lines; agent bodies start after YAML metadata.
+disable = ["MD013", "MD041"]
+exclude = ["skills/**"]

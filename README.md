@@ -27,9 +27,19 @@ Regenerate by hand when you want to inspect the result before committing:
 python3 scripts/build-skills.py
 ```
 
-Before pushing, run the Python and OMP extension tests (the latter uses Bun, already used by OMP):
+Before pushing, install the pinned Markdown linter with [mise](guides/project-tooling.md) once:
+
+```sh
+mise trust
+mise install
+```
+
+The pre-push hook runs the Python tests, OMP extension tests (using Bun), and a check-only Markdown lint. Run the same gate manually with `lefthook run pre-push --force` (`--force` runs it even without pending push files), or run its checks separately:
 
 ```sh
 python3 -m unittest discover -s tests
 bun test
+mise run lint-markdown
 ```
+
+Markdown is checked with rumdl 0.2.77, pinned in `mise.toml` and the cross-platform `mise.lock`. Checks use the installed binary without network access and never rewrite files. `.rumdl.toml` permits long paragraph lines (MD013) and agent bodies without a leading H1 (MD041). Generated `skills/` are excluded; their source Markdown is checked instead.

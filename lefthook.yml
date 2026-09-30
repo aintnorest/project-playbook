@@ -2,3 +2,12 @@ pre-commit:
   commands:
     build-skills:
       run: python3 scripts/build-skills.py && git add skills agents && python3 scripts/build-skills.py --check
+
+pre-push:
+  commands:
+    python-tests:
+      run: python3 -m unittest discover -s tests
+    extension-tests:
+      run: bun test
+    markdown:
+      run: mise run lint-markdown

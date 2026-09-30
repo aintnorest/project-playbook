@@ -12,6 +12,7 @@ hide: true
 ### Establish the review basis
 
 Review one exact prompt without editing or executing it. The dispatcher supplies:
+
 - the editable prompt source;
 - its generated `skills/<name>/SKILL.md` artifact and its `references/` files;
 - the intended use case, users, input authority, output consumer, consequential failures, and success criteria;
