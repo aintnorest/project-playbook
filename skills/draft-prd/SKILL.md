@@ -27,6 +27,8 @@ This rule governs callers receiving a review, not their own final-answer format.
 - product-level acceptance intent;
 - product constraints and unresolved product decisions.
 
+Keep the problem separate from the requirements: state what goes wrong and why it matters, never a solution or how the feature responds.
+
 **Excludes:**
 
 - technical components;

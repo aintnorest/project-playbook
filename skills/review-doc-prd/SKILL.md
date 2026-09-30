@@ -71,6 +71,8 @@ Judge severity by demonstrated impact at this document's boundary, not emphatic 
 - product-level acceptance intent;
 - product constraints and unresolved product decisions.
 
+Keep the problem separate from the requirements: state what goes wrong and why it matters, never a solution or how the feature responds.
+
 **Excludes:**
 
 - technical components;

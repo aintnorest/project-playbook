@@ -32,6 +32,8 @@ Use this title and top-level section order:
 
 In `Target users and underlying problems`, name who the product serves before describing exclusions or problems. As an audience-specific application of [non-goals and boundaries (source: guides/product-documentation-process.md#non-goals-and-boundaries)], include an excluded audience only when it is a plausible subgroup or edge of the stated target and the distinction changes product direction; do not enumerate unrelated people the product was never intended to serve. Put broader product exclusions under `Product-wide boundaries and non-goals`.
 
+Keep underlying problems and product principles separate so downstream documents and their authors remain free to choose how to address the problems. Underlying problems state what goes wrong and why it matters, never a solution or how the product responds. Product principles state durable ideals or opinions that guide choices, never restate a problem, and include at most a brief reason.
+
 The vision owns only product-wide facts intended to remain true when individual features, delivery sequence, interfaces, or implementation change. A feature Product Requirements Document (PRD) references applicable vision content instead of copying it, then owns its feature-specific users, problem, non-goals, requirements, acceptance intent, constraints, and product decisions. Evidence may follow the claim it supports; a separate evidence section is not required.
 
 **Excludes:**
