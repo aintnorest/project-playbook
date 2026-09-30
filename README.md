@@ -34,6 +34,8 @@ mise trust
 mise install
 ```
 
+Install the extension test dependency with `bun install --frozen-lockfile`. The tests use the real `@oh-my-pi/omptype/zod` builder, pinned to the verified OMP 18.4.4 runtime, rather than a schema mock. OMP injects this Zod-compatible subset as `pi.zod`; it does not expose every Zod method. Empty optional arrays use `.max(0)` because the runtime has no `z.never()`.
+
 The pre-push hook runs the Python tests, OMP extension tests (using Bun), and a check-only Markdown lint. Run the same gate manually with `lefthook run pre-push --force` (`--force` runs it even without pending push files), or run its checks separately:
 
 ```sh

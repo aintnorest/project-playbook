@@ -243,7 +243,7 @@ export default function projectPlaybook(pi: ExtensionAPI) {
   });
 
   // The renderer owns kind-specific validation and absent-value normalization.
-  const empty = z.union([z.literal(""), z.array(z.never()), z.object({}).strict()]);
+  const empty = z.union([z.literal(""), z.array(z.string()).max(0), z.object({}).strict()]);
   const optionalText = z.union([z.string(), empty]).nullable().optional();
   pi.registerTool({
     name: "request_developer",

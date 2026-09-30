@@ -77,6 +77,8 @@ git -C ~/development/projects/project-playbook pull
 
 Agents are rediscovered on the next dispatch, but an active session's skill registry can retain the old names. After adding or renaming a skill, run `/reload-plugins` or start a fresh OMP session before dispatching its agent; otherwise the new agent can be found while its `skill://` URI is still unknown. Restart after changing the `extensions:` entry itself.
 
+Restart OMP after changing `omp-extension.ts`, including after pulling an extension-load fix. Sessions that failed to load the extension do not acquire its tools automatically; `/reload-plugins` does not reload extension factories.
+
 Pin a release by checking out a tag in that clone when a moving `main` is not acceptable.
 
 ## Project-specific facts stay in the project

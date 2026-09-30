@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
+import * as zod from "@oh-my-pi/omptype/zod";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -23,21 +24,8 @@ beforeEach(() => {
   workspace = mkdtempSync(join(tmpdir(), "playbook-tool-test-"));
   repo = join(workspace, "repo");
   mkdirSync(repo);
-  const optional = {
-    optional() { return this; }, nullable() { return this; },
-    describe() { return this; }, strict() { return this; },
-  };
   projectPlaybook({
-    zod: {
-      object: fields => Object.assign(fields, optional),
-      enum: values => values,
-      string: () => optional,
-      boolean: () => optional,
-      literal: () => optional,
-      never: () => optional,
-      array: () => optional,
-      union: () => optional,
-    },
+    zod,
     registerTool(definition) {
       if (definition.name === "check_implementation_plan") tool = definition;
       if (definition.name === "check_doc_status") statusTool = definition;
@@ -250,7 +238,7 @@ function decisionRequest() {
 
 
 test("developer request renders the decision and its consequential tradeoffs", async () => {
-  const result = await requestTool.execute("test", decisionRequest(),
+  const result = await requestTool.execute("test", requestTool.parameters.parse(decisionRequest()),
     undefined, undefined, { cwd: repo });
   expect(result.isError).toBeUndefined();
   expect(result.details.status).toBe("ok");
@@ -316,17 +304,34 @@ test("developer request treats null and empty optional values as absent", async 
     blocking: false, needed: "Retention duration in days.",
     productBasisUnavailableReason: "No approved retention requirement is available.",
   };
-  const baseline = await requestTool.execute("test", request,
+  const baseline = await requestTool.execute("test", requestTool.parameters.parse(request),
     undefined, undefined, { cwd: repo });
   expect(baseline.details.status).toBe("ok");
   for (const value of [null, "", [], {}]) {
     const fields = Object.fromEntries([
       "productBasis", "options", "recommendation", "maintainability", "acceptance", "requiredAction",
     ].map(key => [key, value]));
-    const result = await requestTool.execute("test", { ...request, ...fields },
+    const result = await requestTool.execute("test", requestTool.parameters.parse({ ...request, ...fields }),
       undefined, undefined, { cwd: repo });
     expect(result.isError).toBeUndefined();
     expect(result.details.status).toBe("ok");
     expect(result.content[0].text).toBe(baseline.content[0].text);
+  }
+});
+
+test("developer request schema rejects nonempty placeholders and malformed fields", () => {
+  const request = decisionRequest();
+  for (const fields of [
+    { maintainability: ["not empty"] },
+    { acceptance: [null] },
+    { needed: [42] },
+    { productBasisUnavailableReason: { reason: "not empty" } },
+    { options: [{ label: "Missing tradeoffs" }] },
+    { recommendation: { option: "Object storage", rationale: 42 } },
+    { productBasis: [{ source: "PRD", reference: "retention", relevance: false }] },
+    { blocking: "true" },
+    { unexpected: true },
+  ]) {
+    expect(requestTool.parameters.safeParse({ ...request, ...fields }).success).toBe(false);
   }
 });

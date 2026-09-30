@@ -5,5 +5,8 @@
   "description": "OMP extension package exposing the playbook's agents/ and skills/ capability directories.",
   "omp": {
     "extensions": ["./omp-extension.ts"]
+  },
+  "devDependencies": {
+    "@oh-my-pi/omptype": "18.4.4"
   }
 }
