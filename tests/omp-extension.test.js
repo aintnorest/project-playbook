@@ -158,6 +158,15 @@ test("assigned candidate is checked in its recorded worktree through tool", asyn
   expect(rejected.details.stderr).toContain("must be <repo-root>/.worktrees");
 });
 
+test("out-of-plan protected diff treats empty worktreeRoot as absent", async () => {
+  const result = await tool.execute("test",
+    { mode: "protected-diff", plan: "implementation-plan.md", repo,
+      base: "HEAD", head: "HEAD", worktreeRoot: "" },
+    undefined, undefined, { cwd: repo });
+  expect(result.isError).toBeUndefined();
+  expect(result.details.status).toBe("ok");
+});
+
 test("protected diff fails closed when repo is null", async () => {
   const result = await tool.execute("test",
     { mode: "protected-diff", plan: "implementation-plan.md", repo: null,

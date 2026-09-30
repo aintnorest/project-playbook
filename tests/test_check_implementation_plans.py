@@ -342,6 +342,17 @@ class CheckImplementationPlansTests(unittest.TestCase):
                                    "--repo", str(repository), "--base", start, "--head", candidate,
                                    "--task", "T01", "--worktree-root", str(root)],
                                   capture_output=True, text=True, check=False)
+        index = Path(git("rev-parse", "--path-format=absolute", "--git-path", "index", cwd=location))
+        # Identical content with stale cached stat info makes ordinary status refresh the index.
+        tracked = location / "output.txt"
+        stat = tracked.stat()
+        os.utime(tracked, ns=(stat.st_atime_ns, stat.st_mtime_ns + 2_000_000_000))
+        before_content = index.read_bytes()
+        before_mtime = index.stat().st_mtime_ns
+        checked = check()
+        self.assertEqual(checked.returncode, 0, checked.stderr)
+        self.assertEqual(index.read_bytes(), before_content)
+        self.assertEqual(index.stat().st_mtime_ns, before_mtime)
         self.assertEqual(check().returncode, 0, check().stderr)
         self.assertIn("must be <repo-root>/.worktrees",
                       check(root=self.path.parent / "other").stderr)

@@ -32,12 +32,12 @@ BRANCH = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_./-]*$")
 
 
 def git(repo: Path, *args: str) -> str:
-    return subprocess.run(["git", "-C", str(repo), *args], capture_output=True,
+    return subprocess.run(["git", "--no-optional-locks", "-C", str(repo), *args], capture_output=True,
                           check=True, text=True).stdout.strip()
 
 def registered_worktrees(repo: Path) -> List[Path]:
     """Parse Git's NUL-delimited worktree records without splitting path newlines."""
-    result = subprocess.run(["git", "-C", str(repo), "worktree", "list", "--porcelain", "-z"],
+    result = subprocess.run(["git", "--no-optional-locks", "-C", str(repo), "worktree", "list", "--porcelain", "-z"],
                             capture_output=True, check=True).stdout
     return [Path(os.fsdecode(field[len(b"worktree "):])).resolve()
             for field in result.split(b"\0") if field.startswith(b"worktree ")]
@@ -184,7 +184,7 @@ def parse_plan(path: Path, text: str) -> Tuple[List[dict], List[Tuple[int, str]]
         else:
             assignments[str(Path(path).resolve())] = task["id"]
         if not BRANCH.fullmatch(branch) or subprocess.run(
-            ["git", "check-ref-format", "--branch", branch], capture_output=True
+            ["git", "--no-optional-locks", "check-ref-format", "--branch", branch], capture_output=True
         ).returncode:
             errors.append((task["line"], "malformed Assigned branch"))
         elif branch in branches:
@@ -282,7 +282,7 @@ def protected_diff(tasks: List[dict], repo: Path, base: str, head: str,
         revisions = [git(repo, "rev-parse", "--verify", "--end-of-options", name + "^{commit}")
                      for name in (base, head)]
         changed = subprocess.run(
-            ["git", "-C", str(repo), "diff", "--name-only", "--no-ext-diff",
+            ["git", "--no-optional-locks", "-C", str(repo), "diff", "--name-only", "--no-ext-diff",
              "--no-renames", "-z", *revisions, "--"],
             capture_output=True, check=True,
         ).stdout
@@ -306,7 +306,7 @@ def protected_diff(tasks: List[dict], repo: Path, base: str, head: str,
         if actual == permitted or permitted not in actual.parents:
             return [(selected["line"], "assigned worktree is outside --worktree-root")]
         try:
-            if subprocess.run(["git", "-C", str(repo), "check-ignore", "-q", "--",
+            if subprocess.run(["git", "--no-optional-locks", "-C", str(repo), "check-ignore", "-q", "--",
                                str(repo / ".worktrees")], capture_output=True).returncode:
                 return [(selected["line"], "<repo-root>/.worktrees/ is not ignored by Git")]
             if actual not in registered_worktrees(repo):
@@ -315,11 +315,11 @@ def protected_diff(tasks: List[dict], repo: Path, base: str, head: str,
                 return [(selected["line"], "assigned worktree branch differs from plan")]
             if git(location, "rev-parse", "HEAD") != revisions[1]:
                 return [(selected["line"], "candidate is not assigned worktree branch tip")]
-            if subprocess.run(["git", "-C", str(location), "status", "--porcelain",
+            if subprocess.run(["git", "--no-optional-locks", "-C", str(location), "status", "--porcelain",
                                "--untracked-files=all", "--ignore-submodules=none"],
                               capture_output=True, check=True).stdout:
                 return [(selected["line"], "assigned worktree has uncommitted changes")]
-            subprocess.run(["git", "-C", str(repo), "merge-base", "--is-ancestor",
+            subprocess.run(["git", "--no-optional-locks", "-C", str(repo), "merge-base", "--is-ancestor",
                             revisions[0], revisions[1]], capture_output=True, check=True)
         except (OSError, subprocess.CalledProcessError) as error:
             return [(selected["line"], "cannot verify assigned worktree or candidate ancestry: " + str(error))]

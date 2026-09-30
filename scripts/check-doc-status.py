@@ -169,7 +169,7 @@ class GitFailure(Exception):
 
 
 def git_bytes(repo: Path, *arguments: str) -> bytes:
-    command = ["git", "-C", str(repo), *arguments]
+    command = ["git", "--no-optional-locks", "-C", str(repo), *arguments]
     try:
         result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 check=False)

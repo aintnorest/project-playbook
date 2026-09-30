@@ -131,7 +131,7 @@ export default function projectPlaybook(pi: ExtensionAPI) {
       }
 
       const args = mode === "protected-diff"
-        ? [validator, "--protected-diff", plan, "--repo", repo!, "--base", base!, "--head", head!, ...(task == null ? [] : ["--task", task]), ...(worktreeRoot == null ? [] : ["--worktree-root", worktreeRoot])]
+        ? [validator, "--protected-diff", plan, "--repo", repo!, "--base", base!, "--head", head!, ...(task == null ? [] : ["--task", task]), ...(!worktreeRoot ? [] : ["--worktree-root", worktreeRoot])]
         : [validator, mode === "json" ? "--json" : "--check", plan];
       let stdout = "";
       let stderr = "";
