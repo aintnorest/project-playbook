@@ -1,13 +1,13 @@
 ---
 state: draft
-revision: vision-r3
+revision: vision-r4
 ---
 
 # Product vision: Project Playbook
 
 ## Status
 
-Rewritten from the developer's review of the previous revision.
+Revised from the developer's review of the previous revision.
 
 ## Vision
 
@@ -21,22 +21,26 @@ The Playbook serves one developer: its author, who builds software projects with
 
 The underlying problems:
 
-- **The AI needs the right context for each job.** Project knowledge is hard to find, duplicated, and drifts out of date. When the AI cannot find the facts a job needs, or finds several versions of them, it is more likely to hallucinate.
-- **Agents drift.** Models skip steps, drop details, and wander from the goal, and adding more instructions does not reliably stop them. The Playbook answers this with a stronger harness, more focused agents, and clearer processes.
-- **Context has to flow both ways.** The developer has to show the AI which parts of the context matter. The AI has to remind the developer of the context and do the legwork of gathering it. When a request makes the developer rebuild the thread, the AI has pushed its own work back onto the developer.
+- **The AI works from the wrong context.** Project knowledge is hard to find, duplicated, and drifts out of date. When the AI cannot find the facts a job needs, or finds several versions of them, it is more likely to hallucinate.
+- **Agents drift.** Models skip steps, drop details, and wander from the goal, and adding more instructions does not reliably stop them. A model given more context than its job needs has to choose what to follow, and it drops whatever seems less important, contradictory, or unclear.
+- **AI writes code faster than anyone can review it.** Generic guardrails cannot catch everything one project needs. Work can move away from what the developer intended before anyone notices.
+- **Shortcuts compound.** Slop and hardcoding get a lot done quickly. They also make everything downstream harder at a growing rate, until the project can no longer grow.
+- **Requests push the AI's legwork onto the developer.** A question that assumes the developer remembers the thread makes them rebuild its context and gather the facts before they can answer. That costs the developer's scarce attention, and an answer given without the full context is a worse answer.
 - **Guidance and process are rebuilt in every project.** Without a shared playbook, each project reinvents which documents it keeps and how it plans, reviews, and ships work. One ends up with too little process and another with too much, and copies of the same rules drift apart.
-- **Wasteful tooling undermines the playbook.** The Playbook is a playbook first, but it runs on OMP. Slow, unreliable, or wasteful use of the harness, such as spending tokens that add nothing to the work, keeps it from fulfilling its purpose. A website's content is its purpose, but a slow, buggy site still fails its readers.
+- **Guidance goes stale.** Models and the harness keep changing. Rules written from preference, or from how models used to behave, stop working, and the same failures keep recurring.
+- **Wasteful tooling undermines the playbook.** The Playbook is a playbook first, but it runs on OMP. Slow, unreliable, or wasteful use of the harness, such as spending tokens that add nothing to the work, costs time and money and keeps the Playbook from fulfilling its purpose.
 
 ## Product principles
 
-- **The developer holds the vision and the decisions.** Code cannot be reviewed at the speed AI writes it, and generic guardrails cannot catch everything one project needs. A strong product vision, both the document and the idea behind it, therefore stays in view throughout the work. The developer thinks ahead about where the product is going so they can guide its architecture. The developer makes the decisions so that the AI has the context to make its own decisions well.
-- **Force infrastructure over memory.** Models drop details and miss steps. Remove the chance to fail by moving policy, sequencing, and verification into deterministic code wherever possible.
-- **Harness over prompt.** A better harness improves outcomes more than a better prompt. Prompts define intent, while tools and extensions let infrastructure do what prompts cannot. That is why the Playbook is built for OMP.
-- **Context is a shared responsibility.** The developer tells the AI what matters, and the AI keeps the developer supplied with the context they need. Any request to the developer can be answered cold. It states its outcome first and carries the context it depends on, and a decision request lays out distinct options with their strengths, weaknesses, and a recommendation.
-- **Frame decisions by product first and maintainability second.** When the AI asks for a decision, it weighs each option first by how well it serves the product as the developer intended, then by maintainability. Slop and hardcoding get a lot done quickly. They also make everything downstream harder at a growing rate, until the project can no longer grow.
-- **Documents give the AI the right context without contradiction.** Each fact lives in exactly one place, and no document exists only to satisfy the process. The product documents keep the product what it was meant to be. The technical documents give the AI a solid plan, so it is less likely to wander or produce slop. Code reviewers catch the slop that still gets through.
-- **Give each agent one narrow job.** When a model holds too much context, it has to choose what to follow. It then drops whatever seems less important, contradictory, or unclear. A narrow job with the right context keeps it on the goal.
-- **Ground guidance in evidence.** Shared rules rest on published research, official documentation, or observed agent runs, and they state the limits of that evidence. The Playbook improves itself by revising its guidance from what its agents actually did. Research informs the guidance but never overrides a project's own facts.
+- **The developer holds the vision and makes the decisions.** The developer keeps a strong product vision in view, both the document and the idea behind it, and thinks ahead about where the product is going so they can guide its architecture. That direction is the context the AI needs to make its own decisions well.
+- **Force infrastructure over memory.** Push policy, sequencing, and verification into deterministic code wherever possible. A check that runs every time does not depend on a model remembering to do it.
+- **Harness over prompt.** A better harness improves outcomes more than a better prompt, which is why the Playbook is built for OMP. Prompts define intent, but infrastructure is what allows prompt engineering to compound into repeatable reliability.
+- **Context is a shared responsibility.** The developer shows the AI what matters in the context. The AI reminds the developer of the context and does the legwork of gathering it, so that every request can be answered cold. Each side holds what the other lacks.
+- **Frame decisions by product first and maintainability second.** When the AI asks for a decision, it offers distinct options with their strengths and weaknesses and recommends one. It weighs each option first by how well it serves the product as the developer intended, then by maintainability. Maintainability is what keeps a project able to grow.
+- **Every fact has one home, and every document earns its place.** Documents exist to give the AI the context a job needs, never only to satisfy a process. A fact with one home cannot drift into contradicting copies.
+- **Give each agent one narrow job with the right context.** A narrow focus leaves the model nothing important to drop.
+- **Ground guidance in evidence.** Shared guidance rests on published research, official documentation, or observed agent runs, states the limits of that evidence, and changes when agents are seen failing. Evidence can be tested and corrected, while preference cannot.
+- **Efficiency serves the purpose.** Spend time and tokens only where they improve the work. A playbook that is slow or costly to run gets used less, however good its guidance.
 
 ## Product-wide boundaries and non-goals
 
