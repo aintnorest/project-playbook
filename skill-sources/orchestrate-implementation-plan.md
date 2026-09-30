@@ -17,6 +17,7 @@ Execute an existing active `implementation-plan.md` against its active design, p
 - [Document state and revision](../guides/product-documentation-process.md#document-state-and-revision)
 - [Reference rules](../guides/product-documentation-process.md#reference-rules)
 - [Communication rules](../guides/communication-policy.md#rules)
+- [OMP developer requests and ask](../integrations/omp.md#developer-requests-and-omps-built-in-ask)
 
 ## Inputs
 
@@ -26,6 +27,9 @@ Execute an existing active `implementation-plan.md` against its active design, p
 - The `check_implementation_plan` and `check_doc_status` tools, whose Python validators are resolved relative to the Playbook extension directory.
 
 ## Instructions
+
+For any developer decision, approval, input, or blocker, read and apply the developer-request procedure in [communication rules](../guides/communication-policy.md#rules); it takes precedence over abbreviated decision-packet output below.
+When running in OMP and a developer decision blocks progress, read [OMP developer requests and ask](../integrations/omp.md#developer-requests-and-omps-built-in-ask).
 
 ### 1. Establish context before dispatch
 

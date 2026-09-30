@@ -16,6 +16,7 @@ Create or materially revise one prompt for a stated task, execution surface, and
 
 - [Skill design](../guides/skill-design.md)
 - [Communication rules](../guides/communication-policy.md#rules)
+- [OMP developer requests and ask](../integrations/omp.md#developer-requests-and-omps-built-in-ask)
 
 ## Inputs
 
@@ -44,6 +45,9 @@ Destination:
 ```
 
 ## Instructions
+
+For any developer decision, approval, input, or blocker, read and apply the developer-request procedure in [communication rules](../guides/communication-policy.md#rules); it takes precedence over abbreviated question-only output below.
+When running in OMP and a developer decision blocks progress, read [OMP developer requests and ask](../integrations/omp.md#developer-requests-and-omps-built-in-ask).
 
 1. Establish the task, authority, execution surface, output boundary, consequential risks, and observable success criteria from available context. Inspect supplied repositories and existing prompt patterns before proposing a second convention. Ask only for unresolved choices that materially change the contract; otherwise state a safe assumption and proceed.
 2. Build a compact research plan around design questions whose answers can change the prompt. Retrieve only relevant local knowledge-base synthesis and supporting dossiers. Research domain rules and current official model or interface documentation when needed; use the public repository fallbacks only when their local repositories are unavailable.

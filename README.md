@@ -8,6 +8,8 @@ Project Playbook provides reusable guidance and task instructions for planning, 
 
 Guides define the shared rules for the work. Agents route tasks and enforce their boundaries. Generated skill directories (`SKILL.md` plus `references/`) give each agent the task-specific instructions and guidance it needs. Templates in `templates/` give documents you maintain by hand, such as the roadmap, their starting structure.
 
+Top-level agents and callers follow the [agent guidance](guides/agents.md#developer-communication-and-escalation) and [communication policy](guides/communication-policy.md#rules) before asking the developer for a decision, approval, input, or unblock action. Shared request framing stays in that policy; project-specific product authority stays in the project's own documents.
+
 To review how a project's documents work together, dispatch `review-doc-coherence-agent`. Its [coherence review skill](skill-sources/review-doc-coherence.md) checks roles, levels of detail, competing authority, contradictions, traceability, and context usability against the same guidance used to draft the documents; document-specific agents remain available for individual reviews.
 
 ## Changing the playbook

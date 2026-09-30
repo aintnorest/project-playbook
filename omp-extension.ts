@@ -1,6 +1,6 @@
 // Enabling this extension package exposes its sibling agents/ and skills/
-// directories and registers read-only document-status and implementation-plan tools.
-// Validators resolve from this extension's directory, independent of the workspace.
+// directories and registers read-only document checks and developer-request rendering.
+// Scripts resolve from this extension's directory, independent of the workspace.
 
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -9,6 +9,7 @@ import type { ExtensionAPI } from "@oh-my-pi/pi-coding-agent";
 
 const validator = fileURLToPath(new URL("./scripts/check-implementation-plans.py", import.meta.url));
 const statusValidator = fileURLToPath(new URL("./scripts/check-doc-status.py", import.meta.url));
+const requestRenderer = fileURLToPath(new URL("./scripts/request-developer.py", import.meta.url));
 // Bound each validator output stream independently; the child has at most 120 seconds to finish.
 const MAX_STREAM_BYTES = 16 * 1024 * 1024;
 const VALIDATOR_TIMEOUT_MS = 120_000;
@@ -30,10 +31,10 @@ function failure(mode: Mode, message: string, exitCode: number | null = null, st
   };
 }
 
-async function runValidator(args: string[], cwd: string, signal: AbortSignal | undefined, label: string): Promise<ValidatorResult> {
+async function runValidator(args: string[], cwd: string, signal: AbortSignal | undefined, label: string, stdinPayload?: string): Promise<ValidatorResult> {
   return new Promise<ValidatorResult>((resolve, reject) => {
     const child = spawn("python3", args, {
-      stdio: ["ignore", "pipe", "pipe"],
+      stdio: [stdinPayload === undefined ? "ignore" : "pipe", "pipe", "pipe"],
       cwd,
       signal,
     });
@@ -47,6 +48,7 @@ async function runValidator(args: string[], cwd: string, signal: AbortSignal | u
       settled = true;
       clearTimeout(deadline);
       child.kill("SIGKILL");
+      child.stdin?.destroy();
       child.stdout.destroy();
       child.stderr.destroy();
       resolve({ stdout: "", stderr: "", exitCode: null, boundedFailure: message });
@@ -71,12 +73,18 @@ async function runValidator(args: string[], cwd: string, signal: AbortSignal | u
     };
     child.stdout.on("data", (chunk: Buffer) => collect("stdout", chunk));
     child.stderr.on("data", (chunk: Buffer) => collect("stderr", chunk));
-    child.on("error", error => {
+    const fail = (error: Error) => {
       if (settled) return;
       settled = true;
       clearTimeout(deadline);
+      child.kill("SIGKILL");
+      child.stdin?.destroy();
+      child.stdout.destroy();
+      child.stderr.destroy();
       reject(error);
-    });
+    };
+    child.on("error", fail);
+    child.stdin?.on("error", fail);
     child.on("close", code => {
       if (settled) return;
       settled = true;
@@ -87,6 +95,7 @@ async function runValidator(args: string[], cwd: string, signal: AbortSignal | u
         exitCode: code,
       });
     });
+    child.stdin?.end(stdinPayload);
   });
 }
 
@@ -229,6 +238,77 @@ export default function projectPlaybook(pi: ExtensionAPI) {
       return {
         content: [{ type: "text" as const, text: mode === "frozen-diff" ? "Frozen documents unchanged." : "Document status valid." }],
         details: { status: "ok", mode, exitCode, stderr, stdout },
+      };
+    },
+  });
+
+  // The renderer owns kind-specific validation and absent-value normalization.
+  const empty = z.union([z.literal(""), z.array(z.never()), z.object({}).strict()]);
+  const optionalText = z.union([z.string(), empty]).nullable().optional();
+  pi.registerTool({
+    name: "request_developer",
+    label: "Request Developer",
+    description: "Validate and render a developer decision, approval, input, or blocked request. Pass request fields directly, with version=1 and either productBasis or productBasisUnavailableReason. Decisions require 2–5 options, recommendation, and maintainability; approval requires acceptance; input requires needed; blocked requires requiredAction and blocking=true. Returns Markdown; never writes files or uses the network.",
+    parameters: z.object({
+      version: z.literal(1),
+      kind: z.enum(["decision", "approval", "input", "blocked"]),
+      title: z.string(),
+      context: z.string(),
+      question: z.string(),
+      blocking: z.boolean(),
+      productBasis: z.union([z.array(z.object({
+        source: z.string(),
+        reference: z.string(),
+        relevance: z.string(),
+      }).strict()), empty]).nullable().optional(),
+      productBasisUnavailableReason: optionalText,
+      options: z.union([z.array(z.object({
+        label: z.string(),
+        strengths: z.array(z.string()),
+        weaknesses: z.array(z.string()),
+        downstream: z.string(),
+      }).strict()), empty]).nullable().optional(),
+      recommendation: z.union([z.object({
+        option: z.string(),
+        rationale: z.string(),
+      }).strict(), empty]).nullable().optional(),
+      maintainability: optionalText,
+      acceptance: optionalText,
+      needed: optionalText,
+      requiredAction: optionalText,
+    }).strict(),
+    async execute(_toolCallId, request, signal, _onUpdate, ctx) {
+      const fail = (message: string, result?: ValidatorResult) => ({
+        content: [{ type: "text" as const, text: message }],
+        details: {
+          status: "error", request, message,
+          exitCode: result?.exitCode ?? null,
+          stderr: result?.stderr ?? "",
+          stdout: result?.stdout ?? "",
+        },
+        isError: true,
+      });
+      if (!existsSync(requestRenderer)) {
+        return fail(`Developer-request renderer is missing: ${requestRenderer}`);
+      }
+      let result: ValidatorResult;
+      try {
+        result = await runValidator(
+          [requestRenderer, "--stdin"], ctx.cwd, signal, "Developer-request renderer", JSON.stringify(request));
+      } catch (error) {
+        const message = error instanceof Error && "code" in error && error.code === "ENOENT"
+          ? "python3 is missing from PATH; cannot render developer request."
+          : `Unable to run developer-request renderer: ${String(error)}`;
+        return fail(message);
+      }
+      const { stdout, stderr, exitCode, boundedFailure } = result;
+      if (boundedFailure) return fail(boundedFailure, result);
+      if (exitCode !== 0 || stderr.trim()) {
+        return fail(stderr.trim() || `Developer-request renderer exited with code ${exitCode}.`, result);
+      }
+      return {
+        content: [{ type: "text" as const, text: stdout }],
+        details: { status: "ok", request, exitCode, stderr },
       };
     },
   });

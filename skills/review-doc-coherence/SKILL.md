@@ -152,6 +152,8 @@ Review whether the supplied documents stay within their roles and levels of deta
 
 ## Instructions
 
+Return questions and missing-input limits to the caller in the review schema, not directly to the developer. Read [communication rules](skill://review-doc-coherence/references/communication-policy--rules.md) for the caller-escalation boundary; the caller owns any developer request.
+
 Before checking status, read [document state and revision](skill://review-doc-coherence/references/product-documentation-process--document-state-and-revision.md). Run `check_doc_status` on every accessible eligible document in the authorized set, including roadmap and implementation plans; report its frontmatter errors as evidence alongside substantive cross-document findings. For inaccessible/chat-only members or an unavailable tool, identify each unperformed status check as a coverage limit. `## Status`, if present, is prose only; metadata belongs in top-of-file YAML frontmatter.
 Check lifecycle relationships, not just each file's frontmatter: top-level vision, architecture, and roadmap remain living while active; an active plan requires an active TDD, a TDD becomes done only when its implementation plan (small-feature or slice) is done, and a PRD becomes done only with its feature. A system design stays active until all slices finish; delivered slice sections and done PRD/TDD/plan contracts remain historical, not revised for later bugfix or redo work.
 

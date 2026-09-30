@@ -2,7 +2,7 @@
 name: draft-system-design-agent
 description: "Drafts or revises a large feature's shared architecture and cross-slice contracts. Use when a developer asks to design the boundaries shared by feature slices. Not for reviewing that system design (review-doc-system-design-agent) or designing one slice (draft-technical-design-agent)."
 model: anthropic/claude-opus-5-5:high
-tools: read, grep, glob, edit, write, check_doc_status
+tools: read, grep, glob, edit, write, check_doc_status, request_developer
 read-summarize: false
 autoloadSkills:
   - draft-system-design

@@ -31,6 +31,8 @@ Find consequential defects that would let a feature author, system designer, or 
 
 ## Instructions
 
+Return questions and missing-input limits to the caller in the review schema, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
+
 Before checking status, read [document state and revision](../guides/product-documentation-process.md#document-state-and-revision). For an accessible candidate file, run `check_doc_status` and include its frontmatter errors as exact review evidence; do not substitute the static check for substantive review. If the tool is unavailable or the candidate is chat-only, state that the status check was not run and the resulting coverage limit. `## Status`, if present, is prose only; metadata belongs in top-of-file YAML frontmatter.
 Check lifecycle against the table: the product vision remains living while active with its approval date; it is not marked done. A new contract revision is draft without `approved` until developer acceptance returns it to active.
 

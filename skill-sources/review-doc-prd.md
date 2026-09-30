@@ -32,6 +32,8 @@ Find consequential defects that would cause a system designer, technical designe
 
 ## Instructions
 
+Return questions and missing-input limits to the caller in the review schema, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
+
 Before checking status, read [document state and revision](../guides/product-documentation-process.md#document-state-and-revision). For an accessible candidate file, run `check_doc_status` and include its frontmatter errors as exact review evidence; do not substitute the static check for substantive review. If the tool is unavailable or the candidate is chat-only, state that the status check was not run and the resulting coverage limit. `## Status`, if present, is prose only; metadata belongs in top-of-file YAML frontmatter.
 Check lifecycle against the table: an active PRD carries its approval date; a PRD becomes done only when its feature finishes, retains that date, and is frozen historical scope. A later bugfix or redo belongs in a new slice TDD and plan, not a revision of a done PRD.
 

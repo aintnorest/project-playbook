@@ -564,6 +564,89 @@ class BuildSkillsTests(unittest.TestCase):
         self.assertIn('"required": []', self.agent.read_text(encoding="utf-8").splitlines()[5])
         self.assertEqual(self.publish("--check").returncode, 0)
 
+    def test_every_playbook_skill_delivers_shared_developer_request_guidance(self):
+        repository = PUBLISHER.parent.parent
+        shutil.copytree(repository / "guides", self.root / "guides", dirs_exist_ok=True)
+        shutil.copytree(repository / "integrations", self.root / "integrations")
+        shutil.copytree(
+            repository / "skill-sources", self.root / "skill-sources", dirs_exist_ok=True
+        )
+        (self.root / "skill-sources" / "task.md").unlink()
+        policy = self.root / "guides" / "communication-policy.md"
+        lines = policy.read_text(encoding="utf-8").splitlines(keepends=True)
+        headings = PUBLISHER_VALUES["parse_headings"](lines)
+        requests = next(heading for heading in headings if heading.slug == "developer-requests")
+        sentinel = "Developer-request adoption probe: preserve the complete decision context."
+        lines.insert(requests.end, sentinel + "\n\n")
+        policy.write_text("".join(lines), encoding="utf-8")
+
+        names = sorted(path.stem for path in (repository / "skill-sources").glob("*.md"))
+        for name in names:
+            with self.subTest(skill=name):
+                bundle, = PUBLISHER_VALUES["build_bundles"](self.root, only=[name])
+                reference = bundle.output.parent / "references" / "communication-policy--rules.md"
+                self.assertIn(reference, bundle.files)
+                guidance = bundle.files[reference].decode("utf-8")
+                self.assertIn(sentinel, guidance)
+                self.assertNotIn("## Evidence", guidance)
+                self.assertIn(
+                    "skill://" + name + "/references/" + reference.name,
+                    bundle.files[bundle.output].decode("utf-8"),
+                )
+
+    def test_blocking_decision_agents_deliver_omp_escalation_reference(self):
+        repository = PUBLISHER.parent.parent
+        for directory in ("guides", "integrations", "skill-sources"):
+            shutil.copytree(repository / directory, self.root / directory, dirs_exist_ok=True)
+        names = (
+            "draft-implementation-plan",
+            "draft-prd",
+            "draft-product-vision",
+            "draft-prompt",
+            "draft-system-architecture",
+            "draft-system-design",
+            "draft-technical-design",
+            "orchestrate-implementation-plan",
+        )
+        integration = self.root / "integrations" / "omp.md"
+        lines = integration.read_text(encoding="utf-8").splitlines(keepends=True)
+        headings = PUBLISHER_VALUES["parse_headings"](lines)
+        ask = next(
+            heading for heading in headings
+            if heading.slug == "developer-requests-and-omps-built-in-ask"
+        )
+        sentinel = "OMP escalation probe: return rendered requests to the interactive caller."
+        lines.insert(ask.end, sentinel + "\n\n")
+        integration.write_text("".join(lines), encoding="utf-8")
+
+        for name in names:
+            with self.subTest(skill=name):
+                agent = PUBLISHER_VALUES["parse_agent"](
+                    repository / "agents" / (name + "-agent.md")
+                )
+                tools = [tool.strip() for tool in agent.frontmatter["tools"].split(",")]
+                self.assertIn("request_developer", tools)
+                self.assertNotIn("ask", tools)
+                if name.startswith("draft-"):
+                    self.assertNotIn("bash", tools)
+
+                bundle, = PUBLISHER_VALUES["build_bundles"](self.root, only=[name])
+                reference = (
+                    bundle.output.parent / "references"
+                    / "omp--developer-requests-and-omps-built-in-ask.md"
+                )
+                guidance = bundle.files[reference].decode("utf-8")
+                self.assertIn(sentinel, guidance)
+                self.assertNotIn("## Templates", guidance)
+                task = bundle.files[bundle.output].decode("utf-8")
+                self.assertIn(
+                    "When running in OMP and a developer decision blocks progress, read "
+                    "[OMP developer requests and ask](skill://" + name
+                    + "/references/" + reference.name + ").",
+                    task,
+                )
+                self.assertNotIn(sentinel, task)
+
 
 if __name__ == "__main__":
     unittest.main()

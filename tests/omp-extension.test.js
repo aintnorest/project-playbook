@@ -9,6 +9,7 @@ let workspace;
 let repo;
 let tool;
 let statusTool;
+let requestTool;
 
 function git(...args) {
   const result = spawnSync("git", args, { cwd: repo, encoding: "utf8" });
@@ -22,12 +23,25 @@ beforeEach(() => {
   workspace = mkdtempSync(join(tmpdir(), "playbook-tool-test-"));
   repo = join(workspace, "repo");
   mkdirSync(repo);
-  const optional = { optional() { return this; }, nullable() { return this; }, describe() { return this; } };
+  const optional = {
+    optional() { return this; }, nullable() { return this; },
+    describe() { return this; }, strict() { return this; },
+  };
   projectPlaybook({
-    zod: { object: fields => fields, enum: values => values, string: () => optional },
+    zod: {
+      object: fields => Object.assign(fields, optional),
+      enum: values => values,
+      string: () => optional,
+      boolean: () => optional,
+      literal: () => optional,
+      never: () => optional,
+      array: () => optional,
+      union: () => optional,
+    },
     registerTool(definition) {
       if (definition.name === "check_implementation_plan") tool = definition;
       if (definition.name === "check_doc_status") statusTool = definition;
+      if (definition.name === "request_developer") requestTool = definition;
     },
   });
   writeFileSync(join(repo, "implementation-plan.md"),
@@ -206,4 +220,113 @@ test("registered tool admits ordinary changes but rejects protected edits", asyn
     head: forbiddenHead, task: undefined }, undefined, undefined, { cwd: repo });
   expect(documentation.isError).toBe(true);
   expect(documentation.details.stderr).toContain("tests/test_accept.py");
+});
+
+function decisionRequest() {
+  return {
+    version: 1, kind: "decision", title: "Choose export storage",
+    context: "Exports must remain downloadable for seven days.",
+    question: "Use object storage or local disk?", blocking: true,
+    productBasis: [{
+      source: "PRD", reference: "docs/features/export/prd.md#retention",
+      relevance: "Requires seven-day download availability.",
+    }],
+    options: [
+      {
+        label: "Object storage", strengths: ["Survives worker replacement."],
+        weaknesses: ["Adds a service dependency."],
+        downstream: "Add bucket lifecycle configuration.",
+      },
+      {
+        label: "Local disk", strengths: ["No external service."],
+        weaknesses: ["Worker replacement loses exports."],
+        downstream: "Pin downloads to the producing worker.",
+      },
+    ],
+    recommendation: { option: "Object storage", rationale: "Preserves retention across worker replacement." },
+    maintainability: "Bucket lifecycle rules avoid a custom cleanup scheduler.",
+  };
+}
+
+
+test("developer request renders the decision and its consequential tradeoffs", async () => {
+  const result = await requestTool.execute("test", decisionRequest(),
+    undefined, undefined, { cwd: repo });
+  expect(result.isError).toBeUndefined();
+  expect(result.details.status).toBe("ok");
+  expect(result.details.request.kind).toBe("decision");
+  const markdown = result.content[0].text;
+  expect(markdown).toContain("Use object storage or local disk?");
+  expect(markdown).toContain("Adds a service dependency.");
+  expect(markdown).toContain("Pin downloads to the producing worker.");
+  expect(markdown).toContain("Preserves retention across worker replacement.");
+  expect(markdown).toContain("Bucket lifecycle rules avoid a custom cleanup scheduler.");
+  expect(markdown).toContain("docs/features/export/prd.md#retention");
+});
+
+test("developer request preserves context larger than the platform argv limit", async () => {
+  const limit = spawnSync("getconf", ["ARG_MAX"], { encoding: "utf8" });
+  if (limit.error || limit.status !== 0) throw limit.error ?? new Error(limit.stderr);
+  const argumentLimit = Number(limit.stdout.trim());
+  expect(Number.isSafeInteger(argumentLimit) && argumentLimit > 0).toBe(true);
+  const request = decisionRequest();
+  request.context = "Context start " + "a".repeat(argumentLimit + 1024) + " context end";
+  const result = await requestTool.execute("test", request,
+    undefined, undefined, { cwd: repo });
+  expect(result.isError).toBeUndefined();
+  expect(result.details.status).toBe("ok");
+  expect(result.content[0].text).toContain(request.context);
+});
+
+test("developer request cancellation fails cleanly while stdin is pending", async () => {
+  for (const alreadyAborted of [true, false]) {
+    const controller = new AbortController();
+    if (alreadyAborted) controller.abort();
+    const request = decisionRequest();
+    request.context = "a".repeat(1024 * 1024);
+    const pending = requestTool.execute("test", request,
+      controller.signal, undefined, { cwd: repo });
+    if (!alreadyAborted) controller.abort();
+    const result = await pending;
+    expect(result.isError).toBe(true);
+    expect(result.details.status).toBe("error");
+    expect(result.details.exitCode).toBeNull();
+    expect(result.details.stdout).toBe("");
+  }
+});
+
+test("developer request rejects a decision without enough options", async () => {
+  const request = decisionRequest();
+  request.options = request.options.slice(0, 1);
+  const result = await requestTool.execute("test", request,
+    undefined, undefined, { cwd: repo });
+  expect(result.isError).toBe(true);
+  expect(result.details.status).toBe("error");
+  expect(result.details.exitCode).not.toBe(0);
+  expect(result.details.stderr).toContain("options");
+  expect(result.details.message).toBe(result.details.stderr.trim());
+  expect(result.content[0].text).toBe(result.details.message);
+});
+
+test("developer request treats null and empty optional values as absent", async () => {
+  const request = {
+    version: 1, kind: "input", title: "Supply retention duration",
+    context: "The export PRD does not define retention.",
+    question: "How long should exports remain downloadable?",
+    blocking: false, needed: "Retention duration in days.",
+    productBasisUnavailableReason: "No approved retention requirement is available.",
+  };
+  const baseline = await requestTool.execute("test", request,
+    undefined, undefined, { cwd: repo });
+  expect(baseline.details.status).toBe("ok");
+  for (const value of [null, "", [], {}]) {
+    const fields = Object.fromEntries([
+      "productBasis", "options", "recommendation", "maintainability", "acceptance", "requiredAction",
+    ].map(key => [key, value]));
+    const result = await requestTool.execute("test", { ...request, ...fields },
+      undefined, undefined, { cwd: repo });
+    expect(result.isError).toBeUndefined();
+    expect(result.details.status).toBe("ok");
+    expect(result.content[0].text).toBe(baseline.content[0].text);
+  }
 });

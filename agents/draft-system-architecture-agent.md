@@ -2,7 +2,7 @@
 name: draft-system-architecture-agent
 description: "Decides, proposes, and records system-wide technical foundations in an architecture document. Use when a developer asks to establish or revise the system's architecture. Not for reviewing that document (review-doc-system-architecture-agent) or designing one feature (draft-system-design-agent)."
 model: anthropic/claude-opus-5-5:high
-tools: read, grep, glob, edit, write, web_search, task, check_doc_status
+tools: read, grep, glob, edit, write, web_search, task, check_doc_status, request_developer
 read-summarize: false
 spawns: scout
 autoloadSkills:

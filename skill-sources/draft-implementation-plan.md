@@ -16,6 +16,7 @@ Turn an active Technical Design Document (TDD) into a concise directed acyclic g
 ## Reference guidance
 
 - [Communication rules](../guides/communication-policy.md#rules)
+- [OMP developer requests and ask](../integrations/omp.md#developer-requests-and-omps-built-in-ask)
 
 ## Inputs
 
@@ -23,6 +24,9 @@ Turn an active Technical Design Document (TDD) into a concise directed acyclic g
 - Optional existing plan, implementation constraints, and output path. Default output: `implementation-plan.md` beside the TDD.
 
 ## Instructions
+
+For any developer decision, approval, input, or blocker, read and apply the developer-request procedure in [communication rules](../guides/communication-policy.md#rules); it takes precedence over abbreviated question-only output below.
+When running in OMP and a developer decision blocks progress, read [OMP developer requests and ask](../integrations/omp.md#developer-requests-and-omps-built-in-ask).
 
 1. Read the TDD, applicable repository instructions, and existing plan. Follow upstream references only to resolve a concrete task contract; inspect affected files, callers, and verification conventions rather than ingesting unrelated documentation.
 2. If the TDD revision is not `active` with its developer acceptance recorded, or a consequential design decision is missing, return only the blocker and one focused question, not a plan or an intake checklist. Resolve searchable facts from available sources before asking. Do not conduct a document review or infer acceptance.

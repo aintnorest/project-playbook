@@ -51,6 +51,10 @@ Each `review-doc-*` agent needs a negative routed to another `review-doc-*` docu
 
 The skill owns everything else: the procedure, every conditional instruction, the output contract, and the definition of done. Conditional decisions belong only in the skill, including when to research, delegate, write, or stop early.
 
+### Developer communication and escalation
+
+Before any top-level developer-facing message or escalation, read and apply the [communication rules](communication-policy.md#rules), including their developer-request procedure. Drafting and orchestration skills use that shared procedure rather than local question templates. A caller receiving a review report owns escalation: resolve repository-answerable questions itself, then validate and render any remaining developer request under the shared policy. Review agents return questions to their caller in their review schema; they never contact the developer directly.
+
 ## Structured output
 
 Review agents return their report as structured data, not prose. `guides/findings-schemas.json` holds one JSON Schema per review family (`document-review`, `code-review`, `prompt-review`) with the agent-name globs it applies to. The build writes each family's schema into the matching agents' `output:` frontmatter line, and the check rejects an agent whose line drifts from the file. Edit the JSON, run the build, and commit both. The prose report contracts in `guides/document-review.md`, `guides/code-review.md`, and `guides/prompt-design.md` say what each field must contain; the schema only fixes the shape.

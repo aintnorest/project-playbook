@@ -100,6 +100,8 @@ Find consequential defects that would cause a feature designer to re-decide a sy
 
 ## Instructions
 
+Follow [communication rules](skill://review-doc-system-architecture/references/communication-policy--rules.md) for caller escalation.
+
 Before checking status, read [document state and revision](skill://review-doc-system-architecture/references/product-documentation-process--document-state-and-revision.md). For an accessible candidate, run `check_doc_status` and report frontmatter errors with exact evidence; this does not replace substantive review. If unavailable or chat-only, state the status-check coverage limit. `## Status` contains prose, never metadata.
 Check lifecycle against the table: the system architecture remains living while active with its approval date; it is not marked done. A new contract revision is draft without `approved` until developer acceptance returns it to active.
 

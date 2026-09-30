@@ -163,6 +163,9 @@ Destination:
 
 ## Instructions
 
+For any developer decision, approval, input, or blocker, read and apply the developer-request procedure in [communication rules](skill://draft-prompt/references/communication-policy--rules.md); it takes precedence over abbreviated question-only output below.
+When running in OMP and a developer decision blocks progress, read [OMP developer requests and ask](skill://draft-prompt/references/omp--developer-requests-and-omps-built-in-ask.md).
+
 1. Establish the task, authority, execution surface, output boundary, consequential risks, and observable success criteria from available context. Inspect supplied repositories and existing prompt patterns before proposing a second convention. Ask only for unresolved choices that materially change the contract; otherwise state a safe assumption and proceed.
 2. Build a compact research plan around design questions whose answers can change the prompt. Retrieve only relevant local knowledge-base synthesis and supporting dossiers. Research domain rules and current official model or interface documentation when needed; use the public repository fallbacks only when their local repositories are unavailable.
 3. When the research questions are genuinely independent, dispatch bounded read-only workers for knowledge-base evidence, domain evidence, or model/interface evidence. Give them explicit questions and require sources, applicability, disagreements, and limits. They must not edit the prompt target or draft competing final prompts. If delegation would add no independent evidence, research directly.

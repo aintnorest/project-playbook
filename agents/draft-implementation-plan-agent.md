@@ -2,7 +2,7 @@
 name: draft-implementation-plan-agent
 description: "Drafts or revises an implementation plan as a task DAG from an active TDD. Use when a developer asks to plan implementation work from an active technical design. Not for reviewing the plan (review-doc-implementation-plan-agent) or executing it (orchestrate-implementation-plan-agent)."
 model: anthropic/claude-opus-5-5:high
-tools: read, grep, glob, edit, write, check_implementation_plan, check_doc_status
+tools: read, grep, glob, edit, write, check_implementation_plan, check_doc_status, request_developer
 read-summarize: false
 autoloadSkills:
   - draft-implementation-plan

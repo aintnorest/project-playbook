@@ -29,6 +29,8 @@ Find consequential unused and obsolete first-party code in the requested scope a
 
 ## Instructions
 
+Return questions and missing-input limits to the caller in the review schema, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
+
 1. **Map the requested scope and authority.** Determine snapshot versus change review before judging candidates. Map first-party TypeScript, Rust, and Python code in scope, relevant manifests/configuration, public and executable entry points, registration, build scripts, and CI invocation. Exclude vendored code, generated files as independent targets, build output, worktrees, and secrets (`.env*` other than examples). Use other languages only as boundary context. Identify repo instructions, READMEs, and design or feature documents defining supported behavior and release configurations; neither implementation nor test names alone define the intended contract. For a diff review, keep findings to introduced or materially worsened issues, including their affected unchanged callers.
 
 2. **Read the applicable language section before judgment.** Read [TypeScript reachability considerations](../guides/unused-code.md#typescript) when inspecting TypeScript, [Rust reachability considerations](../guides/unused-code.md#rust) when inspecting Rust, and [Python reachability considerations](../guides/unused-code.md#python) when inspecting Python. For a mixed repository, read each section represented in the scope. Establish package and runtime conventions from actual configuration rather than assuming a framework, feature matrix, or distribution model.

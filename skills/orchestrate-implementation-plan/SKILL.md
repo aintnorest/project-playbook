@@ -76,6 +76,9 @@ Execute an existing active `implementation-plan.md` against its active design, p
 
 ## Instructions
 
+For any developer decision, approval, input, or blocker, read and apply the developer-request procedure in [communication rules](skill://orchestrate-implementation-plan/references/communication-policy--rules.md); it takes precedence over abbreviated decision-packet output below.
+When running in OMP and a developer decision blocks progress, read [OMP developer requests and ask](skill://orchestrate-implementation-plan/references/omp--developer-requests-and-omps-built-in-ask.md).
+
 ### 1. Establish context before dispatch
 
 Read root and nested instructions, README, the plan, active TDD, applicable system design, and governing requirements and decisions. Inspect repository structure, tooling, CI, tests, setup, affected code and callers across the plan before dispatch.

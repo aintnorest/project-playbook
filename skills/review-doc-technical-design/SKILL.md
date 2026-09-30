@@ -146,6 +146,8 @@ Find consequential defects that would cause an implementer or downstream task pl
 
 ## Instructions
 
+Return questions and missing-input limits to the caller in the review schema, not directly to the developer. Read [communication rules](skill://review-doc-technical-design/references/communication-policy--rules.md) for the caller-escalation boundary; the caller owns any developer request.
+
 Before checking status, read [document state and revision](skill://review-doc-technical-design/references/product-documentation-process--document-state-and-revision.md). For an accessible candidate file, run `check_doc_status` and include its frontmatter errors as exact review evidence; do not substitute the static check for substantive review. If the tool is unavailable or the candidate is chat-only, state that the status check was not run and the resulting coverage limit. `## Status`, if present, is prose only; metadata belongs in top-of-file YAML frontmatter.
 Check lifecycle against the table: an active TDD carries its approval date; mark it done only when its implementation plan (small-feature or slice) is done, retaining the date and freezing its historical contract. Later bugfix or redo work belongs in a new slice TDD and plan, not edits to a done TDD.
 

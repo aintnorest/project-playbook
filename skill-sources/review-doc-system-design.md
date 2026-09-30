@@ -33,6 +33,8 @@ Find consequential defects that would cause a slice designer, implementer, or ta
 
 ## Instructions
 
+Return questions and missing-input limits to the caller in the review schema, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
+
 Before checking status, read [document state and revision](../guides/product-documentation-process.md#document-state-and-revision). For an accessible candidate file, run `check_doc_status` and include its frontmatter errors as exact review evidence; do not substitute the static check for substantive review. If the tool is unavailable or the candidate is chat-only, state that the status check was not run and the resulting coverage limit. `## Status`, if present, is prose only; metadata belongs in top-of-file YAML frontmatter.
 Check lifecycle against the table: the system design stays active with its approval date until all slices are done, then may become done with its revision and date unchanged. Every body change, including an editorial fix, requires a higher revision in draft and subsequent developer acceptance to active; metadata-only active-to-done is exempt. Delivered slice sections cannot change, even when a revision increases; reviewing that ownership is a human obligation, not a `check_doc_status` inference. For a new slice after done, reopen only through a new draft revision without `approved`, followed by developer acceptance to active with a new date.
 
