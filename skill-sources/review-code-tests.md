@@ -10,6 +10,7 @@ Find consequential gaps where tests claim to prove behavior but would miss a pla
 
 ## Required guidance
 
+- [Review report delivery](../guides/agents.md#review-report-delivery)
 - [Code review contract](../guides/code-review.md)
 - [Test quality scope and authority](../guides/test-quality.md#scope-and-authority)
 - [Test quality core standard](../guides/test-quality.md#core-standard)
@@ -31,7 +32,7 @@ Find consequential gaps where tests claim to prove behavior but would miss a pla
 
 ## Instructions
 
-Return questions and missing-input limits to the caller in the review schema, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
+Return questions and missing-input limits to the caller in the fixed Markdown review report's Questions and Coverage limits sections, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
 
 1. **Map scope and authority.** Determine paths and snapshot or change boundary under the code review contract. Map first-party tests and relevant production boundaries in TypeScript, Rust, and Python; other languages are connected context only. Include manifests, runner configuration, CI, and entry points; exclude vendored/generated sources, build output, worktrees, and secrets (`.env*` except examples). Locate instructions, READMEs, design/feature documents, and behavior contracts. Never infer intended behavior from a test name or implementation.
 2. **Establish what actually runs.** Trace CI jobs and documented commands through scripts, runner discovery, workspace selections, filters, markers, ignored/skipped cases, feature/target gates, environment setup, and config inheritance. Distinguish default runs from supported alternate configurations and an advertised command from one known to run. A meaningful test excluded from every configured run is a finding: identify its exclusion and claimed behavior. Test file presence alone establishes no verification.
@@ -42,4 +43,4 @@ Return questions and missing-input limits to the caller in the review schema, no
 
 ## Output
 
-Before any message, report, or question to the developer, read [communication rules](../guides/communication-policy.md#rules). Return the structured report defined by the code review contract: candidate and mode, inspected languages, tests, configurations and boundaries, supported findings in impact order, checks run versus not run, questions, and precise coverage limits. For each finding, connect the authority and plausible missed regression to the exact test or exclusion and smallest correction. Never imply that a static review ran tests or certified the suite.
+Before any message, report, or question to the developer, read [communication rules](../guides/communication-policy.md#rules). Return the fixed Markdown report defined by the code review contract in your final message: candidate and mode, inspected languages, tests, configurations and boundaries, supported findings in impact order, checks run versus not run, questions, and precise coverage limits. For each finding, connect the authority and plausible missed regression to the exact test or exclusion and smallest correction. Never imply that a static review ran tests or certified the suite.

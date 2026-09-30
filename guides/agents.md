@@ -4,7 +4,7 @@ An agent and its skill have separate jobs. Keep their instructions distinct so t
 
 ## Agent contract
 
-Agent frontmatter holds routing and runtime configuration: the name, description, model, tools, `read-summarize: false` (so `read` returns verbatim file content rather than structural summaries; every playbook agent cites exact text), optional `spawns`, `autoloadSkills`, and for review agents the generated `output` schema described under [Structured output](#structured-output).
+Agent frontmatter holds routing and runtime configuration: the name, description, model, tools, `read-summarize: false` (so `read` returns verbatim file content rather than structural summaries; every playbook agent cites exact text), optional `spawns`, and `autoloadSkills`. Review report delivery follows [Review report delivery](#review-report-delivery).
 
 The body contains only these elements, in this order:
 
@@ -53,14 +53,18 @@ The skill owns everything else: the procedure, every conditional instruction, th
 
 ### Developer communication and escalation
 
-Before any top-level developer-facing message or escalation, read and apply the [communication rules](communication-policy.md#rules), including their developer-request procedure. Drafting and orchestration skills use that shared procedure rather than local question templates. A caller receiving a review report owns escalation: resolve repository-answerable questions itself, then validate and render any remaining developer request under the shared policy. Review agents return questions to their caller in their review schema; they never contact the developer directly.
+Before any top-level developer-facing message or escalation, read and apply the [communication rules](communication-policy.md#rules), including their developer-request procedure. Drafting and orchestration skills use that shared procedure rather than local question templates. A caller receiving a review report owns escalation: resolve repository-answerable questions itself, then validate and render any remaining developer request under the shared policy. Review agents return questions in their report; they never contact the developer directly.
 
-## Structured output
+## Reading reviewer reports
 
-Review agents return their report as structured data, not prose. `guides/findings-schemas.json` holds one JSON Schema per review family (`document-review`, `code-review`, `prompt-review`) with the agent-name globs it applies to. The build writes each family's schema into the matching agents' `output:` frontmatter line, and the check rejects an agent whose line drifts from the file. Edit the JSON, run the build, and commit both. The prose report contracts in `guides/document-review.md`, `guides/code-review.md`, and `guides/prompt-design.md` say what each field must contain; the schema only fixes the shape.
+This rule governs callers receiving a review, not their own final-answer format. Reviewers return Markdown; read its Findings section by stable finding ID, and its Questions and Coverage limits sections before deciding a response. The preview caps at 5,000 characters; `agent://<id>` holds the full report. If truncated, retrieve it with `read` before acting on findings, counts, questions, or coverage. Omit reviewer `outputSchema` and dispatch from a schema-free caller session to avoid inherited validation.
+
+## Review report delivery
+
+Return the complete Markdown report from the owning [document](document-review.md#report), [code](code-review.md#report), or [prompt](prompt-design.md#report-without-editing) contract as final text, without JSON or fences. Schema-free OMP accepts prose. If runtime requires terminal `yield`, write the report, then call `yield` with `type: "result"` and no `data` to capture it. Omit agent `output` and invocation `outputSchema`; the caller session must lack a schema, since OMP inherits it.
 
 ## Build check
 
-`scripts/build-skills.py --check` validates the agent-to-skill relationship, matching names, the standard body lines, obsolete completion wording, reviewer tool restrictions, `verbatim-read`, `output-schema`, `description-contract`, and `routing-cases`. The exact standard sentences are defined in `scripts/build-skills.py`; do not copy their wording into this guide.
+`scripts/build-skills.py --check` validates the agent-to-skill relationship, matching names, the standard body lines, obsolete completion wording, reviewer tool restrictions, `verbatim-read`, `description-contract`, and `routing-cases`; it also rejects an `output` frontmatter key in any Playbook agent. The exact standard sentences and check rule names are defined in `scripts/build-skills.py`; do not copy their wording into this guide.
 
 All rules apply by default. To make an exception, add the affected skill to `skillsWithoutAgents` or add the rule under the affected agent in `exemptions` in `agents/checks.json`. Every exception must have a non-empty reason. The check rejects exceptions that name an unknown skill, agent, or rule.

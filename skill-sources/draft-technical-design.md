@@ -10,6 +10,7 @@ Draft or revise a Technical Design Document (TDD) with concrete, testable local 
 
 ## Required guidance
 
+- [Reading reviewer reports](../guides/agents.md#reading-reviewer-reports)
 - [Technical Design Document contract](../guides/product-documentation-process.md#technical-design-document)
 - [Document state and revision](../guides/product-documentation-process.md#document-state-and-revision)
 - [Behavioral acceptance](../guides/product-documentation-process.md#behavioral-acceptance)

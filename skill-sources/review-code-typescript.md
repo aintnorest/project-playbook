@@ -10,6 +10,7 @@ Find consequential behavior defects and TypeScript-specific risks in the request
 
 ## Required guidance
 
+- [Review report delivery](../guides/agents.md#review-report-delivery)
 - [Code review contract](../guides/code-review.md)
 
 ## Reference guidance
@@ -24,7 +25,7 @@ Find consequential behavior defects and TypeScript-specific risks in the request
 
 ## Instructions
 
-Return questions and missing-input limits to the caller in the review schema, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
+Return questions and missing-input limits to the caller in the fixed Markdown review report's Questions and Coverage limits sections, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
 
 1. **Map the TypeScript scope.** Include relevant first-party `.ts`, `.mts`, `.cts`, `.tsx`, handwritten declarations, and TypeScript sections of mixed-format components when present. Read effective inherited compiler/project settings, package metadata, resolved dependencies, and relevant host/build configuration; do not assume React, Node, browsers, strict checking, ESM, or a TypeScript-only repository.
 2. **Trace contracts before syntax.** Follow representative inputs through validation or trusted construction, transformations, state changes, and outputs. At JavaScript, network, persistence, IPC, or foreign-language boundaries, compare the actual producer/consumer and serializer or authoritative schema, including nullability, omission, discriminants, and numeric/date representations; declarations, assertions, and generic calls alone do not prove runtime validation or conversion. Check that guards establish the conditions they claim.

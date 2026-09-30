@@ -7,6 +7,9 @@ hide: true
 
 ## Included guidance
 
+## Review report delivery
+
+Return the complete Markdown report from the owning document (see included section "Report"), [code (source: guides/code-review.md#report)], or [prompt (source: guides/prompt-design.md#report-without-editing)] contract as final text, without JSON or fences. Schema-free OMP accepts prose. If runtime requires terminal `yield`, write the report, then call `yield` with `type: "result"` and no `data` to capture it. Omit agent `output` and invocation `outputSchema`; the caller session must lack a schema, since OMP inherits it.
 ## Independent review context
 
 For an independent first pass, give fresh reviewers the same candidate, governing sources, accepted decisions, explicit developer constraints, and review scope. Keep provider/model provenance for your own comparison, but omit author identity, self-praise, desired verdicts, prior reviewer findings/dispositions, previous issue totals, and prior review verdicts from the reviewer packet. Keep that history in the owner's continuation context; do not append it to the material forwarded to the reviewer.
@@ -23,11 +26,22 @@ Repository agents read the task's required guidance and relevant authorized proj
 Ask focused questions about consequential unknowns, showing the competing interpretations or tradeoff and a recommendation when useful. Proceed with safe, independent work where possible. Record unresolved decisions explicitly rather than presenting unsupported requirements, scale targets, historical rationale, existing interfaces, or approval as facts; examples in the playbook are not facts about this project.
 ## Findings
 
-Review tasks are read-only. Report actionable defects, not praise, generic summaries, speculative requirements, or a quota of criticisms. For each finding, provide a stable review/finding identifier such as `R1-F1`, reviewed revision, precise location, supporting evidence or violated contract, practical consequence, and a concrete correction or decision question. For an omission, name the expected rule and the relevant material inspected rather than inventing an absent quote.
+Review tasks are read-only. Report actionable defects, not praise, generic summaries, speculative requirements, or criticism quotas. For omissions, name the expected rule and material inspected rather than inventing an absent quote.
 
 When independent reports reuse the same local finding ID, qualify it with a neutral report/source label and retain the original ID. Do not overwrite, merge, or lose different findings merely because both reviewers called one `R1-F1`.
 
-Deliver the report as structured data through the agent's output schema (`guides/findings-schemas.json`, family `document-review`) via the `yield` tool when present, not as prose. The opening facts, coverage, findings, questions, coverage limits, and next action each map to a named field; the finding count is the length of `findings`. Questions to the developer still go out as messages.
+### Report
+
+Use these Markdown sections in this order, following review report delivery (see included section "Review report delivery"):
+
+1. `## Review identity` — labelled **Target**, **Revision**, **Scope**, **Independent**, and **Finding count**. Identify each document-set member's revision and whether prior review context was visible.
+2. `## Coverage` — derived map, inspected sources/evidence, and checks limited by unavailable material.
+3. `## Findings` — one `### R1-F1 — <concise title>` per unique unresolved supported finding; count these blocks and retain supplied IDs. Label **Severity**, **Reviewed revision**, **Location**, **Evidence**, **Governing evidence**, **Consequence**, and **Correction** (smallest corrective change or focused decision). Quote candidate evidence; give precise locations, both for ownership conflicts, and practical downstream consequences. Quote applicable governing evidence; otherwise write `Not applicable`.
+4. `## Questions` — consequential unknowns not established as defects.
+5. `## Coverage limits` — unavailable evidence and exactly which checks it prevents.
+6. `## Next action` — one concrete revision, source retrieval, focused decision, or rereview step; never acceptance.
+
+Keep every section; write `None` for empty findings, questions, or limits.
 
 ### Severity
 
@@ -152,7 +166,7 @@ Review whether the supplied documents stay within their roles and levels of deta
 
 ## Instructions
 
-Return questions and missing-input limits to the caller in the review schema, not directly to the developer. Read [communication rules](skill://review-doc-coherence/references/communication-policy--rules.md) for the caller-escalation boundary; the caller owns any developer request.
+Return questions and missing-input limits to the caller in the fixed Markdown review report's Questions and Coverage limits sections, not directly to the developer. Read [communication rules](skill://review-doc-coherence/references/communication-policy--rules.md) for the caller-escalation boundary; the caller owns any developer request.
 
 Before checking status, read [document state and revision](skill://review-doc-coherence/references/product-documentation-process--document-state-and-revision.md). Run `check_doc_status` on every accessible eligible document in the authorized set, including roadmap and implementation plans; report its frontmatter errors as evidence alongside substantive cross-document findings. For inaccessible/chat-only members or an unavailable tool, identify each unperformed status check as a coverage limit. `## Status`, if present, is prose only; metadata belongs in top-of-file YAML frontmatter.
 Check lifecycle relationships, not just each file's frontmatter: top-level vision, architecture, and roadmap remain living while active; an active plan requires an active TDD, a TDD becomes done only when its implementation plan (small-feature or slice) is done, and a PRD becomes done only with its feature. A system design stays active until all slices finish; delivered slice sections and done PRD/TDD/plan contracts remain historical, not revised for later bugfix or redo work.
@@ -174,14 +188,7 @@ Check lifecycle relationships, not just each file's frontmatter: top-level visio
 
 Before writing any message, report, or question to the developer, read [communication rules](skill://review-doc-coherence/references/communication-policy--rules.md).
 
-Return the shared document-review structured report:
-
-- **Target and revision:** identify the document set and each inspected member's path and exact revision or unambiguous candidate label; do not invent a single revision for mixed inputs.
-- **Scope and independence:** whole-set or focused review, authorized boundaries, and whether prior review context was visible.
-- **Coverage:** the derived relationship map, governing sources read, and paths traced; state what was checked or limited for each of lanes, level of detail, repetition, consistency, composition, and context usability. No findings in one dimension is not proof about unread material.
-- **Findings:** supported defects with exact locations, candidate and governing evidence, downstream consequence, and the minimum correction that preserves each document's contract.
-- **Questions and coverage limits:** unresolved decisions and unavailable evidence, including precisely which comparisons they prevent.
-- **Next action:** the most direct correction, missing source, or decision needed; otherwise `None — review report complete.` Do not imply acceptance.
+Return the shared fixed Markdown document-review report (see included section "Report") in your final message. Identify the document set and every inspected member's exact revision or unambiguous candidate label rather than inventing a single revision for mixed inputs. In Coverage, include the derived relationship map, governing sources read, and paths traced; state what was checked or limited for each of lanes, level of detail, repetition, consistency, composition, and context usability. No findings in one dimension is not proof about unread material. For each finding, include all implicated locations and the minimum correction that preserves each document's contract; for questions and coverage limits, identify precisely which comparisons they prevent. Do not imply acceptance.
 
 ## Supply inputs
 Provide the target, exact revision label, source material, relevant context, and the action-specific request.

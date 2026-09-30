@@ -10,6 +10,7 @@ Find consequential integration defects in the requested Tauri scope. Tauri conne
 
 ## Required guidance
 
+- [Review report delivery](../guides/agents.md#review-report-delivery)
 - [Code review contract](../guides/code-review.md)
 
 ## Reference guidance
@@ -24,7 +25,7 @@ Find consequential integration defects in the requested Tauri scope. Tauri conne
 
 ## Instructions
 
-Return questions and missing-input limits to the caller in the review schema, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
+Return questions and missing-input limits to the caller in the fixed Markdown review report's Questions and Coverage limits sections, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
 
 1. **Establish the actual application and version.** Inspect relevant resolved Cargo/frontend dependencies, Tauri configuration and platform overrides, command/plugin registration, build hooks, and declared distribution targets. Apply the installed version's API, allowlist/capability, and configuration model: do not demand v2 capabilities in a v1 project, exact equality among unrelated ecosystem versions, a frontend-language migration, or unsupported platform support.
 2. **Define the integration slice.** Trace the relevant frontend adapter through IPC commands/events/channels, Rust host state or plugins, and any connected OS resource or sidecar; configuration and build/packaging files are in scope when they control that behavior. Inspect a foreign sidecar's arguments, serialization, output/error, and lifecycle contract as needed, then stop before reviewing its unrelated algorithms, frontend presentation, or general language style.

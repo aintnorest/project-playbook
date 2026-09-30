@@ -10,6 +10,7 @@ Find consequential defects that would cause a task executor to start blocked, bu
 
 ## Required guidance
 
+- [Review report delivery](../guides/agents.md#review-report-delivery)
 - [Independent review context](../guides/document-review.md#independent-review-context)
 - [Evidence and authority](../guides/document-review.md#evidence-and-authority)
 - [Findings](../guides/document-review.md#findings)
@@ -30,7 +31,7 @@ Find consequential defects that would cause a task executor to start blocked, bu
 
 ## Instructions
 
-Return questions and missing-input limits to the caller in the review schema, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
+Return questions and missing-input limits to the caller in the fixed Markdown review report's Questions and Coverage limits sections, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
 
 Before checking status, read [document state and revision](../guides/product-documentation-process.md#document-state-and-revision). For an accessible candidate file, run `check_doc_status` as well as `check_implementation_plan`; include frontmatter errors as exact review evidence, not a substitute for substantive review. If the status tool is unavailable or the candidate is chat-only, state that its check was not run and the resulting coverage limit. `## Status`, if present, is prose only; metadata belongs in top-of-file YAML frontmatter.
 Check lifecycle against the table: an active plan carries its approval date; only verified execution makes it done, retaining revision and date and freezing its historical contract. Later bugfix or redo work belongs in a new slice TDD and plan, not edits to a done plan.

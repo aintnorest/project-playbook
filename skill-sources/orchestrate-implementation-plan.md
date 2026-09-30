@@ -10,6 +10,7 @@ Execute an existing active `implementation-plan.md` against its active design, p
 
 ## Required guidance
 
+- [Reading reviewer reports](../guides/agents.md#reading-reviewer-reports)
 - [Implementation plan contract](../guides/product-documentation-process.md#implementation-plan)
 
 ## Reference guidance
@@ -135,14 +136,13 @@ After integrated acceptance and final verification, read [document state and rev
 
 Before writing any message, report, or question to the developer, read [communication rules](../guides/communication-policy.md#rules).
 
-During execution, report concise stage changes, accepted task IDs, branch state, and consequential blockers rather than narrating every tool call. A design halt returns the decision packet and preserved-work state, not a completion report.
-
+Report execution stage changes, accepted task IDs, branch state, and consequential blockers, not tool narration. A design halt returns its decision packet and preserved-work state, not completion.
 At completion, return one work-up:
 
 - **Delivered:** integration branch, checkout path, final commit, source plan/design revisions, and completed or blocked task IDs with their outcomes.
 - **How it went:** meaningful corrections, rejected/reworked candidates, approved deviations, and any remaining risks; omit routine dispatch history.
 - **Validation evidence:** checks and surface exercises you actually ran, their results and tested commit, with failures or skips distinguished from passes.
-- **Your validation steps:** exact checkout/location and setup instructions, prerequisites/configuration names without secrets, commands or UI actions, and expected observable results; state which steps you already exercised and which require the developer's environment, without moving your own acceptance obligations into this list.
-- **Handoff state:** worktree/branch cleanup, any retained paths and why, and whether anything was pushed or merged outside the integration branch; default to neither.
+- **Your validation steps:** exact checkout/location, setup, prerequisites/configuration names without secrets, commands/UI actions, and expected observations. Distinguish exercised steps from developer-environment steps; retain your own acceptance obligations.
+- **Handoff state:** worktree/branch cleanup, retained paths and reasons, and pushes or merges outside integration (neither by default).
 
-Report commands actually exercised verbatim; label unexercised setup or manual steps. Keep evidence retrievable after worktree removal. Put unresolved decisions or skipped verification in `Caveats / needs your call` when non-empty.
+Quote exercised commands verbatim; label unexercised setup/manual steps. Preserve retrievable evidence after worktree removal. Include non-empty `Caveats / needs your call` for unresolved decisions or skipped verification.

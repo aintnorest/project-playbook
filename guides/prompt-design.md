@@ -161,13 +161,18 @@ The evaluator never executes the prompt, generates new cases or outputs, asks an
 
 ### Report without editing
 
-Deliver the report as structured data through the agent's output schema (`guides/findings-schemas.json`, family `prompt-review`) via the `yield` tool when present, not as prose; each element below maps to a named field. Return:
+Use these Markdown sections in this order, following [review report delivery](agents.md#review-report-delivery):
 
-- **Review basis:** exact source and generated-skill revisions, intended contract, editable-source and compiled-artifact provenance, evidence records, and relevant research consulted.
-- **Findings:** supported structural defects and observed successes or failures, each with a stable ID, exact source text, evidence, consequence, causal trace, smallest specific edit, and owning source or composition boundary. When shared guidance is implicated, include its known consumer scope, the behavior it serves, and the cross-prompt impact review required before correction.
-- **Evidence accounting:** every material supplied observation and whether it supports a finding, confirms useful behavior, is stale for the reviewed revision, or lacks enough provenance or causal support.
-- **Coverage limits:** unavailable source provenance, generated artifact, shared-guidance consumer inventory, evidence details, research, or exact runtime identity.
-- **Next action:** one focused source correction, missing evidence request, or decision. Do not edit the prompt yourself.
+1. `## Review identity` — labelled **Target**, **Source revision**, **Skill revision**, **Scope**, and **Finding count**. Use exact revisions, hashes, or unambiguous artifact labels.
+2. `## Review basis` — intended contract, editable-source and generated-artifact provenance, evidence records, shared guidance, and relevant research consulted.
+3. `## Coverage` — source, generated instructions, evidence records, and connected guidance actually inspected.
+4. `## Findings` — each supported structural defect or observed success or failure under `### R1-F1 — <concise title>`. Retain supplied IDs. Each block has labelled **Kind** (`structural` or `behavioral`), **Severity**, **Location** (exact source path and line or section), **Evidence**, **Governing evidence** (quoted applicable contract or source; `Not applicable` when none applies), **Consequence**, **Correction**, and **Owner** (editable source or composition boundary). Under **Evidence**, retain labelled **Source text** (exact prompt or included-guidance text), **Evidence record** (record and exact observed success or failure), and **Causal trace** (how the text caused or enabled the result, or why causation cannot be established). Under **Correction**, retain labelled **Edit** (smallest specific wording change) and **Shared guidance impact** (known consumer scope, behavior served, and required cross-prompt impact review when shared guidance is implicated). Use `Not applicable` for inapplicable fields rather than dropping their labels. Grade supported defects `Blocker` when they prevent safe execution or the next decision, `Major` for material contract or behavioral failures, and `Minor` for bounded actionable defects; grade demonstrated consequence, not reviewer confidence. For an observed success rather than a defect, use `Not applicable — observed success` for severity. The finding count is the number of finding blocks.
+5. `## Evidence accounting` — one labelled block per material supplied observation, with **Observation**, **Disposition** (`supports-finding`, `confirms-behavior`, `stale`, or `insufficient-provenance`), and **Note**. Link supporting findings by stable ID; retain positive and negative evidence, stale observations, and provenance or causal limits.
+6. `## Questions` — unresolved consequential decisions or evidence questions, not established defects.
+7. `## Coverage limits` — unavailable source provenance, generated artifact, shared-guidance consumer inventory, evidence details, research, or exact runtime identity, and the conclusions each prevents.
+8. `## Next action` — one focused source correction, missing evidence request, or decision. Do not edit the prompt yourself.
+
+Keep every section, using `None` for empty findings, evidence accounting, questions, or limits. These labels preserve the finding's evidence, causal, and ownership requirements; they do not authorize unsupported conclusions.
 
 ## Evidence and limits
 

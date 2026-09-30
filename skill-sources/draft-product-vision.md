@@ -10,6 +10,7 @@ Draft or revise `docs/product-vision.md` when the product's enduring direction c
 
 ## Required guidance
 
+- [Reading reviewer reports](../guides/agents.md#reading-reviewer-reports)
 - [Product vision contract](../guides/product-documentation-process.md#product-vision)
 - [Document state and revision](../guides/product-documentation-process.md#document-state-and-revision)
 

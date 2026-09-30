@@ -10,6 +10,7 @@ Draft or revise feature-wide architecture at `docs/features/<feature-name>/syste
 
 ## Required guidance
 
+- [Reading reviewer reports](../guides/agents.md#reading-reviewer-reports)
 - [Feature system design contract](../guides/product-documentation-process.md#feature-system-design)
 - [Document state and revision](../guides/product-documentation-process.md#document-state-and-revision)
 - [Define boundaries through failure behavior](../guides/technical-writing-standards.md#define-boundaries-through-failure-behavior)

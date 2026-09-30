@@ -1,6 +1,6 @@
 ---
 state: draft
-revision: arch-r3
+revision: arch-r4
 ---
 
 # System architecture: Project Playbook
@@ -31,7 +31,7 @@ The vision's [product-wide boundaries](product-vision.md#product-wide-boundaries
 
 The repository separates authored rules, authored task procedures, generated per-task artifacts, deterministic programs, and OMP extension code, so each rule and each check has exactly one home. Top-level layout (every `[EXISTS]` path in this document was verified by listing the repository root and the named directories):
 
-- `guides/` [EXISTS] — shared rules, each stated once, plus machine-readable contracts such as `guides/developer-request.schema.json` [EXISTS] and `guides/findings-schemas.json` [EXISTS].
+- `guides/` [EXISTS] — shared rules, each stated once, plus machine-readable contracts such as `guides/developer-request.schema.json` [EXISTS].
 - `skill-sources/` [EXISTS] — one authored task procedure per skill, selecting guide sections by link.
 - `skills/` [EXISTS] — generated per-task skills (`SKILL.md` plus `references/`); committed so consumers never build.
 - `agents/` [EXISTS] — one OMP agent per skill, plus `agents/routing-cases.json` [EXISTS] and build-check exceptions in `agents/checks.json` [EXISTS].
@@ -47,7 +47,7 @@ The repository separates authored rules, authored task procedures, generated per
 
 ## Boundaries and dependency rules
 
-- **Source and generated output.** Only `scripts/build-skills.py` [EXISTS] writes `skills/` and the `output:` line of review agents; authors edit `guides/`, `skill-sources/`, and the rest of `agents/`. The build refuses to overwrite a file without its generated marker, and its check fails on stale output.
+- **Source and generated output.** Only `scripts/build-skills.py` [EXISTS] writes `skills/`; authors edit `guides/`, `skill-sources/`, and `agents/`. The build refuses to overwrite a file without its generated marker, and its check fails on stale output.
 - **One home per rule.** A rule lives in one guide section; skill sources link to that section, and the build inlines guidance every run needs and ships conditional guidance as references ([skill construction](../guides/skill-design.md#scope-and-disclosure)). No skill source, agent, or integration note restates a guide rule.
 - **Contract tools.** A tool that enforces or renders a Playbook contract is registered in `omp-extension.ts`, and every validation, parse, and rendering it performs lives in a `scripts/` program; the tool only maps arguments to that program's mode flags, runs it as a bounded child process, and translates its exit status and output. The program's command-line mode is the fallback when the tool is not loaded, not a portability promise.
 - **Way-of-working extensions.** An OMP extension that supports the way of working without enforcing a Playbook contract — for example, a prompt-cache keep-alive, should one ever be built — is its own module under `extensions/`, declared in the extension list in `package.json`, and acts only through OMP's extension API. Contract tools never depend on such a module, so each one can be removed alone.

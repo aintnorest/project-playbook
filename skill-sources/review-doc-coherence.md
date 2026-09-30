@@ -10,6 +10,7 @@ Review whether the supplied documents stay within their roles and levels of deta
 
 ## Required guidance
 
+- [Review report delivery](../guides/agents.md#review-report-delivery)
 - [Independent review context](../guides/document-review.md#independent-review-context)
 - [Evidence and authority](../guides/document-review.md#evidence-and-authority)
 - [Findings](../guides/document-review.md#findings)
@@ -43,7 +44,7 @@ Review whether the supplied documents stay within their roles and levels of deta
 
 ## Instructions
 
-Return questions and missing-input limits to the caller in the review schema, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
+Return questions and missing-input limits to the caller in the fixed Markdown review report's Questions and Coverage limits sections, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
 
 Before checking status, read [document state and revision](../guides/product-documentation-process.md#document-state-and-revision). Run `check_doc_status` on every accessible eligible document in the authorized set, including roadmap and implementation plans; report its frontmatter errors as evidence alongside substantive cross-document findings. For inaccessible/chat-only members or an unavailable tool, identify each unperformed status check as a coverage limit. `## Status`, if present, is prose only; metadata belongs in top-of-file YAML frontmatter.
 Check lifecycle relationships, not just each file's frontmatter: top-level vision, architecture, and roadmap remain living while active; an active plan requires an active TDD, a TDD becomes done only when its implementation plan (small-feature or slice) is done, and a PRD becomes done only with its feature. A system design stays active until all slices finish; delivered slice sections and done PRD/TDD/plan contracts remain historical, not revised for later bugfix or redo work.
@@ -65,11 +66,4 @@ Check lifecycle relationships, not just each file's frontmatter: top-level visio
 
 Before writing any message, report, or question to the developer, read [communication rules](../guides/communication-policy.md#rules).
 
-Return the shared document-review structured report:
-
-- **Target and revision:** identify the document set and each inspected member's path and exact revision or unambiguous candidate label; do not invent a single revision for mixed inputs.
-- **Scope and independence:** whole-set or focused review, authorized boundaries, and whether prior review context was visible.
-- **Coverage:** the derived relationship map, governing sources read, and paths traced; state what was checked or limited for each of lanes, level of detail, repetition, consistency, composition, and context usability. No findings in one dimension is not proof about unread material.
-- **Findings:** supported defects with exact locations, candidate and governing evidence, downstream consequence, and the minimum correction that preserves each document's contract.
-- **Questions and coverage limits:** unresolved decisions and unavailable evidence, including precisely which comparisons they prevent.
-- **Next action:** the most direct correction, missing source, or decision needed; otherwise `None — review report complete.` Do not imply acceptance.
+Return the [shared fixed Markdown document-review report](../guides/document-review.md#report) in your final message. Identify the document set and every inspected member's exact revision or unambiguous candidate label rather than inventing a single revision for mixed inputs. In Coverage, include the derived relationship map, governing sources read, and paths traced; state what was checked or limited for each of lanes, level of detail, repetition, consistency, composition, and context usability. No findings in one dimension is not proof about unread material. For each finding, include all implicated locations and the minimum correction that preserves each document's contract; for questions and coverage limits, identify precisely which comparisons they prevent. Do not imply acceptance.

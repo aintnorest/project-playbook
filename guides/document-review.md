@@ -26,11 +26,22 @@ Ask focused questions about consequential unknowns, showing the competing interp
 
 ## Findings
 
-Review tasks are read-only. Report actionable defects, not praise, generic summaries, speculative requirements, or a quota of criticisms. For each finding, provide a stable review/finding identifier such as `R1-F1`, reviewed revision, precise location, supporting evidence or violated contract, practical consequence, and a concrete correction or decision question. For an omission, name the expected rule and the relevant material inspected rather than inventing an absent quote.
+Review tasks are read-only. Report actionable defects, not praise, generic summaries, speculative requirements, or criticism quotas. For omissions, name the expected rule and material inspected rather than inventing an absent quote.
 
 When independent reports reuse the same local finding ID, qualify it with a neutral report/source label and retain the original ID. Do not overwrite, merge, or lose different findings merely because both reviewers called one `R1-F1`.
 
-Deliver the report as structured data through the agent's output schema (`guides/findings-schemas.json`, family `document-review`) via the `yield` tool when present, not as prose. The opening facts, coverage, findings, questions, coverage limits, and next action each map to a named field; the finding count is the length of `findings`. Questions to the developer still go out as messages.
+### Report
+
+Use these Markdown sections in this order, following [review report delivery](agents.md#review-report-delivery):
+
+1. `## Review identity` — labelled **Target**, **Revision**, **Scope**, **Independent**, and **Finding count**. Identify each document-set member's revision and whether prior review context was visible.
+2. `## Coverage` — derived map, inspected sources/evidence, and checks limited by unavailable material.
+3. `## Findings` — one `### R1-F1 — <concise title>` per unique unresolved supported finding; count these blocks and retain supplied IDs. Label **Severity**, **Reviewed revision**, **Location**, **Evidence**, **Governing evidence**, **Consequence**, and **Correction** (smallest corrective change or focused decision). Quote candidate evidence; give precise locations, both for ownership conflicts, and practical downstream consequences. Quote applicable governing evidence; otherwise write `Not applicable`.
+4. `## Questions` — consequential unknowns not established as defects.
+5. `## Coverage limits` — unavailable evidence and exactly which checks it prevents.
+6. `## Next action` — one concrete revision, source retrieval, focused decision, or rereview step; never acceptance.
+
+Keep every section; write `None` for empty findings, questions, or limits.
 
 ### Severity
 

@@ -27,11 +27,20 @@ Do not edit files, apply fixes, generate code, install/update dependencies, muta
 
 ## Report
 
-Open with the target technology, candidate identity, change/snapshot mode, and supported finding count. Give concise coverage of target code and connected context inspected, then findings in impact order; zero findings is valid and is not certification or approval.
+Zero findings is valid, not certification or approval. Do not fabricate locations, reproductions, approvals, or commands. Retain supplied IDs on follow-up; merge only the same underlying issue and correction.
 
-Each finding includes a stable ID such as `R1-F1`, precise path/line or symbol, category (`correctness` or `maintainability`), observed evidence and contract or engineering rationale, concrete consequence, and the smallest corrective direction with any meaningful tradeoff. Do not fabricate line numbers, reproductions, approvals, or commands; retain supplied IDs on follow-up and merge only the same underlying issue and correction.
+Use these Markdown sections in this order, following [review report delivery](agents.md#review-report-delivery):
 
-Deliver the report as structured data through the agent's output schema (`guides/findings-schemas.json`, family `code-review`) via the `yield` tool when present, not as prose. The opening facts, coverage, findings, executed and not-executed checks, questions, and coverage limits each map to a named field; the finding count is the length of `findings`. Questions to the developer still go out as messages.
+1. `## Review identity` — labelled **Technology**, **Target**, **Candidate revision**, **Mode** (`change` or `snapshot`), **Scope**, and **Finding count**.
+2. `## Coverage` — target code and connected context actually inspected.
+3. `## Findings` — findings in impact order, each under `### R1-F1 — <concise title>` with labelled **Severity**, **Category** (`correctness` or `maintainability`), **Location** (path/line or symbol), **Evidence**, **Governing evidence**, **Consequence** (concrete impact), and **Correction** (smallest corrective direction and meaningful tradeoffs). Quote the governing contract or engineering rationale; write `Not applicable` when no external authority applies. The finding count is the number of supported finding blocks.
+4. `## Checks run` — commands actually executed, verbatim, with their results.
+5. `## Checks not run` — proposed or skipped verification and why it was not executed, separate from execution evidence.
+6. `## Questions` — consequential unknowns and out-of-focus issues routed to their owning reviewer.
+7. `## Coverage limits` — uninspected targets or features and missing caller evidence, with affected conclusions.
+8. `## Next action` — one concrete correction, focused verification, evidence request, or decision; never approval.
+
+Keep every section; use `None` for empty findings, questions, or limits, and `None — static review only` when no checks were run. Each labelled finding block must satisfy the evidence and severity rules below.
 
 Choose each finding's severity only after writing its evidence and consequence. Grade the specific incorrect behavior, or for a test-evidence gap the specific regression the test would let pass, by three factors: the consequence if it occurs; how it arises — demonstrated in the inspected source, reachable through a named input or path, or dependent on a plausible future change; and what limits it, such as another check that would catch it, preconditions, reach, or recovery. Then consider whether the next lower level fits.
 

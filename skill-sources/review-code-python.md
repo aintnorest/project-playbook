@@ -10,6 +10,7 @@ Find consequential behavior defects and Python-specific runtime, boundary, and c
 
 ## Required guidance
 
+- [Review report delivery](../guides/agents.md#review-report-delivery)
 - [Code review contract](../guides/code-review.md)
 
 ## Reference guidance
@@ -24,7 +25,7 @@ Find consequential behavior defects and Python-specific runtime, boundary, and c
 
 ## Instructions
 
-Return questions and missing-input limits to the caller in the review schema, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
+Return questions and missing-input limits to the caller in the fixed Markdown review report's Questions and Coverage limits sections, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
 
 1. **Map the Python scope and effective configuration.** Include relevant first-party `.py` and `.pyi` files, scripts, and notebooks when they are supported entry points. Establish supported interpreters from `requires-python`, classifiers, deployment declarations, and CI; the build backend, `src` or flat layout, `__init__.py`, entry points, extras, and native extensions; the resolution actually used (`uv.lock`, `poetry.lock`, compiled requirements, markers); effective mypy or pyright settings and exclusions; and whether paths run under sync code, asyncio, Trio, WSGI, or ASGI with the installed framework version. Do not assume a framework, async runtime, strict typing, or that CI covers every supported interpreter; a newer language or library feature is a finding only when a supported interpreter or installation reaches it.
 2. **Trace contracts at trust and representation boundaries.** Follow requests, files, rows, environment values, and IPC messages through their actual validation and serialization to consumers. Annotations, `TypedDict`, and plain dataclasses do not validate at runtime; validation libraries may coerce, ignore extra fields, or be bypassed by their construction path, so establish what the used path checks. Compare both ends of JSON and persistence conversions, including missing key versus `None`, naive versus aware datetimes, `Decimal` versus float, enum name versus value, `bytes` versus `str` encoding, and string environment values before parsing. Check that untrusted content reaches subprocesses as arguments rather than shell text, SQL through driver placeholders, and never untrusted `pickle` or unsafe YAML loading. Do not demand duplicate validation of trusted construction or flag parameterized queries or trusted assets by keyword; show data provenance and the consumer's contract.

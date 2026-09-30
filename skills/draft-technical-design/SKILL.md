@@ -7,6 +7,9 @@ hide: true
 
 ## Included guidance
 
+## Reading reviewer reports
+
+This rule governs callers receiving a review, not their own final-answer format. Reviewers return Markdown; read its Findings section by stable finding ID, and its Questions and Coverage limits sections before deciding a response. The preview caps at 5,000 characters; `agent://<id>` holds the full report. If truncated, retrieve it with `read` before acting on findings, counts, questions, or coverage. Omit reviewer `outputSchema` and dispatch from a schema-free caller session to avoid inherited validation.
 ### Technical Design Document
 
 **File:** `tdd.md`

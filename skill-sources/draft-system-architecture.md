@@ -10,6 +10,7 @@ Decide, propose, and record the system-wide technical foundations at `docs/archi
 
 ## Required guidance
 
+- [Reading reviewer reports](../guides/agents.md#reading-reviewer-reports)
 - [System architecture contract](../guides/product-documentation-process.md#system-architecture)
 - [Document state and revision](../guides/product-documentation-process.md#document-state-and-revision)
 - [Label interface confidence](../guides/technical-writing-standards.md#label-interface-confidence-in-ai-written-specifications)

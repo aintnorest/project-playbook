@@ -15,12 +15,12 @@ This roadmap records current priorities and later opportunities. Developer appro
 ## Next
 
 - **Pinned read-only install.** Consumers need confidence that an immutable, pinned Playbook copy works with `--no-extensions --extension <copy>/omp-extension.ts` in a sandbox that denies writes to the copy: agents, skills, and all three tools must load. Python checkers must not write into the install, including `__pycache__`, and nothing may assume the checkout is writable or is the working repository.
-- **Strict review output everywhere.** Invalid reviewer output can otherwise pass as a placeholder result instead of exposing a failed review. Wherever the Playbook tells an agent to launch reviewers, strict structured-output validation should make invalid output a failed run.
 - **Plan progress reporting.** A supervising tool cannot reliably show task progress if it must parse the run ledger. A harness-neutral contract would let the execution owner report each task's state as execution proceeds.
 - **Document-status migration.** Older repository documents lack the status frontmatter needed to establish their authority. A guided migration would let an agent propose state, revision, and acceptance date from evidence for the developer to confirm.
 
 ## Later
 
 - **Repositories that aren't products.** Repositories holding no product documents need a way to declare that scope so agents do not propose product documents there. This opportunity remains pending the developer's decision.
+- Per-finding review reporting: a tool through which reviewers publish each finding’s ID, severity and location so a supervising tool can track responses to individual findings; designed when such a consumer defines its need.
 
 ## Done

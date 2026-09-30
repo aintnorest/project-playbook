@@ -10,6 +10,7 @@ Create or materially revise one prompt for a stated task, execution surface, and
 
 ## Required guidance
 
+- [Reading reviewer reports](../guides/agents.md#reading-reviewer-reports)
 - [Prompt construction contract](../guides/prompt-design.md#prompt-construction-contract)
 
 ## Reference guidance

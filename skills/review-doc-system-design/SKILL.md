@@ -7,6 +7,9 @@ hide: true
 
 ## Included guidance
 
+## Review report delivery
+
+Return the complete Markdown report from the owning document (see included section "Report"), [code (source: guides/code-review.md#report)], or [prompt (source: guides/prompt-design.md#report-without-editing)] contract as final text, without JSON or fences. Schema-free OMP accepts prose. If runtime requires terminal `yield`, write the report, then call `yield` with `type: "result"` and no `data` to capture it. Omit agent `output` and invocation `outputSchema`; the caller session must lack a schema, since OMP inherits it.
 ## Independent review context
 
 For an independent first pass, give fresh reviewers the same candidate, governing sources, accepted decisions, explicit developer constraints, and review scope. Keep provider/model provenance for your own comparison, but omit author identity, self-praise, desired verdicts, prior reviewer findings/dispositions, previous issue totals, and prior review verdicts from the reviewer packet. Keep that history in the owner's continuation context; do not append it to the material forwarded to the reviewer.
@@ -23,11 +26,22 @@ Repository agents read the task's required guidance and relevant authorized proj
 Ask focused questions about consequential unknowns, showing the competing interpretations or tradeoff and a recommendation when useful. Proceed with safe, independent work where possible. Record unresolved decisions explicitly rather than presenting unsupported requirements, scale targets, historical rationale, existing interfaces, or approval as facts; examples in the playbook are not facts about this project.
 ## Findings
 
-Review tasks are read-only. Report actionable defects, not praise, generic summaries, speculative requirements, or a quota of criticisms. For each finding, provide a stable review/finding identifier such as `R1-F1`, reviewed revision, precise location, supporting evidence or violated contract, practical consequence, and a concrete correction or decision question. For an omission, name the expected rule and the relevant material inspected rather than inventing an absent quote.
+Review tasks are read-only. Report actionable defects, not praise, generic summaries, speculative requirements, or criticism quotas. For omissions, name the expected rule and material inspected rather than inventing an absent quote.
 
 When independent reports reuse the same local finding ID, qualify it with a neutral report/source label and retain the original ID. Do not overwrite, merge, or lose different findings merely because both reviewers called one `R1-F1`.
 
-Deliver the report as structured data through the agent's output schema (`guides/findings-schemas.json`, family `document-review`) via the `yield` tool when present, not as prose. The opening facts, coverage, findings, questions, coverage limits, and next action each map to a named field; the finding count is the length of `findings`. Questions to the developer still go out as messages.
+### Report
+
+Use these Markdown sections in this order, following review report delivery (see included section "Review report delivery"):
+
+1. `## Review identity` — labelled **Target**, **Revision**, **Scope**, **Independent**, and **Finding count**. Identify each document-set member's revision and whether prior review context was visible.
+2. `## Coverage` — derived map, inspected sources/evidence, and checks limited by unavailable material.
+3. `## Findings` — one `### R1-F1 — <concise title>` per unique unresolved supported finding; count these blocks and retain supplied IDs. Label **Severity**, **Reviewed revision**, **Location**, **Evidence**, **Governing evidence**, **Consequence**, and **Correction** (smallest corrective change or focused decision). Quote candidate evidence; give precise locations, both for ownership conflicts, and practical downstream consequences. Quote applicable governing evidence; otherwise write `Not applicable`.
+4. `## Questions` — consequential unknowns not established as defects.
+5. `## Coverage limits` — unavailable evidence and exactly which checks it prevents.
+6. `## Next action` — one concrete revision, source retrieval, focused decision, or rereview step; never acceptance.
+
+Keep every section; write `None` for empty findings, questions, or limits.
 
 ### Severity
 
@@ -96,7 +110,7 @@ Find consequential defects that would cause a slice designer, implementer, or ta
 
 ## Instructions
 
-Return questions and missing-input limits to the caller in the review schema, not directly to the developer. Read [communication rules](skill://review-doc-system-design/references/communication-policy--rules.md) for the caller-escalation boundary; the caller owns any developer request.
+Return questions and missing-input limits to the caller in the fixed Markdown review report's Questions and Coverage limits sections, not directly to the developer. Read [communication rules](skill://review-doc-system-design/references/communication-policy--rules.md) for the caller-escalation boundary; the caller owns any developer request.
 
 Before checking status, read [document state and revision](skill://review-doc-system-design/references/product-documentation-process--document-state-and-revision.md). For an accessible candidate file, run `check_doc_status` and include its frontmatter errors as exact review evidence; do not substitute the static check for substantive review. If the tool is unavailable or the candidate is chat-only, state that the status check was not run and the resulting coverage limit. `## Status`, if present, is prose only; metadata belongs in top-of-file YAML frontmatter.
 Check lifecycle against the table: the system design stays active with its approval date until all slices are done, then may become done with its revision and date unchanged. Every body change, including an editorial fix, requires a higher revision in draft and subsequent developer acceptance to active; metadata-only active-to-done is exempt. Delivered slice sections cannot change, even when a revision increases; reviewing that ownership is a human obligation, not a `check_doc_status` inference. For a new slice after done, reopen only through a new draft revision without `approved`, followed by developer acceptance to active with a new date.

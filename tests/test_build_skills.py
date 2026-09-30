@@ -536,33 +536,15 @@ class BuildSkillsTests(unittest.TestCase):
         self.write_checks(exemptions={"task-agent": {"verbatim-read": "summaries wanted"}})
         self.assertEqual(self.publish("--check").returncode, 0)
 
-    def test_output_schema_is_written_and_checked_for_matching_family(self):
-        schema = {"type": "object", "required": ["findings"], "properties": {"findings": {"type": "array"}}}
-        schemas = self.root / "guides" / "findings-schemas.json"
-        schemas.write_text(
-            json.dumps({"families": {"test": {"agents": ["task-*"], "schema": schema}}}),
-            encoding="utf-8",
-        )
+    def test_full_check_rejects_only_output_frontmatter_key(self):
+        self.publish_current()
+        text = self.agent.read_text(encoding="utf-8")
+        self.agent.write_text(text.replace("tools: read\n", "tools: read\ncustom: allowed\n"), encoding="utf-8")
+        self.assertEqual(self.publish("--check").returncode, 0)
+        self.agent.write_text(text.replace("tools: read\n", "tools: read\noutput: {}\n"), encoding="utf-8")
         result = self.publish("--check")
         self.assertEqual(result.returncode, 1)
-        self.assertIn("output-schema: output must match the test schema", result.stderr)
-        self.publish_current()
-        lines = self.agent.read_text(encoding="utf-8").splitlines()
-        self.assertEqual(lines[4], "tools: read")
-        self.assertEqual(
-            lines[5],
-            'output: {"properties": {"findings": {"type": "array"}}, "required": ["findings"], "type": "object"}',
-        )
-        self.assertEqual(self.publish("--check").returncode, 0)
-        schema["required"] = []
-        schemas.write_text(
-            json.dumps({"families": {"test": {"agents": ["task-*"], "schema": schema}}}),
-            encoding="utf-8",
-        )
-        self.assertEqual(self.publish("--check").returncode, 1)
-        self.publish_current()
-        self.assertIn('"required": []', self.agent.read_text(encoding="utf-8").splitlines()[5])
-        self.assertEqual(self.publish("--check").returncode, 0)
+        self.assertIn("agent task-agent.md: frontmatter must not contain output", result.stderr)
 
     def test_every_playbook_skill_delivers_shared_developer_request_guidance(self):
         repository = PUBLISHER.parent.parent

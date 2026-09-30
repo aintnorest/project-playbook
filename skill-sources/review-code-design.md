@@ -10,6 +10,7 @@ Find consequential, demonstrated maintenance burdens in the requested first-part
 
 ## Required guidance
 
+- [Review report delivery](../guides/agents.md#review-report-delivery)
 - [Code review contract](../guides/code-review.md)
 - [Design quality scope and authority](../guides/design-quality.md#scope-and-authority)
 - [Design quality core standard](../guides/design-quality.md#core-standard)
@@ -29,7 +30,7 @@ Find consequential, demonstrated maintenance burdens in the requested first-part
 
 ## Instructions
 
-Return questions and missing-input limits to the caller in the review schema, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
+Return questions and missing-input limits to the caller in the fixed Markdown review report's Questions and Coverage limits sections, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
 
 1. **Map the design scope.** Identify first-party TypeScript, Rust, and Python source and its supported entry points, callers, manifests, build or runtime configuration, and CI invocation where these establish the design's actual use. Exclude vendored code, generated artifacts, build output, worktrees, and secrets (`.env*` except example files). Inspect other languages only at connected boundaries; do not promote them to independent review targets. Read applicable repository instructions, READMEs, and feature/design documents for intended behavior and accepted constraints; neither implementation nor test names establish the oracle. Honor the code review contract's change-versus-snapshot distinction.
 2. **Load language guidance conditionally.** Before judging a TypeScript target, read [TypeScript design considerations](../guides/design-quality.md#typescript); before judging Rust, read [Rust design considerations](../guides/design-quality.md#rust); before judging Python, read [Python design considerations](../guides/design-quality.md#python). Use each only for the language present; assess cross-language edges through their real caller and producer contracts, not a speculative language audit.

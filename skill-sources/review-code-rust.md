@@ -10,6 +10,7 @@ Find consequential behavior defects and Rust-specific ownership, API, and invari
 
 ## Required guidance
 
+- [Review report delivery](../guides/agents.md#review-report-delivery)
 - [Code review contract](../guides/code-review.md)
 
 ## Reference guidance
@@ -24,7 +25,7 @@ Find consequential behavior defects and Rust-specific ownership, API, and invari
 
 ## Instructions
 
-Return questions and missing-input limits to the caller in the review schema, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
+Return questions and missing-input limits to the caller in the fixed Markdown review report's Questions and Coverage limits sections, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
 
 1. **Map the Rust scope and supported configurations.** Identify relevant workspace members, library/executable boundaries, edition and minimum supported Rust version policy, resolved dependencies, feature/resolver settings, conditional compilation, and supported targets. Inspect relevant Rust tests, build scripts, and macro inputs/implementations as source when needed, without executing them by default; do not assume Tokio, async, `unsafe`, FFI, `no_std`, or every possible platform/feature combination is present or supported.
 2. **Trace ownership and lifetime correctness.** Check whether borrowing, consuming, sharing, returning, and retaining data preserve the actual storage and escape invariants. Identify reachable invalid references, unwanted copies of shared state, and resources held across operations where retention breaks the behavior contract; a clone may deliberately detach a snapshot, release a lock, or transfer work.

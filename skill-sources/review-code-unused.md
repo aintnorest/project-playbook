@@ -10,6 +10,7 @@ Find consequential unused and obsolete first-party code in the requested scope a
 
 ## Required guidance
 
+- [Review report delivery](../guides/agents.md#review-report-delivery)
 - [Code review contract](../guides/code-review.md)
 - [Unused code scope and authority](../guides/unused-code.md#scope-and-authority)
 - [Unused code core standard](../guides/unused-code.md#core-standard)
@@ -29,7 +30,7 @@ Find consequential unused and obsolete first-party code in the requested scope a
 
 ## Instructions
 
-Return questions and missing-input limits to the caller in the review schema, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
+Return questions and missing-input limits to the caller in the fixed Markdown review report's Questions and Coverage limits sections, not directly to the developer. Read [communication rules](../guides/communication-policy.md#rules) for the caller-escalation boundary; the caller owns any developer request.
 
 1. **Map the requested scope and authority.** Determine snapshot versus change review before judging candidates. Map first-party TypeScript, Rust, and Python code in scope, relevant manifests/configuration, public and executable entry points, registration, build scripts, and CI invocation. Exclude vendored code, generated files as independent targets, build output, worktrees, and secrets (`.env*` other than examples). Use other languages only as boundary context. Identify repo instructions, READMEs, and design or feature documents defining supported behavior and release configurations; neither implementation nor test names alone define the intended contract. For a diff review, keep findings to introduced or materially worsened issues, including their affected unchanged callers.
 
@@ -43,4 +44,4 @@ Return questions and missing-input limits to the caller in the review schema, no
 
 ## Output
 
-Before writing any message, report, or question to the developer, read [communication rules](../guides/communication-policy.md#rules). Return the structured report defined by the code review contract, with candidate identity, snapshot/change mode, target scope, and supported finding count. Separate checked production and test-only reachability, executed from not-executed checks, and specific missing external/conditional evidence; do not claim whole-repository proof or implement corrections.
+Before writing any message, report, or question to the developer, read [communication rules](../guides/communication-policy.md#rules). Return the fixed Markdown report defined by the code review contract in your final message, with candidate identity, snapshot/change mode, target scope, and supported finding count. Separate checked production and test-only reachability, executed from not-executed checks, and specific missing external/conditional evidence; do not claim whole-repository proof or implement corrections.

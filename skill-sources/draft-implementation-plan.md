@@ -10,6 +10,7 @@ Turn an active Technical Design Document (TDD) into a concise directed acyclic g
 
 ## Required guidance
 
+- [Reading reviewer reports](../guides/agents.md#reading-reviewer-reports)
 - [Implementation plan contract](../guides/product-documentation-process.md#implementation-plan)
 - [Document state and revision](../guides/product-documentation-process.md#document-state-and-revision)
 
