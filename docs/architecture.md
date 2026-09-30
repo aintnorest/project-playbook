@@ -1,6 +1,6 @@
 ---
 state: draft
-revision: arch-r5
+revision: arch-r6
 ---
 
 # System architecture: Project Playbook
@@ -73,7 +73,7 @@ Rules shared by every contract:
 
 - **Program output.** A checker is deterministic for the same files and revisions. It reports diagnostics on standard error with a nonzero exit, and writes standard output only in its machine-readable modes; tools treat any other output as a failure.
 - **Optional arguments.** A null or empty optional tool argument means absent, except where a mode requires a supplied argument to be non-empty; each such exception is declared with the tool in `omp-extension.ts`.
-- **Releases.** `VERSION` owns the release number, and each release is the Git tag `v<version>` (`.git/refs/tags/v0.1.0` [EXISTS] matches `VERSION`); the `package.json` version is not a release identifier. Numbers follow [Semantic Versioning](https://semver.org/): a change that makes a previously valid document, plan, tool call, or report consumer invalid, or changes the meaning of existing output, bumps the major number; an additive contract change bumps the minor number; a release with no contract change bumps the patch number.
+- **Releases.** `VERSION` owns the release number, and each release is the Git tag `v<version>`; the `package.json` version is not a release identifier. Numbers follow [Semantic Versioning](https://semver.org/): a change that makes a previously valid document, plan, tool call, or report consumer invalid, or changes the meaning of existing output, bumps the major number; an additive contract change bumps the minor number; a release with no contract change bumps the patch number.
 - **Migrations.** Each release that changes a contract ships its guided migration as `guides/migrations/<from>-to-<to>.md` [PROPOSED], named by the two release numbers; releases with no contract change have none.
 
 ## Build, checks, and gates
