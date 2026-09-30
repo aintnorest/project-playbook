@@ -39,7 +39,7 @@ Use this title and top-level section order:
 - constraints that every feature must preserve;
 - consequential open decisions whose resolution would change durable product direction.
 
-In `Target users and underlying problems`, name who the product serves before describing exclusions or problems. Include an excluded audience only when it is a plausible subgroup or edge of the stated target and the distinction changes product direction; do not enumerate unrelated people the product was never intended to serve. Put broader product exclusions under `Product-wide boundaries and non-goals`.
+In `Target users and underlying problems`, name who the product serves before describing exclusions or problems. As an audience-specific application of non-goals and boundaries (see included section "Non-goals and boundaries"), include an excluded audience only when it is a plausible subgroup or edge of the stated target and the distinction changes product direction; do not enumerate unrelated people the product was never intended to serve. Put broader product exclusions under `Product-wide boundaries and non-goals`.
 
 The vision owns only product-wide facts intended to remain true when individual features, delivery sequence, interfaces, or implementation change. A feature Product Requirements Document (PRD) references applicable vision content instead of copying it, then owns its feature-specific users, problem, non-goals, requirements, acceptance intent, constraints, and product decisions. Evidence may follow the claim it supports; a separate evidence section is not required.
 
@@ -74,6 +74,11 @@ Product vision, architecture, and roadmap are living documents: edit their curre
 A feature system design stays `active` while any slice is undelivered. Revise only rules for undelivered slices; sections describing delivered slices remain unchanged. Mark the system design `done` when every slice is done. A later bug fix or redo may add a slice: reopen the system design with a higher revision, `state: draft`, and no `approved`, then return it to `active` on developer acceptance. The prohibition on editing delivered-slice sections is a drafting/review obligation, not a claim that the checker can infer which sections describe delivered work.
 
 Use `python3 scripts/check-doc-status.py --check <path...>` to check files and `--json <path...>` to read `{path, type, state, revision, approved}` metadata. Old prose-only statuses fail with diagnostics. Before integrating candidates, `python3 scripts/check-doc-status.py --frozen-diff --repo <root> --base <commit> --head <commit>` requires PRD/TDD/plan transitions to `done` to preserve the active document's body, revision, and `approved` date; it rejects subsequent changes to those frozen documents and system-design body changes without a higher revision (except metadata-only acceptance and completion). The read-only extension tool `check_doc_status` exposes `mode: "check"` / `"json"` with `path`, and `mode: "frozen-diff"` with `repo`, `base`, and `head`.
+## Non-goals and boundaries
+
+For every document type that has non-goals or boundaries, keep them inside the scope the document commits to. Name only what a reader could reasonably expect that scope to include but the document intentionally excludes. Listing things nobody would expect adds nothing.
+
+In a design, state what will not be built, including scale targets, edge cases, generalizations, or optimizations intentionally omitted when they meet that expectation test.
 ## Task
 
 # Draft product vision

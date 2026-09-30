@@ -96,6 +96,11 @@ Use this form for a meaningful design choice:
 > We choose Option A over Option B because we prioritize Advantage X at the accepted cost of Disadvantage Y.
 
 Use `[NEEDS YOUR CALL]` for consequential choices still awaiting the developer's input or unfinished research. Identify recommendations as proposals, not settled facts; the tag does not approve the whole document. Do not hide a cost because one option is common or modern, and do not invent competing options for choices without a meaningful tradeoff.
+## Non-goals and boundaries
+
+For every document type that has non-goals or boundaries, keep them inside the scope the document commits to. Name only what a reader could reasonably expect that scope to include but the document intentionally excludes. Listing things nobody would expect adds nothing.
+
+In a design, state what will not be built, including scale targets, edge cases, generalizations, or optimizations intentionally omitted when they meet that expectation test.
 ## Task
 
 # Draft a feature system design

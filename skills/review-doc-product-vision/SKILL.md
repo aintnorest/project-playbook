@@ -83,7 +83,7 @@ Use this title and top-level section order:
 - constraints that every feature must preserve;
 - consequential open decisions whose resolution would change durable product direction.
 
-In `Target users and underlying problems`, name who the product serves before describing exclusions or problems. Include an excluded audience only when it is a plausible subgroup or edge of the stated target and the distinction changes product direction; do not enumerate unrelated people the product was never intended to serve. Put broader product exclusions under `Product-wide boundaries and non-goals`.
+In `Target users and underlying problems`, name who the product serves before describing exclusions or problems. As an audience-specific application of non-goals and boundaries (see included section "Non-goals and boundaries"), include an excluded audience only when it is a plausible subgroup or edge of the stated target and the distinction changes product direction; do not enumerate unrelated people the product was never intended to serve. Put broader product exclusions under `Product-wide boundaries and non-goals`.
 
 The vision owns only product-wide facts intended to remain true when individual features, delivery sequence, interfaces, or implementation change. A feature Product Requirements Document (PRD) references applicable vision content instead of copying it, then owns its feature-specific users, problem, non-goals, requirements, acceptance intent, constraints, and product decisions. Evidence may follow the claim it supports; a separate evidence section is not required.
 
@@ -96,6 +96,11 @@ The vision owns only product-wide facts intended to remain true when individual 
 - command, schema, interface, or module contracts;
 - business-model, pricing, competitive-positioning, and go-to-market plans;
 - task sequencing.
+## Non-goals and boundaries
+
+For every document type that has non-goals or boundaries, keep them inside the scope the document commits to. Name only what a reader could reasonably expect that scope to include but the document intentionally excludes. Listing things nobody would expect adds nothing.
+
+In a design, state what will not be built, including scale targets, edge cases, generalizations, or optimizations intentionally omitted when they meet that expectation test.
 ## Task
 
 # Review a product vision
@@ -127,7 +132,7 @@ Check lifecycle against the table: the product vision remains living while activ
    When checking whether a consequential open choice belongs in the vision, read [decisions](skill://review-doc-product-vision/references/product-documentation-process--decisions.md).
 3. **Check that served users come first and their underlying problems are stated.** Confirm the vision first names who it serves and the underlying problem it addresses, rather than a product category or an internal goal standing in for a customer need. If it names an audience it does not serve, confirm that audience is a plausible subgroup or edge of the stated target and that the distinction changes product direction; flag lists of unrelated people the product was never intended to serve, and route broader exclusions to `Product-wide boundaries and non-goals`. Where the vision leans on a claim about users, problems, or the market that it presents as established fact, require its cited evidence; an uncited assertion is a coverage limit or a question unless the vision itself presents it as settled, in which case the unsupported claim is a finding.
 4. **Check for a diagnosis and a constraining direction, not a slogan.** Confirm the vision states why the product exists and what problem or opportunity makes the direction matter, specifically enough to rule some product directions out. Flag fluff or a platitude only when you can show it fails to constrain a downstream feature or scope decision, naming the decision it leaves unresolved. Do not turn a preference about ambition or tone into a defect.
-5. **Check boundaries and non-goals are explicit and bounded.** Confirm the vision names product-wide boundaries and durable non-goals rather than implying it will serve everyone. Flag an all-encompassing scope with no stated exclusion, and flag a non-goal so broad it excludes nothing. Bound the actual direction rather than listing unrelated things the product could hypothetically never do.
+5. **Check boundaries and non-goals against the shared rule.** Confirm the vision's product-wide boundaries and durable non-goals follow non-goals and boundaries. Flag an all-encompassing scope with no stated exclusion, and a non-goal so broad it excludes nothing.
 6. **Check durable success signals are falsifiable.** Confirm each success signal names an observable long-term outcome clearly enough that a feature could later be judged against it. Flag a purely subjective signal that offers no way to tell whether the product is moving toward it. Flag quantified or time-bound targets and feature acceptance that should be owned downstream. Do not demand a specific metric framework or numeric target.
 7. **Check the vision boundary.** Confirm the document holds only durable product-wide direction: flag feature-specific users, problems, non-goals, requirements, acceptance criteria, or constraints; quantified targets; product-roadmap sequencing, releases, or milestones; business-model, pricing, competitive-positioning, or go-to-market plans; implementation architecture; command, schema, interface, or module contracts; and task sequencing. A durable constraint every feature must preserve belongs here; a specific solution, feature, surface, technology lock-in, or delivery order does not. Distinguish an enduring boundary from a solution the vision has quietly chosen.
    When assessing whether an inherited rule is necessary context rather than competing authority, read [reference over repetition](skill://review-doc-product-vision/references/product-documentation-process--reference-over-repetition.md).

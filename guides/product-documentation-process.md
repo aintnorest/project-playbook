@@ -7,7 +7,7 @@ approved: 2026-09-29
 
 This process keeps product intent, system architecture, technical design, and implementation work separate while preserving a traceable path from vision to verified code.
 
-It governs document roles, hierarchy, and workflow. General developer-facing output follows [the communication policy](communication-policy.md); confidence labels and the rules for expressing mechanisms, interfaces, failures, non-goals, and tradeoffs follow [the technical-writing standards](technical-writing-standards.md). Those shared guides are authoritative for their subjects. Project-specific facts remain in the document that owns them; any deviation from shared guidance must name the affected rule, scope, reason, and replacement.
+It governs document roles, hierarchy, workflow, and [non-goals and boundaries](#non-goals-and-boundaries). General developer-facing output follows [the communication policy](communication-policy.md); confidence labels and the rules for expressing mechanisms, interfaces, failures, and tradeoffs follow [the technical-writing standards](technical-writing-standards.md). Those shared guides are authoritative for their subjects. Project-specific facts remain in the document that owns them; any deviation from shared guidance must name the affected rule, scope, reason, and replacement.
 
 This is the full-feature workflow for material product work. The [lightweight path](#lightweight-path-for-minor-changes) applies to a minor fix or change that does not introduce a material product decision, cross-boundary technical contract, or independently planned delivery.
 
@@ -21,6 +21,12 @@ Working agreement for new or revised product documentation; independent document
 2. **Use the smallest document hierarchy that keeps boundaries clear.** Do not create slices, diagrams, or templates merely because the process permits them.
 3. **Split work at independently testable handoffs.** A slice ends with observable or persisted state that the next slice can consume.
 4. **Design precedes task decomposition.** An implementation plan divides decided work; it does not silently make product or architecture decisions.
+
+## Non-goals and boundaries
+
+For every document type that has non-goals or boundaries, keep them inside the scope the document commits to. Name only what a reader could reasonably expect that scope to include but the document intentionally excludes. Listing things nobody would expect adds nothing.
+
+In a design, state what will not be built, including scale targets, edge cases, generalizations, or optimizations intentionally omitted when they meet that expectation test.
 
 ## Documentation hierarchy
 
@@ -145,7 +151,7 @@ Use this title and top-level section order:
 - constraints that every feature must preserve;
 - consequential open decisions whose resolution would change durable product direction.
 
-In `Target users and underlying problems`, name who the product serves before describing exclusions or problems. Include an excluded audience only when it is a plausible subgroup or edge of the stated target and the distinction changes product direction; do not enumerate unrelated people the product was never intended to serve. Put broader product exclusions under `Product-wide boundaries and non-goals`.
+In `Target users and underlying problems`, name who the product serves before describing exclusions or problems. As an audience-specific application of [non-goals and boundaries](#non-goals-and-boundaries), include an excluded audience only when it is a plausible subgroup or edge of the stated target and the distinction changes product direction; do not enumerate unrelated people the product was never intended to serve. Put broader product exclusions under `Product-wide boundaries and non-goals`.
 
 The vision owns only product-wide facts intended to remain true when individual features, delivery sequence, interfaces, or implementation change. A feature Product Requirements Document (PRD) references applicable vision content instead of copying it, then owns its feature-specific users, problem, non-goals, requirements, acceptance intent, constraints, and product decisions. Evidence may follow the claim it supports; a separate evidence section is not required.
 
@@ -495,7 +501,7 @@ Use only the sections that apply, but preserve this reasoning order. Apply [the 
 
 1. **Status and parent contracts** — Name the owning documents and requirement IDs.
 2. **Purpose, entry state, and exit state** — Bound the slice.
-3. **Explicit non-goals** — State what will not be built.
+3. **Explicit non-goals** — Apply [non-goals and boundaries](#non-goals-and-boundaries).
 4. **Rejection criteria and failure modes** — Define the edges before the happy path.
 5. **Data-flow traces** — Show how concrete data moves and becomes durable.
 6. **Concrete interfaces and data model** — Define signatures, commands, schemas, and guarantees.

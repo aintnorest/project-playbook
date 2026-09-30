@@ -139,6 +139,11 @@ Use a concise RFC 2119 statement without a full contract block when no useful pr
 - `MAY`: optional behavior with no implied requirement.
 
 Do not capitalize ordinary prose for emphasis. Reserve these words for normative obligations.
+## Non-goals and boundaries
+
+For every document type that has non-goals or boundaries, keep them inside the scope the document commits to. Name only what a reader could reasonably expect that scope to include but the document intentionally excludes. Listing things nobody would expect adds nothing.
+
+In a design, state what will not be built, including scale targets, edge cases, generalizations, or optimizations intentionally omitted when they meet that expectation test.
 ## Task
 
 # Review a Technical Design Document

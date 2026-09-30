@@ -15,6 +15,7 @@ Find consequential defects that would cause a slice designer, implementer, or ta
 - [Evidence and authority](../guides/document-review.md#evidence-and-authority)
 - [Findings](../guides/document-review.md#findings)
 - [Feature system design contract](../guides/product-documentation-process.md#feature-system-design)
+- [Non-goals and boundaries](../guides/product-documentation-process.md#non-goals-and-boundaries)
 
 ## Reference guidance
 

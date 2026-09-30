@@ -17,6 +17,7 @@ Find consequential defects that would cause an implementer or downstream task pl
 - [Technical Design Document contract](../guides/product-documentation-process.md#technical-design-document)
 - [Behavioral acceptance](../guides/product-documentation-process.md#behavioral-acceptance)
 - [Technical contracts and verification](../guides/product-documentation-process.md#technical-contracts-and-verification)
+- [Non-goals and boundaries](../guides/product-documentation-process.md#non-goals-and-boundaries)
 
 ## Reference guidance
 

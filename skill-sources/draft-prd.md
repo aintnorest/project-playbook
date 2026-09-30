@@ -13,6 +13,7 @@ Draft or revise a feature PRD at `docs/features/<feature-name>/prd.md`.
 - [Reading reviewer reports](../guides/agents.md#reading-reviewer-reports)
 - [Feature Product Requirements Document contract](../guides/product-documentation-process.md#feature-product-requirements-document)
 - [Document state and revision](../guides/product-documentation-process.md#document-state-and-revision)
+- [Non-goals and boundaries](../guides/product-documentation-process.md#non-goals-and-boundaries)
 
 ## Reference guidance
 

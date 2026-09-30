@@ -89,6 +89,11 @@ A rule belongs here only when multiple slices must obey it or when it defines th
 This document states each current feature-wide rule without a separate decision record. Preserve its reasoning beside the rule only when the reason is not obvious. A system-wide rule belongs in the [system architecture (source: guides/product-documentation-process.md#system-architecture)] document instead.
 
 **Altitude.** A shared rule is one sentence or a short paragraph naming the states, owner, and outcome at a boundary, plus the slice technical design that owns the mechanism inside it. A rule belongs here only if two or more slices would each have to re-decide it were it absent. Name the states a slice must persist or observe; do not describe how a slice reaches them. A table enumerates only slice handoffs, requirement ownership, or shared error classes; a table of external facts, per-item evidence, or values means the detail belongs in the owning slice's technical design, with only the invariant it produces kept here. A settled rule is stated without a decision tag; a tradeoff appears only when the choice is not obvious. Omit a content area with nothing cross-slice to say; an empty area is not a defect.
+## Non-goals and boundaries
+
+For every document type that has non-goals or boundaries, keep them inside the scope the document commits to. Name only what a reader could reasonably expect that scope to include but the document intentionally excludes. Listing things nobody would expect adds nothing.
+
+In a design, state what will not be built, including scale targets, edge cases, generalizations, or optimizations intentionally omitted when they meet that expectation test.
 ## Task
 
 # Review a feature system design

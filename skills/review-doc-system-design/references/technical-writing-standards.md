@@ -5,7 +5,7 @@ Source: guides/technical-writing-standards.md
 
 ## Scope
 
-Active shared standards for clear, implementation-ready system and technical designs. This file owns how to describe mechanisms, interfaces, failures, non-goals, and tradeoffs; the [product documentation process (source: guides/product-documentation-process.md)] owns which documents and sections a change needs.
+Active shared standards for clear, implementation-ready system and technical designs. This file owns how to describe mechanisms, interfaces, failures, and tradeoffs; the [product documentation process (source: guides/product-documentation-process.md)] owns which documents and sections a change needs and how to bound non-goals (see included section "Non-goals and boundaries").
 
 Apply these standards at the boundary owned by the document. A system design references slice-local contracts rather than reproducing them, and a component does not need a database or network API merely to satisfy a writing rule. The [communication policy (source: guides/communication-policy.md)] also applies.
 
@@ -63,10 +63,6 @@ Input → validation or transformation → state change → output or side effec
 ```
 
 Name the concrete representation at every boundary. State where ownership transfers, what becomes durable, and what can still be rolled back, where applicable.
-
-## State explicit non-goals
-
-In the non-goals required by the product documentation process, name scale targets, edge cases, generalizations, and optimizations intentionally omitted from the design. Bound the actual work rather than listing unrelated things the system could hypothetically do.
 
 ## State tradeoffs rather than declaring a best choice
 

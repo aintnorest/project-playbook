@@ -16,6 +16,7 @@ Draft or revise feature-wide architecture at `docs/features/<feature-name>/syste
 - [Define boundaries through failure behavior](../guides/technical-writing-standards.md#define-boundaries-through-failure-behavior)
 - [Label interface confidence](../guides/technical-writing-standards.md#label-interface-confidence-in-ai-written-specifications)
 - [State tradeoffs](../guides/technical-writing-standards.md#state-tradeoffs-rather-than-declaring-a-best-choice)
+- [Non-goals and boundaries](../guides/product-documentation-process.md#non-goals-and-boundaries)
 
 ## Reference guidance
 

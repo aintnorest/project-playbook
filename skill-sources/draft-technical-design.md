@@ -19,6 +19,7 @@ Draft or revise a Technical Design Document (TDD) with concrete, testable local 
 - [Attach concrete interfaces to components](../guides/technical-writing-standards.md#attach-concrete-interfaces-to-components)
 - [Label interface confidence](../guides/technical-writing-standards.md#label-interface-confidence-in-ai-written-specifications)
 - [State tradeoffs](../guides/technical-writing-standards.md#state-tradeoffs-rather-than-declaring-a-best-choice)
+- [Non-goals and boundaries](../guides/product-documentation-process.md#non-goals-and-boundaries)
 
 ## Reference guidance
 
