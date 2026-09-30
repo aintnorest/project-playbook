@@ -9,7 +9,7 @@ hide: true
 
 ## Review report delivery
 
-Return the complete Markdown report from the owning [document (source: guides/document-review.md#report)], code (see included section "Report"), or [prompt (source: guides/prompt-design.md#report-without-editing)] contract as final text, without JSON or fences. Schema-free OMP accepts prose. If runtime requires terminal `yield`, write the report, then call `yield` with `type: "result"` and no `data` to capture it. Omit agent `output` and invocation `outputSchema`; the caller session must lack a schema, since OMP inherits it.
+Return the complete Markdown report from the owning [document (source: guides/document-review.md#report)], code (see included section "Report"), [prompt (source: guides/prompt-design.md#report-without-editing)], or [friction (source: guides/friction.md#report)] contract as final text, without JSON or fences. Schema-free OMP accepts prose. If runtime requires terminal `yield`, write the report, then call `yield` with `type: "result"` and no `data` to capture it. Omit agent `output` and invocation `outputSchema`; the caller session must lack a schema, since OMP inherits it.
 # Code review contract
 
 This contract governs language, integration, and focused code reviews. Assess the requested focus in its actual context, not idealized architecture or only executable bugs.

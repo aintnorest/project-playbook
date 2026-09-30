@@ -34,6 +34,10 @@ These rules apply to the agent speaking to the developer, including a top-level 
    Rendering uses minimal Markdown backslash escapes, never numeric entities; ordinary spaces, apostrophes, punctuation, and paths remain readable in a raw terminal.
 5. **Collect a blocking decision only after rendering.** For a blocking `decision`, first validate and render, then use OMP's built-in interactive question mechanism when available, carrying the same option labels/order and named recommendation. Preserve the complete rendered context in the question surface, not only in an earlier message. If the OMP session cannot collect an interactive answer, send the validated Markdown verbatim and wait for an explicit developer reply. Nonblocking requests still retain their full framing. A default, timeout selection, cancellation, or redirect is not explicit acceptance; do not resume blocked work until the developer has actually answered.
 
+### Friction line
+
+When Playbook guidance, a Playbook tool, or the way you were dispatched caused avoidable work in this run — an unclear or conflicting instruction, a check that rejected valid input, missing input the dispatcher should have supplied — end your final report or message with one line per occurrence: `Friction: <what happened and what it cost>`. Omit the line when nothing qualifies, and never put it in a document the task writes. [Friction reviews (source: guides/friction.md)] collect these lines.
+
 ### Before you send
 
-Check, in order: outcome first; thread named and self-contained; ordinary messages grouped within the concise limits; every anchor carries its reason; developer requests validated and rendered verbatim with full context, specific product basis or explicit absence, and kind-specific framing; blocking decisions routed only after rendering with unchanged choices and recommendation; caveats present only if real.
+Check, in order: outcome first; thread named and self-contained; ordinary messages grouped within the concise limits; every anchor carries its reason; developer requests validated and rendered verbatim with full context, specific product basis or explicit absence, and kind-specific framing; blocking decisions routed only after rendering with unchanged choices and recommendation; caveats present only if real; Friction lines present only if real.

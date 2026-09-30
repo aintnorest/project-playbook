@@ -262,6 +262,18 @@
       {"request": "Draft the export slice technical design", "expected": "draft-technical-design-agent"}
     ]
   },
+  "review-friction-agent": {
+    "positive": [
+      "What went wrong in the TDD reviewer's runs over the last two weeks?",
+      "Find friction in recent runs of the Rust code reviewer",
+      "Look through last week's session logs for where the plan drafter wasted effort"
+    ],
+    "negative": [
+      {"request": "Diagnose which skill text caused these recorded failures and suggest edits", "expected": "review-prompt-agent"},
+      {"request": "Review the TypeScript changes in the EXPORT module", "expected": "review-code-typescript-agent"},
+      {"request": "Fix the failing export test", "expected": null}
+    ]
+  },
   "review-prompt-agent": {
     "positive": [
       "Review the EXPORT prompt against supplied evidence records",
@@ -270,7 +282,8 @@
     ],
     "negative": [
       {"request": "Create a reusable prompt for the document export task", "expected": "draft-prompt-agent"},
-      {"request": "Review the EXPORT PRD requirements", "expected": "review-doc-prd-agent"}
+      {"request": "Review the EXPORT PRD requirements", "expected": "review-doc-prd-agent"},
+      {"request": "Scan recent session logs for where the prompt reviewer caused rework", "expected": "review-friction-agent"}
     ]
   }
 }

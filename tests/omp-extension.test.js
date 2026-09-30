@@ -11,6 +11,7 @@ let repo;
 let tool;
 let statusTool;
 let requestTool;
+let runsTool;
 
 function git(...args) {
   const result = spawnSync("git", args, { cwd: repo, encoding: "utf8" });
@@ -30,6 +31,7 @@ beforeEach(() => {
       if (definition.name === "check_implementation_plan") tool = definition;
       if (definition.name === "check_doc_status") statusTool = definition;
       if (definition.name === "request_developer") requestTool = definition;
+      if (definition.name === "collect_agent_runs") runsTool = definition;
     },
   });
   writeFileSync(join(repo, "implementation-plan.md"),
@@ -343,4 +345,55 @@ test("developer request schema rejects nonempty placeholders and malformed field
   ]) {
     expect(requestTool.parameters.safeParse({ ...request, ...fields }).success).toBe(false);
   }
+});
+
+function seedSessions() {
+  const sessions = join(workspace, "sessions");
+  const folder = join(sessions, "-work-app", "2026-09-20_a");
+  mkdirSync(folder, { recursive: true });
+  const lines = entries => entries.map(entry => JSON.stringify(entry)).join("\n") + "\n";
+  writeFileSync(`${folder}.jsonl`, lines([
+    { type: "session", cwd: "/work/app" },
+    { type: "message", message: { role: "assistant", content: [{ type: "toolCall", name: "task",
+      arguments: { tasks: [{ name: "Rev1", agent: "review-prompt-agent", task: "t" }] } }] } },
+  ]));
+  writeFileSync(join(folder, "Rev1.jsonl"), lines([
+    { type: "session_init", agent: "review-prompt-agent", timestamp: "2026-09-20T01:00:00Z" },
+    { type: "message", message: { role: "assistant", content: [{ type: "text", text: "Friction: slow" }] } },
+  ]));
+  return sessions;
+}
+
+test("agent-run collection treats null and empty optional values as absent", async () => {
+  const sessions = seedSessions();
+  for (const fields of [{}, { until: null, project: null }, { until: "", project: "" }]) {
+    const result = await runsTool.execute("test", runsTool.parameters.parse(
+      { agent: "review-prompt-agent", since: "2026-09-01", sessions, ...fields }),
+      undefined, undefined, { cwd: repo });
+    expect(result.isError).toBeUndefined();
+    expect(result.details.status).toBe("ok");
+    const [run] = result.details.report.runs;
+    expect(result.details.report.runs).toHaveLength(1);
+    expect(run.run).toBe("Rev1");
+    expect(run.parent.dispatchLine).toBe(2);
+    expect(run.friction.map(item => item.text)).toEqual(["slow"]);
+  }
+  const scoped = await runsTool.execute("test",
+    { agent: "review-prompt-agent", since: "2026-09-01", project: "/work/other", sessions },
+    undefined, undefined, { cwd: repo });
+  expect(scoped.details.report.runs).toEqual([]);
+});
+
+test("agent-run collection reports collector errors and rejects unknown fields", async () => {
+  const sessions = seedSessions();
+  const result = await runsTool.execute("test", { agent: "task", since: "2026-09-01", sessions },
+    undefined, undefined, { cwd: repo });
+  expect(result.isError).toBe(true);
+  expect(result.details.exitCode).toBe(1);
+  expect(result.details.message).toContain("unknown Playbook agent 'task'");
+  const empty = await runsTool.execute("test", { agent: "review-prompt-agent", since: "" },
+    undefined, undefined, { cwd: repo });
+  expect(empty.details.message).toBe("Agent-run collection requires non-empty agent and since.");
+  expect(runsTool.parameters.safeParse(
+    { agent: "review-prompt-agent", since: "2026-09-01", mode: "json" }).success).toBe(false);
 });

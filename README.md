@@ -12,6 +12,8 @@ Top-level agents and callers follow the [agent guidance](guides/agents.md#develo
 
 To review how a project's documents work together, dispatch `review-doc-coherence-agent`. Its [coherence review skill](skill-sources/review-doc-coherence.md) checks roles, levels of detail, competing authority, contradictions, traceability, and context usability against the same guidance used to draft the documents; document-specific agents remain available for individual reviews.
 
+To improve an agent from its real runs, dispatch `review-friction-agent` for it over a time window. It finds the agent's runs in OMP's session transcripts through the `collect_agent_runs` tool and reports friction as evidence records. Then dispatch `review-prompt-agent` with those records and apply the corrections you choose; [failure-driven maintenance](guides/skill-design.md#failure-driven-maintenance) describes the loop.
+
 ## Changing the playbook
 
 Edit skill sources in `skill-sources/` or shared rules in `guides/`; never edit generated files in `skills/`. A git pre-commit hook regenerates the skills, stages them, and runs the build check, so a commit can never carry a stale skill. Install the hook once per clone:

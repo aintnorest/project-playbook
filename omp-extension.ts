@@ -1,5 +1,6 @@
 // Enabling this extension package exposes its sibling agents/ and skills/
-// directories and registers read-only document checks and developer-request rendering.
+// directories and registers read-only document checks, developer-request rendering,
+// and agent-run collection.
 // Scripts resolve from this extension's directory, independent of the workspace.
 
 import { spawn } from "node:child_process";
@@ -10,6 +11,7 @@ import type { ExtensionAPI } from "@oh-my-pi/pi-coding-agent";
 const validator = fileURLToPath(new URL("./scripts/check-implementation-plans.py", import.meta.url));
 const statusValidator = fileURLToPath(new URL("./scripts/check-doc-status.py", import.meta.url));
 const requestRenderer = fileURLToPath(new URL("./scripts/request-developer.py", import.meta.url));
+const runCollector = fileURLToPath(new URL("./scripts/collect-agent-runs.py", import.meta.url));
 // Bound each validator output stream independently; the child has at most 120 seconds to finish.
 const MAX_STREAM_BYTES = 16 * 1024 * 1024;
 const VALIDATOR_TIMEOUT_MS = 120_000;
@@ -238,6 +240,69 @@ export default function projectPlaybook(pi: ExtensionAPI) {
       return {
         content: [{ type: "text" as const, text: mode === "frozen-diff" ? "Frozen documents unchanged." : "Document status valid." }],
         details: { status: "ok", mode, exitCode, stderr, stdout },
+      };
+    },
+  });
+
+  pi.registerTool({
+    name: "collect_agent_runs",
+    label: "Collect Agent Runs",
+    description: "Locate one Playbook agent's runs in OMP session transcripts and return JSON pointers: transcript paths and 1-based lines for each run's task, skill read, and final report, the parent's dispatch, result delivery, and the developer's next message, plus Friction: lines from final reports. Pass agent and since; until, project, and sessions are optional. Reads only.",
+    parameters: z.object({
+      agent: z.string().describe("Playbook agent name, for example review-prompt-agent."),
+      since: z.string().describe("Inclusive start: YYYY-MM-DD (UTC day) or ISO 8601."),
+      until: z.string().nullable().optional().describe("Inclusive end: YYYY-MM-DD (UTC day) or ISO 8601; omit or null for no end."),
+      project: z.string().nullable().optional().describe("Absolute project path; omit or null for every project."),
+      sessions: z.string().nullable().optional().describe("OMP sessions directory; omit or null for ~/.omp/agent/sessions."),
+    }).strict(),
+    async execute(_toolCallId, params, signal, _onUpdate, ctx) {
+      const { agent, since, until, project, sessions } = params;
+      const fail = (message: string, result?: ValidatorResult) => ({
+        content: [{ type: "text" as const, text: message }],
+        details: {
+          status: "error", message,
+          exitCode: result?.exitCode ?? null,
+          stderr: result?.stderr ?? "",
+          stdout: result?.stdout ?? "",
+        },
+        isError: true,
+      });
+      if (!existsSync(runCollector)) {
+        return fail(`Agent-run collector is missing: ${runCollector}`);
+      }
+      if (!agent || !since) {
+        return fail("Agent-run collection requires non-empty agent and since.");
+      }
+      const args = [runCollector, "--agent", agent, "--since", since,
+        ...(!until ? [] : ["--until", until]),
+        ...(!project ? [] : ["--project", project]),
+        ...(!sessions ? [] : ["--sessions", sessions])];
+      let result: ValidatorResult;
+      try {
+        result = await runValidator(args, ctx.cwd, signal, "Agent-run collector");
+      } catch (error) {
+        const message = error instanceof Error && "code" in error && error.code === "ENOENT"
+          ? "python3 is missing from PATH; cannot collect agent runs."
+          : `Unable to run agent-run collector: ${String(error)}`;
+        return fail(message);
+      }
+      const { stdout, stderr, exitCode, boundedFailure } = result;
+      if (boundedFailure) return fail(boundedFailure, result);
+      if (exitCode !== 0 || stderr.trim()) {
+        return fail(stderr.trim() || `Agent-run collector exited with code ${exitCode}.`, result);
+      }
+      let report: unknown;
+      try {
+        report = JSON.parse(stdout);
+      } catch {
+        return fail("Agent-run collector returned invalid JSON.", result);
+      }
+      if (typeof report !== "object" || report === null || !("runs" in report) || !Array.isArray(report.runs)) {
+        return fail("Agent-run collector returned no runs array.", result);
+      }
+      return {
+        content: [{ type: "text" as const, text: stdout }],
+        details: { status: "ok", exitCode, stderr, report },
       };
     },
   });

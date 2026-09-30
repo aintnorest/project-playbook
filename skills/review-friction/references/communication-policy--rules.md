@@ -36,7 +36,7 @@ These rules apply to the agent speaking to the developer, including a top-level 
 
 ### Friction line
 
-When Playbook guidance, a Playbook tool, or the way you were dispatched caused avoidable work in this run — an unclear or conflicting instruction, a check that rejected valid input, missing input the dispatcher should have supplied — end your final report or message with one line per occurrence: `Friction: <what happened and what it cost>`. Omit the line when nothing qualifies, and never put it in a document the task writes. [Friction reviews (source: guides/friction.md)] collect these lines.
+When Playbook guidance, a Playbook tool, or the way you were dispatched caused avoidable work in this run — an unclear or conflicting instruction, a check that rejected valid input, missing input the dispatcher should have supplied — end your final report or message with one line per occurrence: `Friction: <what happened and what it cost>`. Omit the line when nothing qualifies, and never put it in a document the task writes. Friction reviews (see included section "Friction review contract") collect these lines.
 
 ### Before you send
 

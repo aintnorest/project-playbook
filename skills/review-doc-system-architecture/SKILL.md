@@ -9,7 +9,7 @@ hide: true
 
 ## Review report delivery
 
-Return the complete Markdown report from the owning document (see included section "Report"), [code (source: guides/code-review.md#report)], or [prompt (source: guides/prompt-design.md#report-without-editing)] contract as final text, without JSON or fences. Schema-free OMP accepts prose. If runtime requires terminal `yield`, write the report, then call `yield` with `type: "result"` and no `data` to capture it. Omit agent `output` and invocation `outputSchema`; the caller session must lack a schema, since OMP inherits it.
+Return the complete Markdown report from the owning document (see included section "Report"), [code (source: guides/code-review.md#report)], [prompt (source: guides/prompt-design.md#report-without-editing)], or [friction (source: guides/friction.md#report)] contract as final text, without JSON or fences. Schema-free OMP accepts prose. If runtime requires terminal `yield`, write the report, then call `yield` with `type: "result"` and no `data` to capture it. Omit agent `output` and invocation `outputSchema`; the caller session must lack a schema, since OMP inherits it.
 ## Independent review context
 
 For an independent first pass, give fresh reviewers the same candidate, governing sources, accepted decisions, explicit developer constraints, and review scope. Keep provider/model provenance for your own comparison, but omit author identity, self-praise, desired verdicts, prior reviewer findings/dispositions, previous issue totals, and prior review verdicts from the reviewer packet. Keep that history in the owner's continuation context; do not append it to the material forwarded to the reviewer.

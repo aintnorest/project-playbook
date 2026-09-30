@@ -1,6 +1,6 @@
 ---
 state: draft
-revision: arch-r6
+revision: arch-r7
 ---
 
 # System architecture: Project Playbook
@@ -55,7 +55,7 @@ The repository separates authored rules, authored task procedures, generated per
 
 - **Contract tools.** A tool that enforces or renders a Playbook contract is registered in `omp-extension.ts`. Domain validation and rendering live in a `scripts/` program; the tool owns only transport: declaring its arguments, rejecting argument combinations a mode does not accept, running the program as a bounded child process, and checking the result envelope — exit status, unexpected output, and JSON shape — before returning it. The program's command-line mode is the fallback when the tool is not loaded, not a portability promise.
 - **Way-of-working extensions.** An OMP extension that supports the way of working without enforcing a Playbook contract — for example, a prompt-cache keep-alive, should one ever be built — is its own module under `extensions/`, declared in the extension list in `package.json`, and acts only through OMP's extension API. Contract tools never depend on such a module, so each one can be removed alone.
-- **Trust boundary.** At runtime nothing writes to the Playbook checkout or the consuming project: contract tools and checkers only read files and Git state named by their arguments, never use the network, and never contact the developer. Scripts resolve their own files relative to their location, never the caller's workspace, so the Playbook works as a read-only copy pinned to a release tag.
+- **Trust boundary.** At runtime nothing writes to the Playbook checkout or the consuming project: contract tools and checkers only read files and Git state named by their arguments, never use the network, and never contact the developer. The one default is the agent-run collector's sessions directory, OMP's `~/.omp/agent/sessions`, which it only reads. Scripts resolve their own files relative to their location, never the caller's workspace, so the Playbook works as a read-only copy pinned to a release tag.
 - **No persistence or service.** The Playbook keeps no state of its own; every durable fact is a file under Git, in this repository or the consuming project.
 
 ## Consumer contracts and versioning
@@ -67,7 +67,7 @@ A consumer contract is any format, grammar, mode, output, or schema that consumi
 - Checker command-line modes and JSON output: each program in `scripts/`, described in the guide section it checks.
 - Tool arguments: the tool declarations in `omp-extension.ts`.
 - Developer requests: `guides/developer-request.schema.json`, rendered by `scripts/request-developer.py` [EXISTS].
-- Markdown review reports: the [document](../guides/document-review.md#report), [code](../guides/code-review.md#report), and [prompt](../guides/prompt-design.md#report-without-editing) report contracts, delivered as [review report delivery](../guides/agents.md#review-report-delivery) specifies.
+- Markdown review reports: the [document](../guides/document-review.md#report), [code](../guides/code-review.md#report), [prompt](../guides/prompt-design.md#report-without-editing), and [friction](../guides/friction.md#report) report contracts, delivered as [review report delivery](../guides/agents.md#review-report-delivery) specifies.
 
 Rules shared by every contract:
 

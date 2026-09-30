@@ -8,6 +8,7 @@ Enabling this repository as an OMP extension package exposes:
 - `skills/` — the generated skill directories (`SKILL.md` plus `references/` files read through `skill://<name>/references/<file>`) those agents load.
 - `check_implementation_plan` — a read-only tool for plan syntax, the task DAG, and protected diffs. For assigned tasks, protected-diff also checks the recorded worktree under `<repo-root>/.worktrees`, branch, clean candidate tip, and Git ignore rule; it cannot prove where commits originated. It runs the bundled Python validator, so `python3` and Git must be on `PATH`.
 - `request_developer` — validates a version-1 developer-request object against `guides/developer-request.schema.json` and returns Markdown. Request fields are the tool arguments themselves, not a nested `request` property. The call arguments are the machine-readable observer contract; consumers observe those arguments rather than parse Markdown or depend on OMP's presentation. The tool does not contact the developer or collect an answer.
+- `collect_agent_runs` — a read-only tool that finds one Playbook agent's runs in OMP session transcripts within a time window and returns JSON pointers: transcript paths and 1-based line numbers for each run's task, skill read, final report, the parent session's dispatch and result delivery, and the developer's next message, plus `Friction:` lines from final reports. It reads `~/.omp/agent/sessions` unless given another sessions directory, such as one kept by a separate OMP profile, and needs `python3` and Git on `PATH`.
 
 The checkers invoke Git with `--no-optional-locks`, including protected-diff and frozen-diff checks, so inspection does not refresh or write the consuming repository's index. For protected-diff, a null or empty `worktreeRoot` is treated as absent; an assigned candidate still requires the recorded worktree root. An explicitly empty `task` is rejected rather than treated as absent.
 
@@ -34,7 +35,7 @@ Restart OMP. A new extension root is read at startup; `/reload-plugins` refreshe
 
 ## Verify
 
-`/agents` lists the playbook agents. Dispatch one by name, or describe the task and let OMP select by description. The draft, review, and orchestration implementation-plan agents each include `check_implementation_plan` in their task-agent tool list.
+`/agents` lists the playbook agents. Dispatch one by name, or describe the task and let OMP select by description. The draft, review, and orchestration implementation-plan agents each include `check_implementation_plan` in their task-agent tool list, and `review-friction-agent` includes `collect_agent_runs`.
 
 The generated skills are marked `hide: true`, so they deliberately do not appear in the global skill menu. Each surfaces only through the agent that autoloads it. An empty skill menu is expected, not a failed install.
 
