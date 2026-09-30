@@ -1,6 +1,7 @@
 ---
-state: draft
+state: active
 revision: vision-r5
+approved: 2026-09-30
 ---
 
 # Product vision: Project Playbook
@@ -17,7 +18,7 @@ The Playbook assumes the OMP harness. It should also be able to improve itself o
 
 ## Target users and underlying problems
 
-The Playbook serves one developer: its author, who directs AI coding agents on software projects in OMP. The developer runs two to five trains of work at once. They do not reliably hold prior context between sessions, and they often work tired and under heavy cognitive load.
+The Playbook serves one developer: its author, who directs AI coding agents on software projects in OMP. The developer runs two to seven trains of work at once. They do not reliably hold prior context between sessions, and they often work tired and under heavy cognitive load.
 
 The underlying problems:
 
