@@ -1,18 +1,19 @@
 ---
-state: active
-revision: vision-r5
-approved: 2026-09-30
+state: draft
+revision: vision-r6
 ---
 
 # Product vision: Project Playbook
 
 ## Status
 
-Revised from the developer's review of the previous revision.
+Revised to make the software-factory intent explicit.
 
 ## Vision
 
-The Project Playbook explains what documents a software project should have, what each document should contain, and the processes needed to grow and improve the project with AI without slop.
+The Project Playbook is a software factory. The developer's decisions go in, and verified software, built by agents, comes out. The developer takes part only at defined points where human judgment is required. The aim is as few of those touchpoints as possible, without losing quality or the developer's control over direction.
+
+To get there, the Playbook explains what documents a software project should have, what each document should contain, and the processes needed to grow and improve the project with AI without slop.
 
 The Playbook assumes the OMP harness. It should also be able to improve itself over time.
 
@@ -27,6 +28,7 @@ The underlying problems:
 - **AI writes code faster than anyone can review it.** Generic guardrails cannot catch everything one project needs. Work can move away from what the developer intended before anyone notices.
 - **Shortcuts compound.** Slop and hardcoding get a lot done quickly. They also make everything downstream harder at a growing rate, until the project can no longer grow.
 - **Requests push the AI's legwork onto the developer.** A question that assumes the developer remembers the thread makes them rebuild its context and gather the facts before they can answer. That costs the developer's scarce attention, and an answer given without the full context is a worse answer.
+- **Every interruption costs the developer.** Each time an agent stops for the developer, its work waits and the developer switches away from another train of work. Interruptions that do not need the developer's judgment slow every project and spend attention that the real decisions need.
 - **Guidance and process are rebuilt in every project.** Without a shared playbook, each project reinvents which documents it keeps and how it plans, reviews, and ships work. One ends up with too little process and another with too much, and copies of the same rules drift apart.
 - **Guidance goes stale.** Models and the harness keep changing. Rules written from preference, or from how models used to behave, stop working, and the same failures keep recurring.
 - **Wasteful tooling undermines the playbook.** The Playbook is a playbook first, but it runs on OMP. Slow, unreliable, or wasteful use of the harness, such as spending tokens that add nothing to the work, costs time and money and keeps the Playbook from fulfilling its purpose.
@@ -34,6 +36,7 @@ The underlying problems:
 ## Product principles
 
 - **The developer holds the vision and makes the decisions.** The developer keeps a strong product vision in view, both the document and the idea behind it, and thinks ahead about where the product is going so they can guide its architecture. That direction is the context the AI needs to make its own decisions well.
+- **Few gates, deliberately placed.** Work stops for the developer only where a decision is consequential or hard to reverse and only the developer can make it. Anywhere else, the agents keep working, because a gate that adds no judgment only adds delay.
 - **Force infrastructure over memory.** Push policy, sequencing, and verification into deterministic code wherever possible. A check that runs every time does not depend on a model remembering to do it.
 - **Harness over prompt.** A better harness improves outcomes more than a better prompt, which is why the Playbook is built for OMP. Prompts define intent, but infrastructure is what allows prompt engineering to compound into repeatable reliability.
 - **Context is a shared responsibility.** The developer shows the AI what matters in the context. The AI reminds the developer of the context they may have forgotten and does the legwork of gathering it, so that every request can be answered cold.
@@ -61,6 +64,7 @@ Within that scope, the Playbook does not do the following:
 - Mistakes a check can catch are stopped before they land, and most slop that gets past the checks is caught in review rather than in use.
 - The Playbook's guidance changes in response to observed agent failures, and the same failure does not keep recurring.
 - Playbook work spends less time and fewer tokens as its OMP tools and extensions improve, without the quality of the work dropping.
+- The developer steps in less often for each piece of delivered work, while the quality of the work and the developer's control over direction hold.
 
 ## Constraints every feature must preserve
 
