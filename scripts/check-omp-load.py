@@ -40,7 +40,8 @@ def main():
             result = subprocess.run([omp, '--no-session', '--model', 'sandbox-dead/sandbox-null',
                                      '--no-extensions', '--no-skills', '--no-rules', '--no-lsp',
                                      '--extension', str(probe), '--mode', 'rpc', '--no-ui'],
-                                    cwd=directory, env=env, capture_output=True, text=True, timeout=30)
+                                    cwd=directory, env=env, stdin=subprocess.DEVNULL,
+                                    capture_output=True, text=True, timeout=30)
         except subprocess.TimeoutExpired:
             sys.exit('OMP load check failed: exceeded 30-second deadline; no model prompt was sent.')
         match = re.search(r'PLAYBOOK_LOADED=(\[[^\n]+\])', result.stdout)

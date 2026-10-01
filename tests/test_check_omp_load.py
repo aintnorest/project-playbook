@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import shutil
+import pty
 import subprocess
 import sys
 import tempfile
@@ -30,3 +31,17 @@ class OmpLoadIsolationTests(unittest.TestCase):
             self.assertIn('no model turn', result.stdout)
             self.assertEqual({str(path): (path.read_bytes(), path.stat().st_mtime_ns)
                               for path in home.rglob('*') if path.is_file()}, before)
+
+    @unittest.skipUnless(shutil.which('omp'), 'installed OMP required; pre-push load gate checks availability')
+    def test_load_completes_when_stdin_is_a_terminal(self):
+        # An interactive caller (an OMP pty shell, a developer's terminal) leaves stdin attached to a
+        # tty; OMP's RPC mode then waits on it unless the probe closes it.
+        leader, follower = pty.openpty()
+        try:
+            result = subprocess.run([sys.executable, '-B', str(SCRIPT)], stdin=follower,
+                                    capture_output=True, text=True, timeout=35)
+        finally:
+            os.close(follower)
+            os.close(leader)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('no model turn', result.stdout)
