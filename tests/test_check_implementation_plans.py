@@ -1,4 +1,5 @@
 """Behavioral contracts for the implementation-plan DAG validator."""
+import git_test_environment  # Scrub inherited Git hook state before fixture creation.
 
 import importlib.util
 import json

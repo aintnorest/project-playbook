@@ -9,6 +9,7 @@ import signal
 import subprocess
 import tempfile
 import time
+from git_environment import clean_git_environment
 
 MAX_TAIL_BYTES = 64 * 1024
 
@@ -42,7 +43,8 @@ def run(command, cwd, timeout=120, tail_lines=40):
             message = ''
             try:
                 child = subprocess.Popen(['bash', '-o', 'pipefail', '-c', command], cwd=cwd,
-                                         stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+                                         stdout=log, stderr=subprocess.STDOUT, start_new_session=True,
+                                         env=clean_git_environment())
                 try:
                     exit_code = child.wait(timeout=timeout)
                     status = 'passed' if exit_code == 0 else 'unavailable' if exit_code == 127 else 'failed'

@@ -13,6 +13,7 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+from git_environment import clean_git_environment
 
 
 PLAYBOOK_ROOT = Path(__file__).resolve().parent.parent
@@ -191,7 +192,7 @@ def playbook_commit_before(moment: datetime.datetime) -> Optional[str]:
     completed = subprocess.run(
         ["git", "--no-optional-locks", "-C", str(PLAYBOOK_ROOT), "log", "-1", "--format=%H",
          "--before=" + moment.isoformat()],
-        capture_output=True, text=True, check=False)
+        capture_output=True, text=True, check=False, env=clean_git_environment())
     commit = completed.stdout.strip()
     return commit if completed.returncode == 0 and commit else None
 

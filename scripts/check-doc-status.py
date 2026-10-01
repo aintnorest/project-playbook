@@ -10,6 +10,7 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
+from git_environment import clean_git_environment
 
 
 STATES = {
@@ -172,7 +173,7 @@ def git_bytes(repo: Path, *arguments: str) -> bytes:
     command = ["git", "--no-optional-locks", "-C", str(repo), *arguments]
     try:
         result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                check=False)
+                                check=False, env=clean_git_environment())
     except OSError as error:
         raise GitFailure(f"cannot run git: {error}") from error
     if result.returncode:

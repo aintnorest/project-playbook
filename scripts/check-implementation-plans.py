@@ -10,6 +10,7 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
+from git_environment import clean_git_environment
 
 
 HEADING = re.compile(r"^### (T[0-9]+) — (\S(?:.*\S)?)$")
@@ -33,12 +34,12 @@ BRANCH = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_./-]*$")
 
 def git(repo: Path, *args: str) -> str:
     return subprocess.run(["git", "--no-optional-locks", "-C", str(repo), *args], capture_output=True,
-                          check=True, text=True).stdout.strip()
+                          check=True, text=True, env=clean_git_environment()).stdout.strip()
 
 def registered_worktrees(repo: Path) -> List[Path]:
     """Parse Git's NUL-delimited worktree records without splitting path newlines."""
     result = subprocess.run(["git", "--no-optional-locks", "-C", str(repo), "worktree", "list", "--porcelain", "-z"],
-                            capture_output=True, check=True).stdout
+                            capture_output=True, check=True, env=clean_git_environment()).stdout
     return [Path(os.fsdecode(field[len(b"worktree "):])).resolve()
             for field in result.split(b"\0") if field.startswith(b"worktree ")]
 
@@ -184,7 +185,8 @@ def parse_plan(path: Path, text: str) -> Tuple[List[dict], List[Tuple[int, str]]
         else:
             assignments[str(Path(path).resolve())] = task["id"]
         if not BRANCH.fullmatch(branch) or subprocess.run(
-            ["git", "--no-optional-locks", "check-ref-format", "--branch", branch], capture_output=True
+            ["git", "--no-optional-locks", "check-ref-format", "--branch", branch], capture_output=True,
+            env=clean_git_environment()
         ).returncode:
             errors.append((task["line"], "malformed Assigned branch"))
         elif branch in branches:
@@ -284,7 +286,7 @@ def protected_diff(tasks: List[dict], repo: Path, base: str, head: str,
         changed = subprocess.run(
             ["git", "--no-optional-locks", "-C", str(repo), "diff", "--name-only", "--no-ext-diff",
              "--no-renames", "-z", *revisions, "--"],
-            capture_output=True, check=True,
+            capture_output=True, check=True, env=clean_git_environment(),
         ).stdout
     except OSError as error:
         return [(1, f"cannot inspect protected diff: {error}")]
@@ -307,7 +309,7 @@ def protected_diff(tasks: List[dict], repo: Path, base: str, head: str,
             return [(selected["line"], "assigned worktree is outside --worktree-root")]
         try:
             if subprocess.run(["git", "--no-optional-locks", "-C", str(repo), "check-ignore", "-q", "--",
-                               str(repo / ".worktrees")], capture_output=True).returncode:
+                               str(repo / ".worktrees")], capture_output=True, env=clean_git_environment()).returncode:
                 return [(selected["line"], "<repo-root>/.worktrees/ is not ignored by Git")]
             if actual not in registered_worktrees(repo):
                 return [(selected["line"], "assigned worktree is not registered")]
@@ -317,10 +319,10 @@ def protected_diff(tasks: List[dict], repo: Path, base: str, head: str,
                 return [(selected["line"], "candidate is not assigned worktree branch tip")]
             if subprocess.run(["git", "--no-optional-locks", "-C", str(location), "status", "--porcelain",
                                "--untracked-files=all", "--ignore-submodules=none"],
-                              capture_output=True, check=True).stdout:
+                              capture_output=True, check=True, env=clean_git_environment()).stdout:
                 return [(selected["line"], "assigned worktree has uncommitted changes")]
             subprocess.run(["git", "--no-optional-locks", "-C", str(repo), "merge-base", "--is-ancestor",
-                            revisions[0], revisions[1]], capture_output=True, check=True)
+                            revisions[0], revisions[1]], capture_output=True, check=True, env=clean_git_environment())
         except (OSError, subprocess.CalledProcessError) as error:
             return [(selected["line"], "cannot verify assigned worktree or candidate ancestry: " + str(error))]
     elif worktree_root is not None and selected is None:

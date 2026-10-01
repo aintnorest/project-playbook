@@ -47,6 +47,10 @@ python3 scripts/check-omp-load.py
 mise run lint-markdown
 ```
 
+Git hooks export repository-location overrides such as `GIT_DIR`; those override even `git -C` and can redirect temporary fixtures into the repository being pushed. Git-creating Python fixtures import a shared suite sanitizer, and Bun preloads its suite sanitizer; both discard all inherited `GIT_*` variables before creating fixtures. Pre-push commands also run through `scripts/git_environment.py` as defense in depth. The repository checkers and run collector use that same Python helper for their Git subprocesses, so their explicit repository paths remain authoritative.
+
 Markdown is checked with rumdl 0.2.77, pinned in `mise.toml` and the cross-platform `mise.lock`. Checks use the installed binary without network access and never rewrite files. `.rumdl.toml` permits long paragraph lines (MD013) and agent bodies without a leading H1 (MD041). Generated `skills/` are excluded; their source Markdown is checked instead.
 
 `run_check` (CLI: `python3 scripts/run-check.py --command 'your check' --cwd /path/to/repo`) runs foreground project commands with Bash pipefail, a timeout, and a full combined-output log outside the repo. Leftover background processes fail the gate and are killed; cancellation kills the command process group too. Results are `passed`, `failed`, `timed-out`, or `unavailable` (exit 127: missing command, not verified rather than a task-code failure); only `passed` permits integration. Optional `timeout` and `tailLines` default to 120 seconds and 40 lines; returned output is also capped at 64 KiB, without truncating the full log.
+
+`run_check` also removes inherited `GIT_*` variables from project commands while preserving ordinary environment settings. Its explicit `cwd` selects the project, not the caller's hook repository. A command that intentionally needs a Git override can set it explicitly inside `--command`. The regression suite runs Python and Bun fixtures, both repository checker CLIs, and `run_check` with Git overrides pointing at a scratch victim, then compares the victim's config, refs, and HEAD byte for byte.

@@ -1,4 +1,5 @@
 """All checker modes preserve project files and stale Git metadata."""
+import git_test_environment  # Scrub inherited Git hook state before fixture creation.
 import os
 from pathlib import Path
 import subprocess

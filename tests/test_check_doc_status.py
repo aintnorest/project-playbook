@@ -1,4 +1,5 @@
 """CLI contracts for Playbook document status frontmatter."""
+import git_test_environment  # Scrub inherited Git hook state before fixture creation.
 
 import json
 import subprocess

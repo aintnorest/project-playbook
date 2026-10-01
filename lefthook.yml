@@ -6,10 +6,10 @@ pre-commit:
 pre-push:
   commands:
     python-tests:
-      run: python3 -m unittest discover -s tests
+      run: python3 scripts/git_environment.py python3 -m unittest discover -s tests
     extension-tests:
-      run: bun test
+      run: python3 scripts/git_environment.py bun test
     omp-load:
-      run: python3 scripts/check-omp-load.py
+      run: python3 scripts/git_environment.py python3 scripts/check-omp-load.py
     markdown:
-      run: mise run lint-markdown
+      run: python3 scripts/git_environment.py mise run lint-markdown
