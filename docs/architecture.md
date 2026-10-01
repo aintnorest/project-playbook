@@ -1,6 +1,6 @@
 ---
 state: draft
-revision: arch-r7
+revision: arch-r8
 ---
 
 # System architecture: Project Playbook
@@ -60,15 +60,16 @@ The repository separates authored rules, authored task procedures, generated per
 
 ## Consumer contracts and versioning
 
-A consumer contract is any format, grammar, mode, output, or schema that consuming projects' documents, agents, or callers depend on. Each has one owner; change it there:
+A consumer contract is any format, grammar, mode, output, or schema that consuming projects' documents, agents, or callers depend on. Each has one owner; change it there. Each entry also names who reads it today, and any reader that is planned but not yet reading. A field, section, or mode with no reader does not belong in a contract; when a reader goes away, apply the [removal rule](../README.md#changing-the-playbook) to whatever served only that reader.
 
-- Document formats and frontmatter: [document contracts](../guides/product-documentation-process.md#document-contracts), checked by `scripts/check-doc-status.py` [EXISTS].
-- Implementation-plan grammar: [implementation plan](../guides/product-documentation-process.md#implementation-plan), checked by `scripts/check-implementation-plans.py` [EXISTS].
-- Checker command-line modes and JSON output: each program in `scripts/`, described in the guide section it checks.
-- Tool arguments: the tool declarations in `omp-extension.ts`.
-- Developer requests: `guides/developer-request.schema.json`, rendered by `scripts/request-developer.py` [EXISTS].
-- Task verification: `scripts/run-check.py` owns execution, Bash pipefail, timeouts, external logs, and passed/failed/timed-out/unavailable results; `run_check` declares arguments. Missing commands (exit 127) are unavailable, not verified and not a task-code failure.
-- Markdown review reports: the [document](../guides/document-review.md#report), [code](../guides/code-review.md#report), [prompt](../guides/prompt-design.md#report-without-editing), and [friction](../guides/friction.md#report) report contracts, delivered as [review report delivery](../guides/agents.md#review-report-delivery) specifies.
+- Document formats and frontmatter: [document contracts](../guides/product-documentation-process.md#document-contracts), checked by `scripts/check-doc-status.py` [EXISTS]. Read by the draft and review-doc agents through `check_doc_status`, and by the implementation-plan orchestrator, which requires `active` documents with `approved` dates before dispatch.
+- Implementation-plan grammar: [implementation plan](../guides/product-documentation-process.md#implementation-plan), checked by `scripts/check-implementation-plans.py` [EXISTS]. Read by the plan drafter, plan reviewer, and orchestrator through `check_implementation_plan`. Planned: a supervising tool reporting task progress ([roadmap](roadmap.md), plan progress reporting).
+- Checker command-line modes and JSON output: each program in `scripts/`, described in the guide section it checks. Read by the contract tools in `omp-extension.ts`, which check the exit status and JSON shape; no skill calls a JSON mode directly.
+- Tool arguments: the tool declarations in `omp-extension.ts`. Read by the agents that list each tool in their frontmatter `tools`.
+- Developer requests: `guides/developer-request.schema.json`, rendered by `scripts/request-developer.py` [EXISTS]. Called by the seven draft agents and the orchestrator; the rendered Markdown is read by the developer. Planned: an observer that reads the call arguments rather than the Markdown ([OMP integration](../integrations/omp.md)).
+- Task verification: `scripts/run-check.py` owns execution, Bash pipefail, timeouts, external logs, and passed/failed/timed-out/unavailable results; `run_check` declares arguments. Missing commands (exit 127) are unavailable, not verified and not a task-code failure. Read by the orchestrator, which gates task, integration, and final checks on its results.
+- Markdown review reports: the [document](../guides/document-review.md#report), [code](../guides/code-review.md#report), [prompt](../guides/prompt-design.md#report-without-editing), and [friction](../guides/friction.md#report) report contracts, delivered as [review report delivery](../guides/agents.md#review-report-delivery) specifies. Read by the agent that dispatched the reviewer, as [reading reviewer reports](../guides/agents.md#reading-reviewer-reports) specifies; friction reports are also read by `review-prompt` when supplied as evidence. No program parses them.
+- Friction lines: the [Friction line](../guides/communication-policy.md#friction-line) rule. Read by `scripts/collect-agent-runs.py` [EXISTS] through `collect_agent_runs`, and by `review-friction`.
 
 Rules shared by every contract:
 
