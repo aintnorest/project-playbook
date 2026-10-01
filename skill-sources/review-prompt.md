@@ -52,7 +52,7 @@ Return questions and missing-input limits to the caller in the fixed Markdown re
 
 Before writing any message, report, or question to the developer, read [communication rules](../guides/communication-policy.md#rules).
 
-Open with the exact prompt source and generated-skill revisions, review scope, and number of supported findings. Then return:
+Open with the outcome sentence. Start Review basis with the exact prompt source and generated-skill revisions. Then return:
 
 - **Review basis:** intended contract, editable-source and generated-skill provenance, supplied evidence records, shared guidance, and relevant research consulted.
 - **Findings:** stable ID, exact source text, evidence record, observed success or failure, practical consequence, causal trace, smallest specific edit, and editable owner. When shared guidance is implicated, state its known consumer scope, the behavior it serves, and the cross-prompt impact review required before correction. Separate structural defects from evidence-grounded behavioral findings; allow zero findings.

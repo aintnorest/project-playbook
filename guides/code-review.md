@@ -31,14 +31,13 @@ Zero findings is valid, not certification or approval. Do not fabricate location
 
 Use these Markdown sections in this order, following [review report delivery](agents.md#review-report-delivery):
 
-1. `## Review identity` — labelled **Technology**, **Target**, **Candidate revision**, **Mode** (`change` or `snapshot`), **Scope**, and **Finding count**.
-2. `## Coverage` — target code and connected context actually inspected.
-3. `## Findings` — findings in impact order, each under `### R1-F1 — <concise title>` with labelled **Severity**, **Category** (`correctness` or `maintainability`), **Location** (path/line or symbol), **Evidence**, **Governing evidence**, **Consequence** (concrete impact), and **Correction** (smallest corrective direction and meaningful tradeoffs). Quote the governing contract or engineering rationale; write `Not applicable` when no external authority applies. The finding count is the number of supported finding blocks.
-4. `## Checks run` — commands actually executed, verbatim, with their results.
-5. `## Checks not run` — proposed or skipped verification and why it was not executed, separate from execution evidence.
-6. `## Questions` — consequential unknowns and out-of-focus issues routed to their owning reviewer.
-7. `## Coverage limits` — uninspected targets or features and missing caller evidence, with affected conclusions.
-8. `## Next action` — one concrete correction, focused verification, evidence request, or decision; never approval.
+1. `## Coverage` — first a line naming the candidate revision and the mode (`change`, with its base, or `snapshot`), then the target code and connected context actually inspected.
+2. `## Findings` — findings in impact order, each under `### R1-F1 — <concise title>` with labelled **Severity**, **Category** (`correctness` or `maintainability`), **Location** (path/line or symbol), **Evidence**, **Governing evidence**, **Consequence** (concrete impact), and **Correction** (smallest corrective direction and meaningful tradeoffs). Quote the governing contract or engineering rationale; write `Not applicable` when no external authority applies.
+3. `## Checks run` — commands actually executed, verbatim, with their results.
+4. `## Checks not run` — proposed or skipped verification and why it was not executed, separate from execution evidence.
+5. `## Questions` — consequential unknowns and out-of-focus issues routed to their owning reviewer.
+6. `## Coverage limits` — uninspected targets or features and missing caller evidence, with affected conclusions.
+7. `## Next action` — one concrete correction, focused verification, evidence request, or decision; never approval.
 
 Keep every section; use `None` for empty findings, questions, or limits, and `None — static review only` when no checks were run. Each labelled finding block must satisfy the evidence and severity rules below.
 

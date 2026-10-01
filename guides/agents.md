@@ -61,7 +61,7 @@ This rule governs callers receiving a review, not their own final-answer format.
 
 ## Review report delivery
 
-Return the complete Markdown report from the owning [document](document-review.md#report), [code](code-review.md#report), [prompt](prompt-design.md#report-without-editing), or [friction](friction.md#report) contract as final text, without JSON or fences. Schema-free OMP accepts prose. If runtime requires terminal `yield`, write the report, then call `yield` with `type: "result"` and no `data` to capture it. Omit agent `output` and invocation `outputSchema`; the caller session must lack a schema, since OMP inherits it.
+Open the report with one sentence stating its outcome: how many supported findings it has, the most severe one with its ID, and what it blocks; for zero findings, say so and name the most important coverage limit. Then return the complete Markdown sections from the owning [document](document-review.md#report), [code](code-review.md#report), [prompt](prompt-design.md#report-without-editing), or [friction](friction.md#report) contract as final text, without JSON or fences. Schema-free OMP accepts prose. If runtime requires terminal `yield`, write the report, then call `yield` with `type: "result"` and no `data` to capture it. Omit agent `output` and invocation `outputSchema`; the caller session must lack a schema, since OMP inherits it.
 
 ## Build check
 

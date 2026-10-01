@@ -9,7 +9,7 @@ hide: true
 
 ## Review report delivery
 
-Return the complete Markdown report from the owning [document (source: guides/document-review.md#report)], [code (source: guides/code-review.md#report)], [prompt (source: guides/prompt-design.md#report-without-editing)], or friction (see included section "Report") contract as final text, without JSON or fences. Schema-free OMP accepts prose. If runtime requires terminal `yield`, write the report, then call `yield` with `type: "result"` and no `data` to capture it. Omit agent `output` and invocation `outputSchema`; the caller session must lack a schema, since OMP inherits it.
+Open the report with one sentence stating its outcome: how many supported findings it has, the most severe one with its ID, and what it blocks; for zero findings, say so and name the most important coverage limit. Then return the complete Markdown sections from the owning [document (source: guides/document-review.md#report)], [code (source: guides/code-review.md#report)], [prompt (source: guides/prompt-design.md#report-without-editing)], or friction (see included section "Report") contract as final text, without JSON or fences. Schema-free OMP accepts prose. If runtime requires terminal `yield`, write the report, then call `yield` with `type: "result"` and no `data` to capture it. Omit agent `output` and invocation `outputSchema`; the caller session must lack a schema, since OMP inherits it.
 # Friction review contract
 
 ## Scope and authority
@@ -45,13 +45,12 @@ Name the owner of each finding: the skill source, the agent description or routi
 
 Return the report as review report delivery (see included section "Review report delivery") specifies, using these Markdown sections in this order:
 
-1. `## Review identity` — labelled **Agent**, **Skill**, **Window**, **Project filter**, **Runs examined**, and **Finding count**.
-2. `## Runs` — one line per run: run name, start time, project, model, Playbook commit before the run, transcript path, and what was read (final report, reaction window, full transcript).
-3. `## Findings` — each finding under `### F1 — <concise title>`, with labelled **Signal**, **Owner**, **Occurrences**, **Cost**, and **Expected behavior**. Each occurrence is an evidence record: transcript path and line range, run start time, Playbook commit before the run, and the observed result in one sentence. Mark an occurrence `stale` when the current Playbook no longer contains the text or behavior involved.
-4. `## Confirmed behavior` — behavior that worked as intended, with the runs that show it.
-5. `## Outside the Playbook` — one line per problem owned by the project, OMP, or a model provider, with its transcript pointer.
-6. `## Coverage limits` — runs not read, missing parent sessions or reports, and anything that prevented attributing an owner.
-7. `## Next action` — the prompt evaluation to run, naming the skill and the findings to supply as evidence, or `None`.
+1. `## Runs` — first a line naming the window and project filter, then one line per run: run name, start time, project, model, Playbook commit before the run, transcript path, and what was read (final report, reaction window, full transcript).
+2. `## Findings` — each finding under `### F1 — <concise title>`, with labelled **Signal**, **Owner**, **Occurrences**, **Cost**, and **Expected behavior**. Each occurrence is an evidence record: transcript path and line range, run start time, Playbook commit before the run, and the observed result in one sentence. Mark an occurrence `stale` when the current Playbook no longer contains the text or behavior involved.
+3. `## Confirmed behavior` — behavior that worked as intended, with the runs that show it.
+4. `## Outside the Playbook` — one line per problem owned by the project, OMP, or a model provider, with its transcript pointer.
+5. `## Coverage limits` — runs not read, missing parent sessions or reports, and anything that prevented attributing an owner.
+6. `## Next action` — the prompt evaluation to run, naming the skill and the findings to supply as evidence, or `None`.
 
 Keep every section, using `None` when a section is empty.
 ## Task
@@ -95,7 +94,7 @@ If the agent name or window start is missing, return a report whose Coverage lim
 
 Before writing the report, read [communication rules](skill://review-friction/references/communication-policy--rules.md).
 
-Return the friction report defined by the friction review contract: Review identity, Runs, Findings, Confirmed behavior, Outside the Playbook, Coverage limits, and Next action, keeping every section and using `None` when a section is empty.
+Return the friction report defined by the friction review contract: an outcome sentence, then Runs, Findings, Confirmed behavior, Outside the Playbook, Coverage limits, and Next action, keeping every section and using `None` when a section is empty.
 
 ## Supply inputs
 Provide the target, exact revision label, source material, relevant context, and the action-specific request.

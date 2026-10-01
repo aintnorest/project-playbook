@@ -16,6 +16,8 @@ To improve an agent from its real runs, dispatch `review-friction-agent` for it 
 
 ## Changing the playbook
 
+When you remove a mechanism, or learn that the reason for one was wrong, list everything that exists only to serve it — fields, report sections, skill wording, checks, tests, and docs — and in the same change either delete each one or give it a current reason. For example, removing the reviewer JSON schema also had to remove the report section that existed only to carry the schema's top-level fields.
+
 Edit skill sources in `skill-sources/` or shared rules in `guides/`; never edit generated files in `skills/`. A git pre-commit hook regenerates the skills, stages them, and runs the build check, so a commit can never carry a stale skill. Install the hook once per clone:
 
 ```sh

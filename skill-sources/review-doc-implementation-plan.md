@@ -58,7 +58,7 @@ Check the candidate's lifecycle against the referenced table and transition rule
 
 Before writing any message, report, or question to the developer, read [communication rules](../guides/communication-policy.md#rules).
 
-Open with the target path/revision, the source TDD path/revision, review scope, canonical count of unique unresolved supported findings, and whether the pass is independent. Then provide:
+Open with the outcome sentence. Start Coverage with the target and source TDD paths and revisions and whether the pass is independent. Then provide:
 
 - **Coverage:** the derived requirement-to-task map, the dependency graph inspected, sources and repository evidence inspected, and precise checks limited by unavailable material.
 - **Findings:** supported defects in canonical finding form: stable ID, severity, exact location, candidate evidence, governing evidence when applicable, practical downstream consequence, and smallest correction or focused decision question.

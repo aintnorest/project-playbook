@@ -9,7 +9,7 @@ hide: true
 
 ## Review report delivery
 
-Return the complete Markdown report from the owning [document (source: guides/document-review.md#report)], code (see included section "Report"), [prompt (source: guides/prompt-design.md#report-without-editing)], or [friction (source: guides/friction.md#report)] contract as final text, without JSON or fences. Schema-free OMP accepts prose. If runtime requires terminal `yield`, write the report, then call `yield` with `type: "result"` and no `data` to capture it. Omit agent `output` and invocation `outputSchema`; the caller session must lack a schema, since OMP inherits it.
+Open the report with one sentence stating its outcome: how many supported findings it has, the most severe one with its ID, and what it blocks; for zero findings, say so and name the most important coverage limit. Then return the complete Markdown sections from the owning [document (source: guides/document-review.md#report)], code (see included section "Report"), [prompt (source: guides/prompt-design.md#report-without-editing)], or [friction (source: guides/friction.md#report)] contract as final text, without JSON or fences. Schema-free OMP accepts prose. If runtime requires terminal `yield`, write the report, then call `yield` with `type: "result"` and no `data` to capture it. Omit agent `output` and invocation `outputSchema`; the caller session must lack a schema, since OMP inherits it.
 ## Scope and evidence
 
 This contract governs language, integration, and focused code reviews. Assess the requested focus in its actual context, not idealized architecture or only executable bugs.
@@ -38,14 +38,13 @@ Zero findings is valid, not certification or approval. Do not fabricate location
 
 Use these Markdown sections in this order, following review report delivery (see included section "Review report delivery"):
 
-1. `## Review identity` — labelled **Technology**, **Target**, **Candidate revision**, **Mode** (`change` or `snapshot`), **Scope**, and **Finding count**.
-2. `## Coverage` — target code and connected context actually inspected.
-3. `## Findings` — findings in impact order, each under `### R1-F1 — <concise title>` with labelled **Severity**, **Category** (`correctness` or `maintainability`), **Location** (path/line or symbol), **Evidence**, **Governing evidence**, **Consequence** (concrete impact), and **Correction** (smallest corrective direction and meaningful tradeoffs). Quote the governing contract or engineering rationale; write `Not applicable` when no external authority applies. The finding count is the number of supported finding blocks.
-4. `## Checks run` — commands actually executed, verbatim, with their results.
-5. `## Checks not run` — proposed or skipped verification and why it was not executed, separate from execution evidence.
-6. `## Questions` — consequential unknowns and out-of-focus issues routed to their owning reviewer.
-7. `## Coverage limits` — uninspected targets or features and missing caller evidence, with affected conclusions.
-8. `## Next action` — one concrete correction, focused verification, evidence request, or decision; never approval.
+1. `## Coverage` — first a line naming the candidate revision and the mode (`change`, with its base, or `snapshot`), then the target code and connected context actually inspected.
+2. `## Findings` — findings in impact order, each under `### R1-F1 — <concise title>` with labelled **Severity**, **Category** (`correctness` or `maintainability`), **Location** (path/line or symbol), **Evidence**, **Governing evidence**, **Consequence** (concrete impact), and **Correction** (smallest corrective direction and meaningful tradeoffs). Quote the governing contract or engineering rationale; write `Not applicable` when no external authority applies.
+3. `## Checks run` — commands actually executed, verbatim, with their results.
+4. `## Checks not run` — proposed or skipped verification and why it was not executed, separate from execution evidence.
+5. `## Questions` — consequential unknowns and out-of-focus issues routed to their owning reviewer.
+6. `## Coverage limits` — uninspected targets or features and missing caller evidence, with affected conclusions.
+7. `## Next action` — one concrete correction, focused verification, evidence request, or decision; never approval.
 
 Keep every section; use `None` for empty findings, questions, or limits, and `None — static review only` when no checks were run. Each labelled finding block must satisfy the evidence and severity rules below.
 
@@ -125,7 +124,7 @@ Return questions and missing-input limits to the caller in the fixed Markdown re
 
 ## Output
 
-Before writing any message, report, or question to the developer, read [communication rules](skill://review-code-invariants/references/communication-policy--rules.md). Return the fixed Markdown report defined by the code review contract in your final message, with **Technology** set to `invariant conformance` and the languages traced. Under Coverage, list every inventoried invariant with its source section, its classification, and the paths inspected for it, including the call sites a convention depends on. Do not claim an invariant holds on paths you did not trace, and do not implement corrections.
+Before writing any message, report, or question to the developer, read [communication rules](skill://review-code-invariants/references/communication-policy--rules.md). Return the fixed Markdown report defined by the code review contract in your final message. Under Coverage, after the revision and mode line, name the languages traced and list every inventoried invariant with its source section, its classification, and the paths inspected for it, including the call sites a convention depends on. Do not claim an invariant holds on paths you did not trace, and do not implement corrections.
 
 ## Supply inputs
 Provide the target, exact revision label, source material, relevant context, and the action-specific request.

@@ -9,7 +9,7 @@ hide: true
 
 ## Review report delivery
 
-Return the complete Markdown report from the owning document (see included section "Report"), [code (source: guides/code-review.md#report)], [prompt (source: guides/prompt-design.md#report-without-editing)], or [friction (source: guides/friction.md#report)] contract as final text, without JSON or fences. Schema-free OMP accepts prose. If runtime requires terminal `yield`, write the report, then call `yield` with `type: "result"` and no `data` to capture it. Omit agent `output` and invocation `outputSchema`; the caller session must lack a schema, since OMP inherits it.
+Open the report with one sentence stating its outcome: how many supported findings it has, the most severe one with its ID, and what it blocks; for zero findings, say so and name the most important coverage limit. Then return the complete Markdown sections from the owning document (see included section "Report"), [code (source: guides/code-review.md#report)], [prompt (source: guides/prompt-design.md#report-without-editing)], or [friction (source: guides/friction.md#report)] contract as final text, without JSON or fences. Schema-free OMP accepts prose. If runtime requires terminal `yield`, write the report, then call `yield` with `type: "result"` and no `data` to capture it. Omit agent `output` and invocation `outputSchema`; the caller session must lack a schema, since OMP inherits it.
 ## Independent review context
 
 For an independent first pass, give fresh reviewers the same candidate, governing sources, accepted decisions, explicit developer constraints, and review scope. Keep provider/model provenance for your own comparison, but omit author identity, self-praise, desired verdicts, prior reviewer findings/dispositions, previous issue totals, and prior review verdicts from the reviewer packet. Keep that history in the owner's continuation context; do not append it to the material forwarded to the reviewer.
@@ -34,12 +34,11 @@ When independent reports reuse the same local finding ID, qualify it with a neut
 
 Use these Markdown sections in this order, following review report delivery (see included section "Review report delivery"):
 
-1. `## Review identity` — labelled **Target**, **Revision**, **Scope**, **Independent**, and **Finding count**. Identify each document-set member's revision and whether prior review context was visible.
-2. `## Coverage` — derived map, inspected sources/evidence, and checks limited by unavailable material.
-3. `## Findings` — one `### R1-F1 — <concise title>` per unique unresolved supported finding; count these blocks and retain supplied IDs. Label **Severity**, **Reviewed revision**, **Location**, **Evidence**, **Governing evidence**, **Consequence**, and **Correction** (smallest corrective change or focused decision). Quote candidate evidence; give precise locations, both for ownership conflicts, and practical downstream consequences. Quote applicable governing evidence; otherwise write `Not applicable`.
-4. `## Questions` — consequential unknowns not established as defects.
-5. `## Coverage limits` — unavailable evidence and exactly which checks it prevents.
-6. `## Next action` — one concrete revision, source retrieval, focused decision, or rereview step; never acceptance.
+1. `## Coverage` — first a line naming each reviewed document's revision and whether the pass is independent or a follow-up that saw prior review context, then the derived map, inspected sources/evidence, and checks limited by unavailable material.
+2. `## Findings` — one `### R1-F1 — <concise title>` per unique unresolved supported finding; retain supplied IDs. Label **Severity**, **Reviewed revision**, **Location**, **Evidence**, **Governing evidence**, **Consequence**, and **Correction** (smallest corrective change or focused decision). Quote candidate evidence; give precise locations, both for ownership conflicts, and practical downstream consequences. Quote applicable governing evidence; otherwise write `Not applicable`.
+3. `## Questions` — consequential unknowns not established as defects.
+4. `## Coverage limits` — unavailable evidence and exactly which checks it prevents.
+5. `## Next action` — one concrete revision, source retrieval, focused decision, or rereview step; never acceptance.
 
 Keep every section; write `None` for empty findings, questions, or limits.
 
@@ -153,7 +152,7 @@ Check the candidate's lifecycle against the referenced table and transition rule
 
 Before writing any message, report, or question to the developer, read [communication rules](skill://review-doc-prd/references/communication-policy--rules.md).
 
-Open with the target path/revision, the feature scope, review scope, canonical count of unique unresolved supported findings, and whether the pass is independent. Then provide:
+Open with the outcome sentence. Start Coverage with the target path and revision, the feature scope, and whether the pass is independent. Then provide:
 
 - **Coverage:** the derived requirement/acceptance/scope map, sources inspected, evidence inspected, and precise checks limited by unavailable material.
 - **Findings:** supported defects in canonical finding form: stable ID, severity, exact location, candidate evidence, governing evidence when applicable, practical downstream consequence, and smallest correction or focused decision question.

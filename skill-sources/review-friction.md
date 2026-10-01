@@ -47,4 +47,4 @@ If the agent name or window start is missing, return a report whose Coverage lim
 
 Before writing the report, read [communication rules](../guides/communication-policy.md#rules).
 
-Return the friction report defined by the friction review contract: Review identity, Runs, Findings, Confirmed behavior, Outside the Playbook, Coverage limits, and Next action, keeping every section and using `None` when a section is empty.
+Return the friction report defined by the friction review contract: an outcome sentence, then Runs, Findings, Confirmed behavior, Outside the Playbook, Coverage limits, and Next action, keeping every section and using `None` when a section is empty.

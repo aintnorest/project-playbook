@@ -33,12 +33,11 @@ Name the owner of each finding: the skill source, the agent description or routi
 
 Return the report as [review report delivery](agents.md#review-report-delivery) specifies, using these Markdown sections in this order:
 
-1. `## Review identity` — labelled **Agent**, **Skill**, **Window**, **Project filter**, **Runs examined**, and **Finding count**.
-2. `## Runs` — one line per run: run name, start time, project, model, Playbook commit before the run, transcript path, and what was read (final report, reaction window, full transcript).
-3. `## Findings` — each finding under `### F1 — <concise title>`, with labelled **Signal**, **Owner**, **Occurrences**, **Cost**, and **Expected behavior**. Each occurrence is an evidence record: transcript path and line range, run start time, Playbook commit before the run, and the observed result in one sentence. Mark an occurrence `stale` when the current Playbook no longer contains the text or behavior involved.
-4. `## Confirmed behavior` — behavior that worked as intended, with the runs that show it.
-5. `## Outside the Playbook` — one line per problem owned by the project, OMP, or a model provider, with its transcript pointer.
-6. `## Coverage limits` — runs not read, missing parent sessions or reports, and anything that prevented attributing an owner.
-7. `## Next action` — the prompt evaluation to run, naming the skill and the findings to supply as evidence, or `None`.
+1. `## Runs` — first a line naming the window and project filter, then one line per run: run name, start time, project, model, Playbook commit before the run, transcript path, and what was read (final report, reaction window, full transcript).
+2. `## Findings` — each finding under `### F1 — <concise title>`, with labelled **Signal**, **Owner**, **Occurrences**, **Cost**, and **Expected behavior**. Each occurrence is an evidence record: transcript path and line range, run start time, Playbook commit before the run, and the observed result in one sentence. Mark an occurrence `stale` when the current Playbook no longer contains the text or behavior involved.
+3. `## Confirmed behavior` — behavior that worked as intended, with the runs that show it.
+4. `## Outside the Playbook` — one line per problem owned by the project, OMP, or a model provider, with its transcript pointer.
+5. `## Coverage limits` — runs not read, missing parent sessions or reports, and anything that prevented attributing an owner.
+6. `## Next action` — the prompt evaluation to run, naming the skill and the findings to supply as evidence, or `None`.
 
 Keep every section, using `None` when a section is empty.

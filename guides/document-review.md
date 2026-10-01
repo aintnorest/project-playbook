@@ -34,12 +34,11 @@ When independent reports reuse the same local finding ID, qualify it with a neut
 
 Use these Markdown sections in this order, following [review report delivery](agents.md#review-report-delivery):
 
-1. `## Review identity` — labelled **Target**, **Revision**, **Scope**, **Independent**, and **Finding count**. Identify each document-set member's revision and whether prior review context was visible.
-2. `## Coverage` — derived map, inspected sources/evidence, and checks limited by unavailable material.
-3. `## Findings` — one `### R1-F1 — <concise title>` per unique unresolved supported finding; count these blocks and retain supplied IDs. Label **Severity**, **Reviewed revision**, **Location**, **Evidence**, **Governing evidence**, **Consequence**, and **Correction** (smallest corrective change or focused decision). Quote candidate evidence; give precise locations, both for ownership conflicts, and practical downstream consequences. Quote applicable governing evidence; otherwise write `Not applicable`.
-4. `## Questions` — consequential unknowns not established as defects.
-5. `## Coverage limits` — unavailable evidence and exactly which checks it prevents.
-6. `## Next action` — one concrete revision, source retrieval, focused decision, or rereview step; never acceptance.
+1. `## Coverage` — first a line naming each reviewed document's revision and whether the pass is independent or a follow-up that saw prior review context, then the derived map, inspected sources/evidence, and checks limited by unavailable material.
+2. `## Findings` — one `### R1-F1 — <concise title>` per unique unresolved supported finding; retain supplied IDs. Label **Severity**, **Reviewed revision**, **Location**, **Evidence**, **Governing evidence**, **Consequence**, and **Correction** (smallest corrective change or focused decision). Quote candidate evidence; give precise locations, both for ownership conflicts, and practical downstream consequences. Quote applicable governing evidence; otherwise write `Not applicable`.
+3. `## Questions` — consequential unknowns not established as defects.
+4. `## Coverage limits` — unavailable evidence and exactly which checks it prevents.
+5. `## Next action` — one concrete revision, source retrieval, focused decision, or rereview step; never acceptance.
 
 Keep every section; write `None` for empty findings, questions, or limits.
 

@@ -47,4 +47,4 @@ Return questions and missing-input limits to the caller in the fixed Markdown re
 
 ## Output
 
-Before writing any message, report, or question to the developer, read [communication rules](../guides/communication-policy.md#rules). Return the fixed Markdown report defined by the code review contract in your final message, with candidate identity, snapshot/change mode, target scope, and supported finding count. Separate checked production and test-only reachability, executed from not-executed checks, and specific missing external/conditional evidence; do not claim whole-repository proof or implement corrections.
+Before writing any message, report, or question to the developer, read [communication rules](../guides/communication-policy.md#rules). Return the fixed Markdown report defined by the code review contract in your final message. Separate checked production and test-only reachability, executed from not-executed checks, and specific missing external/conditional evidence; do not claim whole-repository proof or implement corrections.
