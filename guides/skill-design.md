@@ -8,7 +8,7 @@ The publisher owns `skills/<name>/`; authors edit `skill-sources/` and `guides/`
 
 ## Classify guidance
 
-Required guidance is inlined when it applies on every run. Reference guidance is conditional or phase-bound and linked from the step that needs it. Select the smallest authoritative section; do not overlap selected ranges across manifests. Communication rules are reference guidance for every task, read before any message, report, or question to the developer.
+Required guidance is inlined only when it applies on every run. Move conditional blocks to references: a phase reached only after prerequisites pass, a language or mechanism that may be absent, a repair or follow-up loop, an exceptional mode, and OMP-specific ask mechanics are not always-needed guidance. Link the reference from the step that triggers it, state the condition, and require reading it before acting; a reference manifest entry alone is not a trigger. Select the smallest authoritative section; do not overlap selected ranges across manifests or leave a second copy inline. Communication rules are reference guidance for every task, read before any message, report, or question to the developer.
 
 The owning document contract stays inline for drafts and reviews of that type. Independent-review context, evidence and authority, and findings stay inline for document reviews; code-review guidance for code reviews; the respective construction or evaluation contract for prompt tasks; and the already-selected technical-writing sections for system-architecture, system-design, and technical-design drafts. Normally reference decisions, roadmap, requirement identifiers, minor changes, reference-over-repetition, feature slices, behavioral acceptance, technical contracts and verification, and reference rules. System-architecture, system-design, and technical-design reviews reference the whole technical-writing guide.
 Focused code reviews inline their standard's scope and core standard alongside the shared code-review contract; their language considerations remain conditional references read when that language is present.
@@ -17,7 +17,7 @@ Fixed exceptions: draft-technical-design and review-doc-technical-design inline 
 
 ## Budget and description
 
-`SKILL.md` must not exceed 500 lines or 3,800 words (about 5,000 tokens); the publisher rejects oversize output. Words are a dependency-free token proxy, uncertain by roughly 20%. Classify unnecessary always-loaded text correctly, but never defer an unconditional rule. Keep the skill procedural, not a fact store.
+`SKILL.md` must not exceed 500 lines or 3,800 words (about 5,000 tokens); the publisher rejects oversize output and warns at 90% of either limit (450 lines or 3,420 words). Words are a dependency-free token proxy, uncertain by roughly 20%. Audit the skill source and every selected guide section for conditional blocks before expanding a near-budget skill. Classify unnecessary always-loaded text correctly, but never defer an unconditional rule or an owning contract required by the exceptions above. Keep the skill procedural, not a fact store.
 
 The skill frontmatter description is the first paragraph of the prompt's Purpose, joined on one line, 1–1,024 characters. It describes the task, not its dispatch; agent description rules live in the [agent guide](agents.md#description-contract).
 

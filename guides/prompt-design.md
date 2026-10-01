@@ -96,18 +96,7 @@ Tie tool and subagent instructions to actual harness capabilities and permission
 
 Keep one authoritative common prompt. Add a conditional model or tool adaptation only when a current official interface requirement or supplied behavioral evidence establishes that the common contract needs it. Do not maintain complete per-provider prompt copies, and do not invent an adaptation from provider reputation.
 
-For each adaptation, record:
-
-```text
-Task and prompt revision:
-Model/version and interface:
-Adaptation:
-Official requirement or supplied behavioral evidence:
-Applicability:
-Unverified limits:
-```
-
-Adaptations may cover reasoning-effort controls, verbosity controls, supported message roles, assistant prefill, tool schemas, phase metadata, context ordering, structured output, or compaction. They must not change the user's substantive requirements. When evidence does not justify divergence, deliver the common prompt and identify cross-model behavior as unverified.
+Adaptations must not change the user's substantive requirements. When evidence does not justify divergence, deliver the common prompt and identify cross-model behavior as unverified.
 
 ### Deliver the prompt and its evidence
 
@@ -173,6 +162,21 @@ Use these Markdown sections in this order, following [review report delivery](ag
 8. `## Next action` — one focused source correction, missing evidence request, or decision. Do not edit the prompt yourself.
 
 Keep every section, using `None` for empty findings, evidence accounting, questions, or limits. These labels preserve the finding's evidence, causal, and ownership requirements; they do not authorize unsupported conclusions.
+
+## Model and interface adaptation record
+
+For each adaptation, record:
+
+```text
+Task and prompt revision:
+Model/version and interface:
+Adaptation:
+Official requirement or supplied behavioral evidence:
+Applicability:
+Unverified limits:
+```
+
+Adaptations may cover reasoning-effort controls, verbosity controls, supported message roles, assistant prefill, tool schemas, phase metadata, context ordering, structured output, or compaction.
 
 ## Evidence and limits
 

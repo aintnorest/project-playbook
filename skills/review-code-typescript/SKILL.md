@@ -10,17 +10,14 @@ hide: true
 ## Review report delivery
 
 Return the complete Markdown report from the owning [document (source: guides/document-review.md#report)], code (see included section "Report"), [prompt (source: guides/prompt-design.md#report-without-editing)], or [friction (source: guides/friction.md#report)] contract as final text, without JSON or fences. Schema-free OMP accepts prose. If runtime requires terminal `yield`, write the report, then call `yield` with `type: "result"` and no `data` to capture it. Omit agent `output` and invocation `outputSchema`; the caller session must lack a schema, since OMP inherits it.
-# Code review contract
+## Scope and evidence
 
 This contract governs language, integration, and focused code reviews. Assess the requested focus in its actual context, not idealized architecture or only executable bugs.
-
-## Scope and evidence
 
 1. Establish the requested technology or review focus, paths/component, and candidate identity. An explicit diff/base-target request is a change review: report issues introduced or materially worsened by that change, including affected unchanged callers, not unrelated existing debt; otherwise review the supplied current snapshot without inventing a baseline.
 2. If no paths are supplied, map the repository and review its first-party code relevant to the selected technology or focus, excluding unrelated languages for a language review, vendored dependencies, and generated output as independent review targets. State the actual files/components and revision or working-tree state covered; do not claim comprehensive coverage of unread code or turn a language review into a repository-wide audit.
 3. Read applicable instructions, relevant configuration, enclosing code, direct callers, existing tests, and contracts before judging a candidate issue. For language or integration reviews, cross into another language only through an actual API, serialization, foreign-function, IPC, lifecycle, or build connection needed to assess the target; stop when that contract is understood, and report a connected mismatch as one boundary finding rather than unrelated findings about foreign internals.
 4. Ground version-sensitive claims in the installed toolchain/dependencies and applicable documentation. With missing source or configuration, finish supported checks and name the precise coverage limit or question; absence of supplied evidence is not a defect or proof of safety.
-
 ## Review standard
 
 Prioritize correct production behavior and useful failure contracts. Establish the relevant requirements and actual operation before judging a defect; stylistic preferences alone are not evidence.
@@ -29,14 +26,12 @@ A maintainability finding need not demonstrate a current runtime failure or viol
 
 Check existing guarantees and accepted tradeoffs before alleging missing validation, error handling, cleanup, or tests. Prefer the smallest useful correction; do not demand new frameworks, libraries, schemas, traits, generic layers, retries, immutability, or migrations merely because they are possible, and do not weaken requirements to simplify the code.
 
-**Focused reviews.** Test effectiveness ([test quality (source: guides/test-quality.md)]), unused and obsolete code ([unused code (source: guides/unused-code.md)]), and design and maintainability ([design quality (source: guides/design-quality.md)]) each have a dedicated reviewer and owning standard. Language and integration reviews prioritize production behavior and language- or integration-specific boundaries; report an issue in a focused area only when it directly causes or hides a production defect, applying the owning standard. If you notice a likely consequential issue outside your focus, do not investigate or grade it; add one question naming its path, the observed trigger, and the reviewer that owns it.
+**Focused reviews.** Test effectiveness ([test quality (source: guides/test-quality.md)]), unused and obsolete code ([unused code (source: guides/unused-code.md)]), design and maintainability ([design quality (source: guides/design-quality.md)]), and conformance to declared invariants across boundaries ([invariant conformance (source: guides/invariants.md)]) each have a dedicated reviewer and owning standard. Language and integration reviews prioritize production behavior and language- or integration-specific boundaries; report an issue in a focused area only when it directly causes or hides a production defect, applying the owning standard. If you notice a likely consequential issue outside your focus, do not investigate or grade it; add one question naming its path, the observed trigger, and the reviewer that owns it.
 
 Performance concerns need an actual unnecessary cost or applicable workload, not hypothetical scale; distinguish correctness defects from contextual design recommendations and leave equally sound alternatives alone.
-
 ## Read-only operation
 
 Do not edit files, apply fixes, generate code, install/update dependencies, mutate Git state, or launch an implementation workflow. Static review is the default; run only requested or already authorized narrow checks after inspecting the commands and their effects, never automatic fix modes or unrelated suites, and distinguish execution evidence from reasoning or proposed verification. When the `lsp` tool is available, use only its read actions (`diagnostics`, `definition`, `references`, `hover`, `symbols`, `status`, `capabilities`); never `rename`, `rename_file`, `code_actions`, `reload`, or `request`, which mutate files. Use `references` before calling code unused or a change breaking, and `ast_grep` for structural patterns `grep` cannot express.
-
 ## Report
 
 Zero findings is valid, not certification or approval. Do not fabricate locations, reproductions, approvals, or commands. Retain supplied IDs on follow-up; merge only the same underlying issue and correction.
@@ -89,13 +84,11 @@ Return questions and missing-input limits to the caller in the fixed Markdown re
 
 1. **Map the TypeScript scope.** Include relevant first-party `.ts`, `.mts`, `.cts`, `.tsx`, handwritten declarations, and TypeScript sections of mixed-format components when present. Read effective inherited compiler/project settings, package metadata, resolved dependencies, and relevant host/build configuration; do not assume React, Node, browsers, strict checking, ESM, or a TypeScript-only repository.
 2. **Trace contracts before syntax.** Follow representative inputs through validation or trusted construction, transformations, state changes, and outputs. At JavaScript, network, persistence, IPC, or foreign-language boundaries, compare the actual producer/consumer and serializer or authoritative schema, including nullability, omission, discriminants, and numeric/date representations; declarations, assertions, and generic calls alone do not prove runtime validation or conversion. Check that guards establish the conditions they claim.
-3. **Check ownership and asynchronous behavior.** Trace aliases, mutation visibility, listener/resource lifetime, promise completion and rejection ownership, discarded async callback results, stale writes, and cleanup on relevant failure paths. A returned promise may correctly transfer responsibility, `readonly` is not a deep runtime freeze, and concurrent promises do not imply cancellation or rollback; establish the actual host/callback contract before claiming a failure or recommending new concurrency machinery.
-4. **Check runtime and consumer compatibility where relevant.** Relate module resolution, emit or transpilation, imports/exports, declarations, and package entry points to supported runtimes and consumers. Compiler library declarations do not supply runtime APIs, and path aliases do not by themselves rewrite emitted imports; verify the actual bundler/loader before alleging a mismatch, and do not turn review into an unsolicited compiler-flag or module-system migration.
+3. **Check ownership and asynchronous behavior when present.** When the scope contains shared mutable state, listeners/resources, promises, or async callbacks, read [TypeScript asynchronous ownership](skill://review-code-typescript/references/code-review--typescript-asynchronous-ownership.md) before judging their lifetime or completion.
+4. **Check runtime and consumer compatibility where relevant.** When the scope touches module resolution, emitted code, package entry points, or runtime APIs, read [TypeScript runtime compatibility](skill://review-code-typescript/references/code-review--typescript-runtime-compatibility.md).
 5. **Respect the boundary and source of truth.** Use connected foreign code only to establish the contract and its consequence for the TypeScript; do not emit independent Rust, Python, JavaScript, or framework reviews. For generated clients/declarations, trace a supported issue to the owning schema/generator or adapter rather than proposing hand edits to generated output or another competing definition; inspect existing tests for the specific observable behavior at risk.
 
-## Gotchas
-
-- **Hidden control character mistaken for missing separator** — `read` output can omit control characters such as NUL. Before reporting that a string or template literal lacks a separator or can collide, `grep` that file for the literal's visible text; if `grep` finds no match for text `read` displays, the file contains a byte the tools hide, so do not report the collision. Evidence: 2026-09-24, gsl `app/src/screens/document-review/form.ts` `annotationKey` reported as colliding in 2 of 3 reviews despite a NUL separator.
+Before alleging a missing literal separator or collision, read [TypeScript literal separators](skill://review-code-typescript/references/code-review--typescript-literal-separators.md).
 
 ## Output
 

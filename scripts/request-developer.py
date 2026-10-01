@@ -7,12 +7,6 @@ import sys
 from pathlib import Path
 
 SCHEMA = Path(__file__).resolve().parent.parent / "guides" / "developer-request.schema.json"
-KIND_REQUIRED = {
-    "decision": ("options", "recommendation", "maintainability"),
-    "approval": ("acceptance",),
-    "input": ("needed",),
-    "blocked": ("requiredAction",),
-}
 
 
 def schema_errors(value, schema, path="$request"):
@@ -67,7 +61,7 @@ def validate_request(request):
     schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
     if not isinstance(request, dict):
         return request, ["$request: expected object"]
-    required = set(schema["required"]) | set(KIND_REQUIRED.get(request.get("kind") if isinstance(request.get("kind"), str) else None, ()))
+    required = set(schema["required"])
     normalized = {key: value for key, value in request.items()
                   if key not in schema["properties"] or key in required or value not in (None, "", [], {})}
     errors = schema_errors(normalized, schema)

@@ -1,8 +1,8 @@
 # Code review contract
 
-This contract governs language, integration, and focused code reviews. Assess the requested focus in its actual context, not idealized architecture or only executable bugs.
-
 ## Scope and evidence
+
+This contract governs language, integration, and focused code reviews. Assess the requested focus in its actual context, not idealized architecture or only executable bugs.
 
 1. Establish the requested technology or review focus, paths/component, and candidate identity. An explicit diff/base-target request is a change review: report issues introduced or materially worsened by that change, including affected unchanged callers, not unrelated existing debt; otherwise review the supplied current snapshot without inventing a baseline.
 2. If no paths are supplied, map the repository and review its first-party code relevant to the selected technology or focus, excluding unrelated languages for a language review, vendored dependencies, and generated output as independent review targets. State the actual files/components and revision or working-tree state covered; do not claim comprehensive coverage of unread code or turn a language review into a repository-wide audit.
@@ -17,7 +17,7 @@ A maintainability finding need not demonstrate a current runtime failure or viol
 
 Check existing guarantees and accepted tradeoffs before alleging missing validation, error handling, cleanup, or tests. Prefer the smallest useful correction; do not demand new frameworks, libraries, schemas, traits, generic layers, retries, immutability, or migrations merely because they are possible, and do not weaken requirements to simplify the code.
 
-**Focused reviews.** Test effectiveness ([test quality](test-quality.md)), unused and obsolete code ([unused code](unused-code.md)), and design and maintainability ([design quality](design-quality.md)) each have a dedicated reviewer and owning standard. Language and integration reviews prioritize production behavior and language- or integration-specific boundaries; report an issue in a focused area only when it directly causes or hides a production defect, applying the owning standard. If you notice a likely consequential issue outside your focus, do not investigate or grade it; add one question naming its path, the observed trigger, and the reviewer that owns it.
+**Focused reviews.** Test effectiveness ([test quality](test-quality.md)), unused and obsolete code ([unused code](unused-code.md)), design and maintainability ([design quality](design-quality.md)), and conformance to declared invariants across boundaries ([invariant conformance](invariants.md)) each have a dedicated reviewer and owning standard. Language and integration reviews prioritize production behavior and language- or integration-specific boundaries; report an issue in a focused area only when it directly causes or hides a production defect, applying the owning standard. If you notice a likely consequential issue outside your focus, do not investigate or grade it; add one question naming its path, the observed trigger, and the reviewer that owns it.
 
 Performance concerns need an actual unnecessary cost or applicable workload, not hypothetical scale; distinguish correctness defects from contextual design recommendations and leave equally sound alternatives alone.
 
@@ -53,3 +53,43 @@ A `Blocker` or `Major` finding's evidence must begin with the verbatim source li
 A test-evidence gap alone is at most `Major` and is never a demonstrated production defect; if the production behavior is itself wrong, report that defect on its own evidence. Words such as "guarantee", "security", or "durable" in a test name or document do not raise severity by themselves, and neither do reviewer confidence, finding category, or several reports sharing one cause. Omit a concern with no credible trigger or meaningful consequence rather than reporting it as `Minor`.
 
 Finish with checks actually run or not run and specific questions or coverage limits when needed. No praise padding, scores, issue quotas, exhaustive checklist recitals, speculative rewrites, or claims of whole-application safety; separate uncertainty from supported findings.
+
+## TypeScript asynchronous ownership
+
+3. **Check ownership and asynchronous behavior.** Trace aliases, mutation visibility, listener/resource lifetime, promise completion and rejection ownership, discarded async callback results, stale writes, and cleanup on relevant failure paths. A returned promise may correctly transfer responsibility, `readonly` is not a deep runtime freeze, and concurrent promises do not imply cancellation or rollback; establish the actual host/callback contract before claiming a failure or recommending new concurrency machinery.
+
+## TypeScript runtime compatibility
+
+4. **Check runtime and consumer compatibility where relevant.** Relate module resolution, emit or transpilation, imports/exports, declarations, and package entry points to supported runtimes and consumers. Compiler library declarations do not supply runtime APIs, and path aliases do not by themselves rewrite emitted imports; verify the actual bundler/loader before alleging a mismatch, and do not turn review into an unsolicited compiler-flag or module-system migration.
+
+## TypeScript literal separators
+
+- **Hidden control character mistaken for missing separator** — `read` output can omit control characters such as NUL. Before reporting that a string or template literal lacks a separator or can collide, `grep` that file for the literal's visible text; if `grep` finds no match for text `read` displays, the file contains a byte the tools hide, so do not report the collision. Evidence: 2026-09-24, `app/src/screens/document-review/form.ts` `annotationKey` reported as colliding in 2 of 3 reviews despite a NUL separator.
+
+## Python concurrency ownership
+
+4. **Check async, thread, and process ownership where present.** Identify coroutines that are never awaited, tasks created without a retained reference or anyone observing their result, blocking work in a shared event loop, thread-to-loop calls that bypass the documented bridge, and swallowed `CancelledError` that defeats `TaskGroup`, timeouts, or shutdown. Establish framework bridging (sync versus async handlers, Django sync ORM calls, Flask's per-view loop), races on compound operations across threads (the GIL does not protect an application invariant, and free-threaded builds remove it), and multiprocessing start-method and pickling requirements for the supported platforms. A returned task may transfer ownership, a sync handler is not automatically blocking, and a lock-free operation is not automatically racy; find the actual scheduler and competing writer.
+
+## Python runtime compatibility
+
+6. **Check runtime and consumer compatibility at owned boundaries.** Compare changed behavior with published import paths, `__all__` and `__init__.py` re-exports, installed scripts and plugins, and known consumers. Judge version guards, optional-dependency imports, and platform branches in their supported installation modes, including Windows paths, newline translation, environment-variable case folding, and default text encoding before Python 3.15. Read foreign serializers or callers only enough to resolve the contract. Use read-only `lsp` definitions, references, and hover when available; they reflect static resolution and cannot prove runtime validation or rule out `getattr`, `importlib`, registry, or external use.
+
+## Rust concurrency
+
+4. **Inspect concurrency only where present.** Trace lock scope/order, blocking work, actual contention, task and resource lifetime, shutdown, cancellation, and partial progress across repeated operations. A short standard-mutex critical section that ends before awaiting can be appropriate, and cancellation-unsafety matters only when the discarded progress violates this operation's contract; do not condemn `Arc`, mutexes, dynamic dispatch, allocations, or async code by their presence.
+
+## Rust unsafe and foreign boundaries
+
+5. **Audit applicable unsafe and foreign boundaries precisely.** For `unsafe`, follow the invariant from construction and safe callers through aliasing, initialization, lifetimes, allocation/destruction, ABI, and relevant `Send`/`Sync` or pinning claims. Safety comments must match the implementation, not substitute for its proof; identify a violated invariant or concrete auditability burden without treating unsafe code itself as a defect or inventing unsettled language guarantees.
+
+## Rust compatibility
+
+6. **Check compatibility at owned boundaries.** Where relevant, compare Serde/FFI/wire representation, feature forwarding, and supported toolchain/target behavior with actual consumers and project policy. Read foreign serializers/bindings/callers only enough to resolve that contract, avoid unsolicited cross-language naming changes, and trace generated issues to their source.
+
+## Tauri lifecycle and concurrency
+
+5. **Trace lifecycle and concurrency.** Inspect asynchronous listener readiness/disposal, window/webview destruction, managed-state identity, locks and blocking work at command boundaries, task completion/cancellation, and child-process shutdown/output ownership where present. A view may disappear before `listen` resolves, whereas an intentional application-lifetime listener need not be removed on each view change; events versus channels, standard versus async locks, and background work require the actual lifetime, workload, and delivery contract rather than blanket rules.
+
+## Tauri shipped boundary
+
+8. **Check the shipped boundary where relevant.** Relate frontend assets, dev/release configuration, plugin initialization and documented host/frontend version compatibility, writable-data versus packaged-resource paths, sidecar target names, and native configuration to supported builds and platforms. Inspect signing/updater/installer behavior only for the declared distribution path; development success is not release evidence, missing artifacts are specific coverage limits, and build scripts remain source evidence unless execution was authorized.

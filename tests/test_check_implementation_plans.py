@@ -51,6 +51,12 @@ class CheckImplementationPlansTests(unittest.TestCase):
             result.stderr,
         )
 
+    def test_no_file_target_is_sole_none(self):
+        self.assertEqual(self.run_validator(task("T01", target="none")).returncode, 0)
+        mixed = self.run_validator(task("T01", target="none; `src/mod.py` (edit)"))
+        self.assertNotEqual(mixed.returncode, 0)
+        self.assertIn("sole none", mixed.stderr)
+
     def test_valid_plan_with_direct_reasons_and_optional_tests(self):
         content = (
             "# Approved plan\n\n"

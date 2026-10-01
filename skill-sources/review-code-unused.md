@@ -11,7 +11,10 @@ Find consequential unused and obsolete first-party code in the requested scope a
 ## Required guidance
 
 - [Review report delivery](../guides/agents.md#review-report-delivery)
-- [Code review contract](../guides/code-review.md)
+- [Code review scope and evidence](../guides/code-review.md#scope-and-evidence)
+- [Code review standard](../guides/code-review.md#review-standard)
+- [Read-only review operation](../guides/code-review.md#read-only-operation)
+- [Code review report](../guides/code-review.md#report)
 - [Unused code scope and authority](../guides/unused-code.md#scope-and-authority)
 - [Unused code core standard](../guides/unused-code.md#core-standard)
 

@@ -11,11 +11,17 @@ Find consequential behavior defects and Rust-specific ownership, API, and invari
 ## Required guidance
 
 - [Review report delivery](../guides/agents.md#review-report-delivery)
-- [Code review contract](../guides/code-review.md)
+- [Code review scope and evidence](../guides/code-review.md#scope-and-evidence)
+- [Code review standard](../guides/code-review.md#review-standard)
+- [Read-only review operation](../guides/code-review.md#read-only-operation)
+- [Code review report](../guides/code-review.md#report)
 
 ## Reference guidance
 
 - [Communication rules](../guides/communication-policy.md#rules)
+- [Rust concurrency](../guides/code-review.md#rust-concurrency)
+- [Rust unsafe and foreign boundaries](../guides/code-review.md#rust-unsafe-and-foreign-boundaries)
+- [Rust compatibility](../guides/code-review.md#rust-compatibility)
 
 ## Inputs
 
@@ -30,9 +36,9 @@ Return questions and missing-input limits to the caller in the fixed Markdown re
 1. **Map the Rust scope and supported configurations.** Identify relevant workspace members, library/executable boundaries, edition and minimum supported Rust version policy, resolved dependencies, feature/resolver settings, conditional compilation, and supported targets. Inspect relevant Rust tests, build scripts, and macro inputs/implementations as source when needed, without executing them by default; do not assume Tokio, async, `unsafe`, FFI, `no_std`, or every possible platform/feature combination is present or supported.
 2. **Trace ownership and lifetime correctness.** Check whether borrowing, consuming, sharing, returning, and retaining data preserve the actual storage and escape invariants. Identify reachable invalid references, unwanted copies of shared state, and resources held across operations where retention breaks the behavior contract; a clone may deliberately detach a snapshot, release a lock, or transfer work.
 3. **Follow errors, panic paths, and partial state.** Determine which failures callers must distinguish or recover from, whether useful context survives translation, and what is left after interruption or cleanup. An `unwrap` or `expect` is not automatically a defect when an established invariant justifies it; show the reachable unwanted panic or brittle assumption, and respect the differing needs of library contracts, applications, and tests without prescribing an error crate.
-4. **Inspect concurrency only where present.** Trace lock scope/order, blocking work, actual contention, task and resource lifetime, shutdown, cancellation, and partial progress across repeated operations. A short standard-mutex critical section that ends before awaiting can be appropriate, and cancellation-unsafety matters only when the discarded progress violates this operation's contract; do not condemn `Arc`, mutexes, dynamic dispatch, allocations, or async code by their presence.
-5. **Audit applicable unsafe and foreign boundaries precisely.** For `unsafe`, follow the invariant from construction and safe callers through aliasing, initialization, lifetimes, allocation/destruction, ABI, and relevant `Send`/`Sync` or pinning claims. Safety comments must match the implementation, not substitute for its proof; identify a violated invariant or concrete auditability burden without treating unsafe code itself as a defect or inventing unsettled language guarantees.
-6. **Check compatibility at owned boundaries.** Where relevant, compare Serde/FFI/wire representation, feature forwarding, and supported toolchain/target behavior with actual consumers and project policy. Read foreign serializers/bindings/callers only enough to resolve that contract, avoid unsolicited cross-language naming changes, and trace generated issues to their source.
+4. **Inspect concurrency only where present.** Before judging concurrent or asynchronous Rust code, read [Rust concurrency](../guides/code-review.md#rust-concurrency).
+5. **Audit applicable unsafe and foreign boundaries precisely.** When the scope contains `unsafe`, FFI, or safety claims, read [Rust unsafe and foreign boundaries](../guides/code-review.md#rust-unsafe-and-foreign-boundaries) before judging their invariants.
+6. **Check compatibility at owned boundaries.** When the scope touches serialized/foreign representations, feature forwarding, or toolchain/target compatibility, read [Rust compatibility](../guides/code-review.md#rust-compatibility).
 
 ## Output
 

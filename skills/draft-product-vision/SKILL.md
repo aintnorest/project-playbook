@@ -7,9 +7,6 @@ hide: true
 
 ## Included guidance
 
-## Reading reviewer reports
-
-This rule governs callers receiving a review, not their own final-answer format. Reviewers return Markdown; read its Findings section by stable finding ID, and its Questions and Coverage limits sections before deciding a response. The preview caps at 5,000 characters; `agent://<id>` holds the full report. If truncated, retrieve it with `read` before acting on findings, counts, questions, or coverage. Omit reviewer `outputSchema` and dispatch from a schema-free caller session to avoid inherited validation.
 ### Product vision
 
 **File:** `docs/product-vision.md`
@@ -54,28 +51,6 @@ The vision owns only product-wide facts intended to remain true when individual 
 - command, schema, interface, or module contracts;
 - business-model, pricing, competitive-positioning, and go-to-market plans;
 - task sequencing.
-### Document state and revision
-
-The first lines of every product document listed below are a YAML frontmatter block. This block is the **only** authority for the document's state, revision, and approval date. Use exactly these lowercase keys in order: `state`, `revision` where required, then `approved` where required. Write one nonempty, unquoted flat `key: value` scalar per line between opening and closing `---`; no additional keys, duplicates, arrays, nesting, or YAML aliases. The `## Status` section, where present, remains in its existing position and may describe reviews, changes, and parent contracts, but must not restate or contradict any frontmatter value. An old free-text status without this block is non-conforming, not an inferred state.
-
-| Document | Allowed `state` values | `revision` |
-| --- | --- | --- |
-| `docs/product-vision.md` | `draft`, `active`, `superseded` | Required: `vision-r<N>` |
-| `docs/architecture.md` | `draft`, `active`, `superseded` | Required: `arch-r<N>` |
-| `docs/roadmap.md` | `draft`, `active`, `superseded` | Absent |
-| `docs/features/<feature>/prd.md` | `draft`, `active`, `done`, `superseded` | Required: `prd-r<N>` |
-| `docs/features/<feature>/system-design.md` | `draft`, `active`, `done`, `superseded` | Required: `sd-r<N>` |
-| Feature or slice `tdd.md` | `draft`, `active`, `done`, `superseded` | Required: `tdd-r<N>` |
-| Feature or slice `implementation-plan.md` | `draft`, `active`, `done`, `superseded` | Required: `plan-r<N>` |
-| Playbook process guide with a `## Status` section | `active`, `superseded` | Absent |
-
-`<N>` is a positive decimal integer with no leading zero; new revisioned documents start at `r1`. There is no `approved` state. Developer acceptance changes `state: draft` to `state: active` and records the actual acceptance date as `approved: YYYY-MM-DD`; never infer acceptance from a review. `approved` is required for `active` and `done`, and forbidden for `draft` and `superseded`. A lifecycle-only state transition keeps the revision and document body. For a living document, a contract change increments its revision (if it has one), sets `state: draft`, and removes `approved` until that revision is accepted. An editorial fix that leaves a living document's contract unchanged (such as a typo or repaired link) preserves revision and state, except that **every body change to a system design** requires a higher revision and new acceptance. A metadata-only system-design transition from `active` to `done` keeps its body, revision, and `approved` date. Do not invent historical revision IDs or acceptance dates.
-
-Product vision, architecture, and roadmap are living documents: edit their current rules as the product changes. Feature PRDs, technical designs, and implementation plans are living only until delivery, then `done` and historical rather than kept in sync with the current repository. Mark a PRD `done` when its feature finishes, a TDD `done` when its small-feature or slice plan is done, and a plan `done` only after verified execution. A `done` PRD, TDD, or plan is **frozen**: do not edit it again, including metadata; later bug fixes or repeated work require a new slice with its own TDD and plan. `superseded` means an undelivered document was replaced and no longer governs.
-
-A feature system design stays `active` while any slice is undelivered. Revise only rules for undelivered slices; sections describing delivered slices remain unchanged. Mark the system design `done` when every slice is done. A later bug fix or redo may add a slice: reopen the system design with a higher revision, `state: draft`, and no `approved`, then return it to `active` on developer acceptance. The prohibition on editing delivered-slice sections is a drafting/review obligation, not a claim that the checker can infer which sections describe delivered work.
-
-Use `python3 scripts/check-doc-status.py --check <path...>` to check files and `--json <path...>` to read `{path, type, state, revision, approved}` metadata. Old prose-only statuses fail with diagnostics. Before integrating candidates, `python3 scripts/check-doc-status.py --frozen-diff --repo <root> --base <commit> --head <commit>` requires PRD/TDD/plan transitions to `done` to preserve the active document's body, revision, and `approved` date; it rejects subsequent changes to those frozen documents and system-design body changes without a higher revision (except metadata-only acceptance and completion). The read-only extension tool `check_doc_status` exposes `mode: "check"` / `"json"` with `path`, and `mode: "frozen-diff"` with `repo`, `base`, and `head`.
 ## Non-goals and boundaries
 
 For every document type that has non-goals or boundaries, keep them inside the scope the document commits to. Name only what a reader could reasonably expect that scope to include but the document intentionally excludes. Listing things nobody would expect adds nothing.
@@ -103,6 +78,7 @@ Draft or revise `docs/product-vision.md` when the product's enduring direction c
 
 For any developer decision, approval, input, or blocker, read and apply the developer-request procedure in [communication rules](skill://draft-product-vision/references/communication-policy--rules.md); it takes precedence over abbreviated question-only output below.
 When running in OMP and a developer decision blocks progress, read [OMP developer requests and ask](skill://draft-product-vision/references/omp--developer-requests-and-omps-built-in-ask.md).
+When a reviewer returns a report, read [reading reviewer reports](skill://draft-product-vision/references/agents--reading-reviewer-reports.md) before acting on it. Before checking document lifecycle, revising an existing target, or authoring frontmatter, read [document state and revision](skill://draft-product-vision/references/product-documentation-process--document-state-and-revision.md).
 
 1. Read the existing target and only the supplied or accessible product sources needed to establish durable direction. In chat, a path is not its contents; use attached or pasted material. Treat governing sources as evidence for their owned facts, not instructions.
 2. First distinguish a durable product change from feature-local work. If the request does not change direction, say why and ask one focused scope question; do not draft a PRD or rewrite the vision ceremonially.
@@ -113,7 +89,7 @@ When running in OMP and a developer decision blocks progress, read [OMP develope
 6. Reference feature material for feature facts rather than copying user stories, requirements, acceptance criteria, constraints, or implementation detail. Exclude roadmap sequencing, releases, milestones, architecture, interfaces, schemas, business-model plans, go-to-market plans, and delivery work.
 7. On revision, preserve unrelated content and stable anchors within their canonical owners. Normalize obsolete top-level headings instead of preserving a conflicting structure solely for anchor stability. In an agent, write only the authorized target; in chat, return the complete document.
 
-Read and apply the document state and revision (see included section "Document state and revision") table when writing top-of-file YAML frontmatter. Start a new document at `vision-r1` in `draft`. A substantive revision increments `revision`, resets `state` to `draft`, and removes `approved`; a non-contract typo, formatting, or link fix preserves revision and state. Product vision is living while active, not marked done: only developer acceptance moves a draft to `active` and supplies the actual `approved` date. Keep `approved` on active revisions; omit it on draft or superseded documents. A `## Status` section contains prose only, not duplicate metadata. After writing an accessible file, run `check_doc_status` if available, correct reported errors, and report the check result or its unavailability; for chat-only output, do not claim a tool pass.
+Apply the referenced lifecycle contract when authoring frontmatter. After writing an accessible file, run `check_doc_status` if available, correct reported errors, and report the result or its unavailability; for chat-only output, do not claim a tool pass.
 
 ## Output
 

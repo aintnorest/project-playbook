@@ -99,6 +99,19 @@
       {"request": "Find obsolete export paths with no supported consumers", "expected": "review-code-unused-agent"}
     ]
   },
+  "review-code-invariants-agent": {
+    "positive": [
+      "Check whether the EXPORT code keeps the per-user isolation rule from our architecture doc on every path",
+      "Trace who can reach export records and whether ownership comes from trusted context or the caller",
+      "Verify the integrated branch against the trust boundaries in the system design"
+    ],
+    "negative": [
+      {"request": "Review the TypeScript export client for runtime contract defects", "expected": "review-code-typescript-agent"},
+      {"request": "Assess whether the export authorization tests catch regressions", "expected": "review-code-tests-agent"},
+      {"request": "Assess control-flow complexity in the export pipeline", "expected": "review-code-design-agent"},
+      {"request": "Review the EXPORT system design for missing shared invariants", "expected": "review-doc-system-design-agent"}
+    ]
+  },
   "review-code-python-agent": {
     "positive": [
       "Review the Python code in the export service for behavior defects",
@@ -139,7 +152,8 @@
       {"request": "Review a TypeScript-only export change", "expected": "review-code-typescript-agent"},
       {"request": "Assess whether integration tests detect export IPC regressions", "expected": "review-code-tests-agent"},
       {"request": "Identify unused integration hooks and superseded commands", "expected": "review-code-unused-agent"},
-      {"request": "Review design complexity across host and frontend code", "expected": "review-code-design-agent"}
+      {"request": "Review design complexity across host and frontend code", "expected": "review-code-design-agent"},
+      {"request": "Check every export path against the architecture's declared isolation and trust rules", "expected": "review-code-invariants-agent"}
     ]
   },
   "review-code-tests-agent": {

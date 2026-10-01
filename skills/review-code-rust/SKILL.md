@@ -10,17 +10,14 @@ hide: true
 ## Review report delivery
 
 Return the complete Markdown report from the owning [document (source: guides/document-review.md#report)], code (see included section "Report"), [prompt (source: guides/prompt-design.md#report-without-editing)], or [friction (source: guides/friction.md#report)] contract as final text, without JSON or fences. Schema-free OMP accepts prose. If runtime requires terminal `yield`, write the report, then call `yield` with `type: "result"` and no `data` to capture it. Omit agent `output` and invocation `outputSchema`; the caller session must lack a schema, since OMP inherits it.
-# Code review contract
+## Scope and evidence
 
 This contract governs language, integration, and focused code reviews. Assess the requested focus in its actual context, not idealized architecture or only executable bugs.
-
-## Scope and evidence
 
 1. Establish the requested technology or review focus, paths/component, and candidate identity. An explicit diff/base-target request is a change review: report issues introduced or materially worsened by that change, including affected unchanged callers, not unrelated existing debt; otherwise review the supplied current snapshot without inventing a baseline.
 2. If no paths are supplied, map the repository and review its first-party code relevant to the selected technology or focus, excluding unrelated languages for a language review, vendored dependencies, and generated output as independent review targets. State the actual files/components and revision or working-tree state covered; do not claim comprehensive coverage of unread code or turn a language review into a repository-wide audit.
 3. Read applicable instructions, relevant configuration, enclosing code, direct callers, existing tests, and contracts before judging a candidate issue. For language or integration reviews, cross into another language only through an actual API, serialization, foreign-function, IPC, lifecycle, or build connection needed to assess the target; stop when that contract is understood, and report a connected mismatch as one boundary finding rather than unrelated findings about foreign internals.
 4. Ground version-sensitive claims in the installed toolchain/dependencies and applicable documentation. With missing source or configuration, finish supported checks and name the precise coverage limit or question; absence of supplied evidence is not a defect or proof of safety.
-
 ## Review standard
 
 Prioritize correct production behavior and useful failure contracts. Establish the relevant requirements and actual operation before judging a defect; stylistic preferences alone are not evidence.
@@ -29,14 +26,12 @@ A maintainability finding need not demonstrate a current runtime failure or viol
 
 Check existing guarantees and accepted tradeoffs before alleging missing validation, error handling, cleanup, or tests. Prefer the smallest useful correction; do not demand new frameworks, libraries, schemas, traits, generic layers, retries, immutability, or migrations merely because they are possible, and do not weaken requirements to simplify the code.
 
-**Focused reviews.** Test effectiveness ([test quality (source: guides/test-quality.md)]), unused and obsolete code ([unused code (source: guides/unused-code.md)]), and design and maintainability ([design quality (source: guides/design-quality.md)]) each have a dedicated reviewer and owning standard. Language and integration reviews prioritize production behavior and language- or integration-specific boundaries; report an issue in a focused area only when it directly causes or hides a production defect, applying the owning standard. If you notice a likely consequential issue outside your focus, do not investigate or grade it; add one question naming its path, the observed trigger, and the reviewer that owns it.
+**Focused reviews.** Test effectiveness ([test quality (source: guides/test-quality.md)]), unused and obsolete code ([unused code (source: guides/unused-code.md)]), design and maintainability ([design quality (source: guides/design-quality.md)]), and conformance to declared invariants across boundaries ([invariant conformance (source: guides/invariants.md)]) each have a dedicated reviewer and owning standard. Language and integration reviews prioritize production behavior and language- or integration-specific boundaries; report an issue in a focused area only when it directly causes or hides a production defect, applying the owning standard. If you notice a likely consequential issue outside your focus, do not investigate or grade it; add one question naming its path, the observed trigger, and the reviewer that owns it.
 
 Performance concerns need an actual unnecessary cost or applicable workload, not hypothetical scale; distinguish correctness defects from contextual design recommendations and leave equally sound alternatives alone.
-
 ## Read-only operation
 
 Do not edit files, apply fixes, generate code, install/update dependencies, mutate Git state, or launch an implementation workflow. Static review is the default; run only requested or already authorized narrow checks after inspecting the commands and their effects, never automatic fix modes or unrelated suites, and distinguish execution evidence from reasoning or proposed verification. When the `lsp` tool is available, use only its read actions (`diagnostics`, `definition`, `references`, `hover`, `symbols`, `status`, `capabilities`); never `rename`, `rename_file`, `code_actions`, `reload`, or `request`, which mutate files. Use `references` before calling code unused or a change breaking, and `ast_grep` for structural patterns `grep` cannot express.
-
 ## Report
 
 Zero findings is valid, not certification or approval. Do not fabricate locations, reproductions, approvals, or commands. Retain supplied IDs on follow-up; merge only the same underlying issue and correction.
@@ -90,9 +85,9 @@ Return questions and missing-input limits to the caller in the fixed Markdown re
 1. **Map the Rust scope and supported configurations.** Identify relevant workspace members, library/executable boundaries, edition and minimum supported Rust version policy, resolved dependencies, feature/resolver settings, conditional compilation, and supported targets. Inspect relevant Rust tests, build scripts, and macro inputs/implementations as source when needed, without executing them by default; do not assume Tokio, async, `unsafe`, FFI, `no_std`, or every possible platform/feature combination is present or supported.
 2. **Trace ownership and lifetime correctness.** Check whether borrowing, consuming, sharing, returning, and retaining data preserve the actual storage and escape invariants. Identify reachable invalid references, unwanted copies of shared state, and resources held across operations where retention breaks the behavior contract; a clone may deliberately detach a snapshot, release a lock, or transfer work.
 3. **Follow errors, panic paths, and partial state.** Determine which failures callers must distinguish or recover from, whether useful context survives translation, and what is left after interruption or cleanup. An `unwrap` or `expect` is not automatically a defect when an established invariant justifies it; show the reachable unwanted panic or brittle assumption, and respect the differing needs of library contracts, applications, and tests without prescribing an error crate.
-4. **Inspect concurrency only where present.** Trace lock scope/order, blocking work, actual contention, task and resource lifetime, shutdown, cancellation, and partial progress across repeated operations. A short standard-mutex critical section that ends before awaiting can be appropriate, and cancellation-unsafety matters only when the discarded progress violates this operation's contract; do not condemn `Arc`, mutexes, dynamic dispatch, allocations, or async code by their presence.
-5. **Audit applicable unsafe and foreign boundaries precisely.** For `unsafe`, follow the invariant from construction and safe callers through aliasing, initialization, lifetimes, allocation/destruction, ABI, and relevant `Send`/`Sync` or pinning claims. Safety comments must match the implementation, not substitute for its proof; identify a violated invariant or concrete auditability burden without treating unsafe code itself as a defect or inventing unsettled language guarantees.
-6. **Check compatibility at owned boundaries.** Where relevant, compare Serde/FFI/wire representation, feature forwarding, and supported toolchain/target behavior with actual consumers and project policy. Read foreign serializers/bindings/callers only enough to resolve that contract, avoid unsolicited cross-language naming changes, and trace generated issues to their source.
+4. **Inspect concurrency only where present.** Before judging concurrent or asynchronous Rust code, read [Rust concurrency](skill://review-code-rust/references/code-review--rust-concurrency.md).
+5. **Audit applicable unsafe and foreign boundaries precisely.** When the scope contains `unsafe`, FFI, or safety claims, read [Rust unsafe and foreign boundaries](skill://review-code-rust/references/code-review--rust-unsafe-and-foreign-boundaries.md) before judging their invariants.
+6. **Check compatibility at owned boundaries.** When the scope touches serialized/foreign representations, feature forwarding, or toolchain/target compatibility, read [Rust compatibility](skill://review-code-rust/references/code-review--rust-compatibility.md).
 
 ## Output
 

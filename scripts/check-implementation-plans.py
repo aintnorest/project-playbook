@@ -232,12 +232,12 @@ def parse_plan(path: Path, text: str) -> Tuple[List[dict], List[Tuple[int, str]]
             else:
                 protected[item] = (task["id"], position)
     for position, task in enumerate(tasks):
-        if not protected:
-            break
+        if task["fields"].get("Targets", "").strip() == "none":
+            continue
         for item in re.split(r";\s*|\n", task["fields"].get("Targets", "")):
             match = TARGET_ITEM.fullmatch(item.strip())
             if match is None:
-                errors.append((task["line"], "cannot check protected files in malformed Targets item: " + item.strip()))
+                errors.append((task["line"], "cannot check protected files in malformed Targets item: " + item.strip() + "; use path[::symbol] (edit|create), separated by semicolons/newlines, or sole none"))
                 continue
             target = match[1] or match[2]
             owner = protected.get(posixpath.normpath(target))

@@ -11,7 +11,10 @@ Find consequential, demonstrated maintenance burdens in the requested first-part
 ## Required guidance
 
 - [Review report delivery](../guides/agents.md#review-report-delivery)
-- [Code review contract](../guides/code-review.md)
+- [Code review scope and evidence](../guides/code-review.md#scope-and-evidence)
+- [Code review standard](../guides/code-review.md#review-standard)
+- [Read-only review operation](../guides/code-review.md#read-only-operation)
+- [Code review report](../guides/code-review.md#report)
 - [Design quality scope and authority](../guides/design-quality.md#scope-and-authority)
 - [Design quality core standard](../guides/design-quality.md#core-standard)
 

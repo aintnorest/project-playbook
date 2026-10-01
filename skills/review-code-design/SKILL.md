@@ -10,17 +10,14 @@ hide: true
 ## Review report delivery
 
 Return the complete Markdown report from the owning [document (source: guides/document-review.md#report)], code (see included section "Report"), [prompt (source: guides/prompt-design.md#report-without-editing)], or [friction (source: guides/friction.md#report)] contract as final text, without JSON or fences. Schema-free OMP accepts prose. If runtime requires terminal `yield`, write the report, then call `yield` with `type: "result"` and no `data` to capture it. Omit agent `output` and invocation `outputSchema`; the caller session must lack a schema, since OMP inherits it.
-# Code review contract
+## Scope and evidence
 
 This contract governs language, integration, and focused code reviews. Assess the requested focus in its actual context, not idealized architecture or only executable bugs.
-
-## Scope and evidence
 
 1. Establish the requested technology or review focus, paths/component, and candidate identity. An explicit diff/base-target request is a change review: report issues introduced or materially worsened by that change, including affected unchanged callers, not unrelated existing debt; otherwise review the supplied current snapshot without inventing a baseline.
 2. If no paths are supplied, map the repository and review its first-party code relevant to the selected technology or focus, excluding unrelated languages for a language review, vendored dependencies, and generated output as independent review targets. State the actual files/components and revision or working-tree state covered; do not claim comprehensive coverage of unread code or turn a language review into a repository-wide audit.
 3. Read applicable instructions, relevant configuration, enclosing code, direct callers, existing tests, and contracts before judging a candidate issue. For language or integration reviews, cross into another language only through an actual API, serialization, foreign-function, IPC, lifecycle, or build connection needed to assess the target; stop when that contract is understood, and report a connected mismatch as one boundary finding rather than unrelated findings about foreign internals.
 4. Ground version-sensitive claims in the installed toolchain/dependencies and applicable documentation. With missing source or configuration, finish supported checks and name the precise coverage limit or question; absence of supplied evidence is not a defect or proof of safety.
-
 ## Review standard
 
 Prioritize correct production behavior and useful failure contracts. Establish the relevant requirements and actual operation before judging a defect; stylistic preferences alone are not evidence.
@@ -29,14 +26,12 @@ A maintainability finding need not demonstrate a current runtime failure or viol
 
 Check existing guarantees and accepted tradeoffs before alleging missing validation, error handling, cleanup, or tests. Prefer the smallest useful correction; do not demand new frameworks, libraries, schemas, traits, generic layers, retries, immutability, or migrations merely because they are possible, and do not weaken requirements to simplify the code.
 
-**Focused reviews.** Test effectiveness ([test quality (source: guides/test-quality.md)]), unused and obsolete code ([unused code (source: guides/unused-code.md)]), and design and maintainability ([design quality (source: guides/design-quality.md)]) each have a dedicated reviewer and owning standard. Language and integration reviews prioritize production behavior and language- or integration-specific boundaries; report an issue in a focused area only when it directly causes or hides a production defect, applying the owning standard. If you notice a likely consequential issue outside your focus, do not investigate or grade it; add one question naming its path, the observed trigger, and the reviewer that owns it.
+**Focused reviews.** Test effectiveness ([test quality (source: guides/test-quality.md)]), unused and obsolete code ([unused code (source: guides/unused-code.md)]), design and maintainability ([design quality (source: guides/design-quality.md)]), and conformance to declared invariants across boundaries ([invariant conformance (source: guides/invariants.md)]) each have a dedicated reviewer and owning standard. Language and integration reviews prioritize production behavior and language- or integration-specific boundaries; report an issue in a focused area only when it directly causes or hides a production defect, applying the owning standard. If you notice a likely consequential issue outside your focus, do not investigate or grade it; add one question naming its path, the observed trigger, and the reviewer that owns it.
 
 Performance concerns need an actual unnecessary cost or applicable workload, not hypothetical scale; distinguish correctness defects from contextual design recommendations and leave equally sound alternatives alone.
-
 ## Read-only operation
 
 Do not edit files, apply fixes, generate code, install/update dependencies, mutate Git state, or launch an implementation workflow. Static review is the default; run only requested or already authorized narrow checks after inspecting the commands and their effects, never automatic fix modes or unrelated suites, and distinguish execution evidence from reasoning or proposed verification. When the `lsp` tool is available, use only its read actions (`diagnostics`, `definition`, `references`, `hover`, `symbols`, `status`, `capabilities`); never `rename`, `rename_file`, `code_actions`, `reload`, or `request`, which mutate files. Use `references` before calling code unused or a change breaking, and `ast_grep` for structural patterns `grep` cannot express.
-
 ## Report
 
 Zero findings is valid, not certification or approval. Do not fabricate locations, reproductions, approvals, or commands. Retain supplied IDs on follow-up; merge only the same underlying issue and correction.
@@ -67,7 +62,7 @@ A test-evidence gap alone is at most `Major` and is never a demonstrated product
 Finish with checks actually run or not run and specific questions or coverage limits when needed. No praise padding, scores, issue quotas, exhaustive checklist recitals, speculative rewrites, or claims of whole-application safety; separate uncertainty from supported findings.
 ## Scope and authority
 
-This guide owns the design and maintainability standard for first-party TypeScript, Rust, and Python code. Apply it to the requested code, its actual callers and entry points, and the configuration and connected boundaries needed to understand a design decision. The code review contract (see included section "Code review contract") owns review scope, evidence, read-only operation, report shape, and severity; this guide does not turn an incidental production bug, weak test, or unused item into an independent design finding. Intended behavior and accepted tradeoffs come from the project's requirements, contracts, instructions, and consumers, not a preferred pattern or the existing implementation alone.
+This guide owns the design and maintainability standard for first-party TypeScript, Rust, and Python code. Apply it to the requested code, its actual callers and entry points, and the configuration and connected boundaries needed to understand a design decision. The [code review contract (source: guides/code-review.md)] owns review scope, evidence, read-only operation, report shape, and severity; this guide does not turn an incidental production bug, weak test, or unused item into an independent design finding. Intended behavior and accepted tradeoffs come from the project's requirements, contracts, instructions, and consumers, not a preferred pattern or the existing implementation alone.
 
 A maintainability finding does not require a runtime failure. It does require a concrete *present* burden in changing, understanding, testing, or owning the inspected operation and a smaller correction whose benefits exceed its migration or coupling cost. Preserve equally sound alternatives; do not prescribe a rewrite, framework, abstraction, generic type, immutability, or validation by default. For design-time traces, refer to the [technical-design control-flow clarity rule (source: guides/product-documentation-process.md#technical-design-document)]; this guide judges the inspected code and its actual paths rather than restating that document contract.
 ## Core standard

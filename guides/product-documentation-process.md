@@ -79,7 +79,7 @@ Slice `02-<slice-name>` has no implementation plan yet because its technical des
 
 Every full feature lives under `docs/features/<feature-name>/` and starts with `prd.md`, the Product Requirements Document. Use the small-feature shape unless the feature meets the [slice criteria](#when-a-feature-needs-slices); then use the large-feature shape. Create an implementation plan only when its technical design is `active` and ready to build.
 
-### Lightweight path for minor changes
+## Lightweight path for minor changes
 
 For a minor fix or change, update the existing living document that owns the changed product fact or technical contract, if one exists, and verify the actual changed behavior. A `done` feature document is historical and must not be revised; later fixes or repeated work use a new slice as [document state and revision](#document-state-and-revision) specifies. Do not create a Product Requirements Document, technical design, system design, or implementation plan merely to satisfy this process.
 
@@ -346,7 +346,7 @@ Keep traces at component, interface, and state-boundary level, not every functio
 - observable acceptance and a narrow verification command or concrete exercise with its expected result;
 - verification prerequisites available within the task, the existing repository, or predecessor tasks;
 - explicit ownership or ordered handoffs for shared files and contracts;
-- integrated feature acceptance and the repository's required final verification;
+- integrated feature acceptance and required integration/final verification owned by the execution owner, outside task `Verify` fields;
 - explicit decision gates only for already approved conditional choices.
 
 **Excludes:**
@@ -360,8 +360,12 @@ Use one task ID namespace per plan: headings are `### T<digits> — <title>`, wi
 
 Write `- Depends on: none` or a single physical line of comma-and-space-separated **direct IDs only**, with no prose or transitive prerequisites. Immediately below that line, give one indented `- T<digits> — <reason>` sub-bullet per direct ID, in the same order; each reason names the required output or hard ordering constraint. Give no reason sub-bullets for `none`. Every dependency must reference an earlier task: no dangling IDs, self-edges, or cycles. List task blocks in topological order; a task is ready when its prerequisites finish, not when an arbitrary phase ends. This line is the authoritative DAG; diagrams and parallel-wave tables are optional derived views, not additional sources of truth.
 
+Write `Targets` as `none` when the task changes no files, for example `- Targets: none` for a no-file evidence handoff. Otherwise list one or more items separated by `; ` or continued on separate indented lines. Each item is a file path (backtick-quoted, or unquoted with no whitespace), optionally followed by `::symbol`, then a space and exactly `(edit)` or `(create)`: for example, `` `src/cache.ts`::SessionCache (edit) ``. Use `(edit)` for an existing target and `(create)` for an approved planned creation. `none` must be the entire field; do not combine it with file targets. Parentheses contain only the action keyword, never descriptive prose: put details such as “new session cache and fixture beside `Scenario`” in `Change`, not `Targets`.
+
 At pickup the execution owner adds `- Assigned worktree: <absolute path>` and `- Assigned branch: <branch name>` immediately after `Verify`, as a pair. Every task worktree goes under `<repo-root>/.worktrees/`; before any pickup the execution owner confirms Git ignores `.worktrees/` and, if not, stops and asks the developer to add it to the repository's `.gitignore`. The execution owner never edits `.gitignore` or `.git/info/exclude`, and never uses another root. Do not write assignment fields while drafting: an unstarted task has neither. Both remain after integration and safe cleanup as assignment history. The validator rejects a partial pair, duplicate path or branch across tasks, relative paths, and malformed branch names. Task status, attempts, verification, and cleanup stay in the separate run ledger. Static validation cannot infer whether a task is running; the execution owner reconciles the ledger and plan. Existing unassigned plans remain valid.
 Put acceptance-test tasks derived from the active TDD's acceptance scenarios before their implementation dependents in the DAG, and assign them to a different worker from the implementation tasks. Every acceptance-test task must declare `- Protects: tests/test_feature.py; tests/test_other.py` immediately after `Targets`, listing **all** test files carrying its active TDD scenarios; no other task may declare `Protects`. The label is optional in the task-block grammar because that grammar cannot identify acceptance-test tasks: review this requirement semantically. `Protects` is a semicolon-and-space-separated list of distinct, plain repository-relative test file paths. Each slash-separated segment uses only ASCII letters, digits, `.`, `_`, or `-`, and cannot be `.` or `..`; quoting and backslashes are not allowed. Name target files as `` `path` (create) `` or `` `path`::symbol (edit) `` (unquoted paths also parse). Once that task integrates, no later task may target its protected files, and candidate changes to them are rejected except when validating the task that declares them. A wrong acceptance test returns to the developer for a TDD revision; the implementer does not change the test to make its code pass.
+
+A task's `Verify` checks only its own targets: the tests and files it changes. Never put whole-repository checks — the full test suite, whole-tree type checking, or whole-tree lint — in a task's `Verify`, including a no-file task. Record those checks separately as execution-owner integration and final gates. The execution owner runs them personally once per integration/merge and is responsible for catching cross-task errors before merging.
 
 For example:
 
@@ -560,8 +564,89 @@ Once the feature's documents exist, trim its roadmap Now entry to the short summ
 
 Build tasks in dependency order, run narrow checks while iterating, and exercise the actual changed surface. Finish with the repository's required verification command.
 
-For subagent execution with an owned integration branch and isolated task worktrees, use [Orchestrate an implementation plan](../skill-sources/orchestrate-implementation-plan.md). The skill owns the dispatch, validation, integration, and design-escalation procedure.
+For subagent execution with an owned integration branch and isolated task worktrees, use [Orchestrate an implementation plan](../skill-sources/orchestrate-implementation-plan.md). Its procedure loads the phase-bound [implementation execution](#implementation-execution) references at the point of need.
 
 ### 11. Close the milestone
 
 Apply [document state and revision](#document-state-and-revision) on delivery: mark a verified plan `done`, then its TDD `done`; mark the PRD `done` when the feature finishes, and the system design `done` when all slices finish. Keep their actual `approved` dates; do not revise frozen documents. Move the finished feature from the roadmap's Now section to Done with its finish date. Revise superseded decisions in the living document that owns them rather than leaving conflicting current contracts.
+
+## Implementation execution
+
+The orchestration skill selects these procedures as phase-bound references. Read the applicable phase before acting; startup authorization and scheduling remain in the skill.
+
+### 2. Own a safe integration branch
+
+Inspect the current branch and commit, local changes, registered worktrees, and any in-progress Git operation before mutation. Record the starting state; never stash, discard, commit, or overwrite the developer's existing changes, force-switch a checked-out branch, or reuse another run's worktree without established ownership.
+
+Use the supplied integration branch, creating it if it does not exist. If none is supplied, create a unique branch using repository naming conventions, or `impl/<plan-name>-<unique-suffix>` when none exist; start a new branch at the supplied base, otherwise the current committed `HEAD`, and report the chosen base SHA.
+
+An existing integration branch retains its history; a supplied base is not permission to reset it. Resolve a remote-only branch to its intended remote ref instead of creating an unrelated local branch, and ask if that identity is ambiguous.
+
+Use a clean integration checkout dedicated to this run. If the branch is already checked out, use that checkout only when it is clean and available to this run; otherwise stop for ownership resolution, while unrelated local changes may remain untouched in a different checkout.
+
+Do not silently omit local changes the implementation needs: have the developer make them available in the agreed base before dispatch. Only you advance the integration branch; never push, merge to the default/release branch, or rewrite published history without separate authorization.
+
+### 4. Create each worktree and hand off bounded work
+
+Before pickup, require `<repo-root>/.worktrees/` to be ignored by Git (`git check-ignore <repo-root>/.worktrees/`). If not ignored, stop before creating any task worktree and ask the developer to add `.worktrees/` to the repository's `.gitignore`; never edit `.gitignore` or `.git/info/exclude` yourself, or use another location. At pickup choose a unique branch and absolute path `<repo-root>/.worktrees/<name>`; use `<repo-root>/.worktrees` as `worktreeRoot` at the candidate gate. Never overwrite existing branches or paths. Add `Assigned worktree` and `Assigned branch` after `Verify`, check the plan, and commit only this metadata when tracked. Stop if unable to persist it. From the resulting accepted SHA create the task worktree (`git worktree add -b <branch> <path> <sha>`). If creation fails, preserve the assignment for reconciliation; do not dispatch.
+
+Verify registered path, branch, and base SHA before dispatch. Require work only in that worktree/branch: absolute paths for file tools, explicit worktree selection for shell/Git, never bare relative paths that may resolve against the parent's directory. Assign acceptance tests to a worker distinct from implementation; that worker edits every protected test and demonstrates the specified failure. Implementation workers cannot edit protected tests; a wrong oracle requires design review.
+
+Give each worker a self-contained packet; do not assume it inherits this conversation:
+
+```text
+Task: stable plan ID, bounded outcome, and explicit non-goals
+Workspace: absolute assigned worktree path, task branch, dispatch base SHA; use only that worktree
+Authority: plan/TDD/system-design revisions and relevant sections; applicable repo instructions
+Prerequisites: integrated task outputs and commits the worker can consume
+Ownership: allowed files/symbols/contracts; protected tests and excluded work
+Implementation: required behavior, existing patterns, acceptance, and verification commands
+Environment: setup, isolated resources, and any access constraints
+Escalation: report design conflicts or scope expansion immediately; do not choose a new design
+Return: task ID, base and final commit SHAs, changed files, acceptance evidence,
+        exact checks/results and skips, deviations/risks, and worktree/process state
+```
+
+Require the worker to inspect its targets, implement the complete bounded outcome, and keep all intended changes in commits on its task branch before returning. The worker may run assigned narrow checks when the harness permits; reserve project-wide build/lint/test suites for your integration/final gate, and obey any harness restriction on concurrent validation.
+
+Workers must not modify the integration checkout, merge their work into it, push, delete worktrees, expand their assignment, or dispatch untracked workers. Permit a worker to merge a pinned integration commit into its own task branch only when you explicitly assign synchronization; have it stop task processes and relinquish writes when returning, including on failure, with uncommitted or incomplete work explicitly reported rather than labeled done.
+
+### 5. Validate, integrate, then remove the worktree
+
+Treat a returned report as a claim, not acceptance. Confirm the worker and its processes have stopped, inspect the actual commits and diff against the assigned base, and check scope, contracts, tests, documentation, and unexplained changes; reject an uncommitted, incomplete, or out-of-scope candidate and delegate the correction without editing it yourself.
+
+Serialize integration and freeze the candidate while validating it. If the integration branch advanced since dispatch, incorporate its current accepted tip into the task branch before acceptance: you may perform a mechanical Git merge, but abort conflicts and assign their resolution to a subagent in that task worktree, then review the new candidate and rerun affected checks.
+Before integrating **any** candidate, run `check_doc_status` frozen-diff and `check_implementation_plan` protected-diff against the accepted tip and candidate commit. Pass assigned task and worktreeRoot only to protected-diff for assigned tasks; omit both for out-of-plan candidates. Stop if either tool is unavailable or fails; repeat after merge or repair.
+
+Call `check_doc_status` with `mode: "frozen-diff"`, `repo`, `base`, `head`; call `check_implementation_plan` with `mode: "protected-diff"`, `plan`, `repo`, `base`, `head`, plus `task` and `worktreeRoot` for assigned tasks. The first guards done documents and system-design revision increments; the second guards protected tests, worktree identity, clean tip, and ancestry. Personally check delivered system-design slice sections: the tool cannot infer ownership. Git cannot prove where a commit originated or prevent outside writes.
+
+Require the current accepted integration tip to be an ancestor of the candidate; validation of an older isolated result does not prove the combined result. Personally inspect the resulting diff and run the task's acceptance checks plus relevant cross-task checks against that exact candidate, exercising the actual changed surface when applicable; worker logs and reviewer opinions supplement but never replace your own validation.
+Workers run only their task's scoped `Verify`. Run every task `Verify` through `run_check` with command, cwd, and timeout; personally run the project's whole-repository checks through it once per integration/merge, catching cross-task errors before merging. Never merge unless every required check returns `passed`. Expected-red commands must exit zero only for the specified failure. Preserve logPath evidence. `unavailable` means not verified, not a code failure: raise the missing command through `request_developer`; never skip it or merge. The runner uses pipefail and keeps full output outside the repository.
+For an acceptance-test task, the red check succeeds **only** when each protected approved TDD scenario fails because its specified behavior is missing, with no unrelated failure; a premature pass or unexpected failure rejects the candidate. For its implementation dependent, verify the applicable protected scenarios pass without editing their tests. A check "fails" when it misses the task-specific expected result, not merely because its command returns a nonzero status.
+If a check misses its expected result, keep the task unaccepted and delegate diagnosis or repair in its worktree. Distinguish a verified pre-existing failure or missing environment from a regression, but do not weaken acceptance, silently skip a required check, or call incomplete validation a pass; report a blocking prerequisite when it cannot be resolved within authorized scope.
+
+After acceptance, confirm both candidate and integration SHAs are unchanged and the integration checkout is clean, then advance it to the exact validated candidate, for example `git merge --ff-only <validated-sha>`. If either SHA changed, re-evaluate and revalidate instead of forcing the merge; preserve repository-mandated history conventions only if they still validate the exact candidate before advancing the branch.
+
+Verify the integration branch reached the accepted commit and run the relevant post-integration smoke check before releasing dependents. A post-integration failure blocks further dispatch and integration until a subagent repair is accepted; retain the failed-task evidence and worktree rather than deleting them or hiding the failure with a destructive reset.
+
+Only after the task's work is merged into the integration branch (or main, if that is the integration branch) and post-integration checks succeed, save evidence outside its worktree. Confirm no worker/process remains and no uncommitted, untracked, or valuable ignored work would be lost, then `git worktree remove <task-path>` and `git branch -d <task-branch>` (never `-D`). Record both cleanup results in the ledger. Never remove an unmerged worktree or force-delete its branch; preserve and report dirty, failed, or unmerged worktrees, and never delete the integration branch or developer's checkout.
+
+### 6. Handle bounded issues; halt for significant design changes
+
+A small issue is a local implementation correction or plan clarification that preserves approved behavior, interfaces, invariants, and acceptance. Delegate it with explicit scope, keep its evidence under the affected task, and have a subagent update the owning documentation or plan when needed; read [reference rules](../guides/product-documentation-process.md#reference-rules) when updating any governing document or plan during issue resolution. Do not turn incidental cleanup into new product work. Record every repair attempt and result in the ledger; after three failed repairs for one task, halt the entire run and escalate the unresolved issue to the developer rather than retrying indefinitely.
+
+A significant issue changes a material TDD or system-design decision, product behavior, a shared interface/invariant, compatibility, security, or data ownership; also escalate an issue spanning multiple tasks when its resolution is complex or far-reaching. A wrong acceptance-test oracle requires a developer-reviewed TDD revision, not a fix by an implementation worker. A repair that changes a produced interface or `Done when` outcome relied upon by dependent tasks halts the whole run for plan revision through the draft and review agents, even when that output has not yet been produced. Examples include replacing the persistence strategy, changing an API consumed by several tasks, or discovering a shared transaction assumption is false; the number of changed files alone does not decide severity, and uncertainty about material impact is itself a reason to pause.
+
+On a significant issue:
+
+1. Immediately stop new dispatch, acceptance, and merges for the entire run, including independent tasks; tell every active worker to stop and preserve its current work, and cancel/terminate through the harness if needed.
+2. Confirm each worker and its task processes are stopped; record any inability to stop as an unresolved safety blocker, reject late returns from automatic acceptance, and preserve all worktrees and commits without cleanup or destructive rollback.
+3. Present the evidence, conflicting document sections, affected tasks and already integrated work, viable resolutions and tradeoffs, and your recommendation; ask the developer for the consequential decision, not permission to keep silently redesigning.
+4. Wait for the developer's decision before dispatch, including documentation workers. Preserve done PRD/TDD/plan documents; bugfix or redo work gets a new slice TDD and plan. Keep delivered system-design slice sections unchanged; reopening a done design for a new slice requires a draft revision without `approved`. Delegate authorized document changes, draft or revise the unfinished plan, then independently review it. Pause implementation until the developer accepts changed drafts as `active` with the actual date.
+5. Integrate the developer-accepted active documentation through both candidate validation gates, rerun the `check_implementation_plan` static check on the revised plan, recheck previously accepted work, and obtain explicit authorization to resume. Reassign affected tasks from the updated integration tip with new handoffs, repairing or replacing stale work through subagents rather than merging old-design returns unchanged.
+
+### 7. Verify the complete branch and deliver it
+
+After all planned outcomes are integrated, run the repository's required final verification and integrated feature acceptance on the final branch tip, including the actual CLI, UI, service, or other changed surface. If documents declare invariants, dispatch `review-code-invariants-agent` on the final tip against the run's base; findings follow step 6. Delegate every discovered fix and repeat affected acceptance and final checks after integration; no task count, green worker report, or successful merge substitutes for working end-to-end behavior.
+
+After integrated acceptance and final verification, read [document state and revision](../guides/product-documentation-process.md#document-state-and-revision) and delegate metadata-only transitions: active plan to `done` with its revision and `approved` date; TDD when its plan is done; PRD when its feature finishes; system design when all slices finish. Run `check_doc_status`, validate the candidate through both gates, and integrate. Delegate other delivery material; clean up safe worktrees and report blockers.

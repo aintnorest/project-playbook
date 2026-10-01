@@ -2,7 +2,7 @@
 name: orchestrate-implementation-plan-agent
 description: "Executes an active implementation plan through isolated subagents and integrates a verified working branch. Use when a developer asks to implement an active plan and validate the result. Not for drafting the plan (draft-implementation-plan-agent) or reviewing its task DAG (review-doc-implementation-plan-agent)."
 model: anthropic/claude-fable-5-1:high
-tools: read, grep, glob, edit, write, bash, task, hub, check_implementation_plan, check_doc_status, request_developer
+tools: read, grep, glob, edit, write, bash, task, hub, check_implementation_plan, check_doc_status, request_developer, run_check
 read-summarize: false
 spawns: "*"
 autoloadSkills:

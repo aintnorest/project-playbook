@@ -1080,6 +1080,10 @@ def publish(root: Path, check: bool, only: Optional[Sequence[str]] = None) -> in
                 "oversize: " + str(bundle.output.relative_to(root))
                 + " (" + str(lines) + " lines, " + str(words) + " words; limit 500/3800)"
             )
+        elif lines >= 450 or words >= 3420:
+            print("near budget: " + str(bundle.output.relative_to(root))
+                  + " (" + str(lines) + " lines, " + str(words)
+                  + " words); audit conditional/phase guidance before expanding", file=sys.stderr)
     if check:
         violations = check_agents(root) if only is None else []
         for path in changed:

@@ -11,7 +11,10 @@ Find consequential gaps where tests claim to prove behavior but would miss a pla
 ## Required guidance
 
 - [Review report delivery](../guides/agents.md#review-report-delivery)
-- [Code review contract](../guides/code-review.md)
+- [Code review scope and evidence](../guides/code-review.md#scope-and-evidence)
+- [Code review standard](../guides/code-review.md#review-standard)
+- [Read-only review operation](../guides/code-review.md#read-only-operation)
+- [Code review report](../guides/code-review.md#report)
 - [Test quality scope and authority](../guides/test-quality.md#scope-and-authority)
 - [Test quality core standard](../guides/test-quality.md#core-standard)
 

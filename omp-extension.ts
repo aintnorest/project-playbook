@@ -1,6 +1,6 @@
 // Enabling this extension package exposes its sibling agents/ and skills/
-// directories and registers read-only document checks, developer-request rendering,
-// and agent-run collection.
+// directories and registers document checks, developer-request rendering,
+// agent-run collection, and bounded project verification.
 // Scripts resolve from this extension's directory, independent of the workspace.
 
 import { spawn } from "node:child_process";
@@ -12,7 +12,8 @@ const validator = fileURLToPath(new URL("./scripts/check-implementation-plans.py
 const statusValidator = fileURLToPath(new URL("./scripts/check-doc-status.py", import.meta.url));
 const requestRenderer = fileURLToPath(new URL("./scripts/request-developer.py", import.meta.url));
 const runCollector = fileURLToPath(new URL("./scripts/collect-agent-runs.py", import.meta.url));
-// Bound each validator output stream independently; the child has at most 120 seconds to finish.
+const checkRunner = fileURLToPath(new URL("./scripts/run-check.py", import.meta.url));
+// Bound each output stream independently; checkers have 120 seconds, runner timeout adds transport grace.
 const MAX_STREAM_BYTES = 16 * 1024 * 1024;
 const VALIDATOR_TIMEOUT_MS = 120_000;
 
@@ -33,7 +34,7 @@ function failure(mode: Mode, message: string, exitCode: number | null = null, st
   };
 }
 
-async function runValidator(args: string[], cwd: string, signal: AbortSignal | undefined, label: string, stdinPayload?: string): Promise<ValidatorResult> {
+async function runValidator(args: string[], cwd: string, signal: AbortSignal | undefined, label: string, stdinPayload?: string, timeoutMs = VALIDATOR_TIMEOUT_MS): Promise<ValidatorResult> {
   return new Promise<ValidatorResult>((resolve, reject) => {
     const child = spawn("python3", args, {
       stdio: [stdinPayload === undefined ? "ignore" : "pipe", "pipe", "pipe"],
@@ -56,8 +57,8 @@ async function runValidator(args: string[], cwd: string, signal: AbortSignal | u
       resolve({ stdout: "", stderr: "", exitCode: null, boundedFailure: message });
     };
     const deadline = setTimeout(() => {
-      stop(`${label} exceeded ${VALIDATOR_TIMEOUT_MS / 1000}-second deadline.`);
-    }, VALIDATOR_TIMEOUT_MS);
+      stop(`${label} exceeded ${timeoutMs / 1000}-second deadline.`);
+    }, timeoutMs);
     const collect = (stream: "stdout" | "stderr", chunk: Buffer) => {
       if (settled) return;
       const length = stream === "stdout" ? outputBytes : errorBytes;
@@ -114,7 +115,7 @@ export default function projectPlaybook(pi: ExtensionAPI) {
       repo: z.string().nullable().optional().describe("Protected-diff only: required repository root; omit or null for check/json."),
       base: z.string().nullable().optional().describe("Protected-diff only: required base revision; omit or null for check/json."),
       head: z.string().nullable().optional().describe("Protected-diff only: required candidate revision; omit or null for check/json."),
-      task: z.string().nullable().optional().describe("Protected-diff only: optional task ID; omit or null for check/json."),
+      task: z.string().nullable().optional().describe("Protected-diff only: optional task ID; null means absent, but supplied empty string is rejected in protected-diff."),
       worktreeRoot: z.string().nullable().optional().describe("Protected-diff only: required <repo-root>/.worktrees for assigned candidates."),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, ctx) {
@@ -304,6 +305,44 @@ export default function projectPlaybook(pi: ExtensionAPI) {
         content: [{ type: "text" as const, text: stdout }],
         details: { status: "ok", exitCode, stderr, report },
       };
+    },
+  });
+
+  pi.registerTool({
+    name: "run_check",
+    label: "Run Check",
+    description: "Run one project shell command with bash pipefail in cwd, with a timeout. Returns passed/failed/timed-out/unavailable, true exitCode, duration in seconds, last tailLines lines, and the full combined stdout/stderr log outside the repo. Unavailable means not verified, not a task-code failure; never merge on it. Project commands may write project files.",
+    parameters: z.object({
+      command: z.string(),
+      cwd: z.string(),
+      timeout: z.union([z.number(), z.literal("")]).nullable().optional().describe("Positive seconds, maximum 3600; absent defaults to 120."),
+      tailLines: z.union([z.number(), z.literal("")]).nullable().optional().describe("Last 0–1000 lines; absent defaults to 40."),
+    }).strict(),
+    async execute(_toolCallId, params, signal, _onUpdate, ctx) {
+      const timeout = params.timeout == null || params.timeout === "" ? 120 : params.timeout;
+      const tailLines = params.tailLines == null || params.tailLines === "" ? 40 : params.tailLines;
+      if (!params.command.trim() || !params.cwd || !Number.isFinite(timeout) || timeout <= 0 || timeout > 3600 ||
+          !Number.isInteger(tailLines) || tailLines < 0 || tailLines > 1000) {
+        return failure("check", "Run check requires command, cwd, timeout in (0, 3600], and integer tailLines in [0, 1000].");
+      }
+      try {
+        const result = await runValidator([checkRunner, "--command", params.command, "--cwd", params.cwd,
+          "--timeout", String(timeout), "--tail-lines", String(tailLines)], ctx.cwd, signal, "Check runner",
+          undefined, (timeout + 5) * 1000);
+        if (result.boundedFailure || result.exitCode !== 0 || result.stderr.trim()) {
+          return failure("check", result.boundedFailure || result.stderr || "Check runner failed.", result.exitCode);
+        }
+        const report = JSON.parse(result.stdout);
+        if (!["passed", "failed", "timed-out", "unavailable"].includes(report.status) ||
+            !(report.exitCode === null || Number.isInteger(report.exitCode)) ||
+            typeof report.duration !== "number" || typeof report.tail !== "string" ||
+            typeof report.logPath !== "string" || typeof report.message !== "string") {
+          return failure("check", "Check runner returned an invalid result.");
+        }
+        return { content: [{ type: "text" as const, text: result.stdout }], details: report };
+      } catch (error) {
+        return failure("check", `Unable to run check runner: ${String(error)}`);
+      }
     },
   });
 
