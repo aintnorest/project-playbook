@@ -16,6 +16,10 @@ function seed(ir) {
   return "fixture";
 }
 
+function kinds(ir) {
+  return ir.k === "union" ? ir.members.flatMap(kinds) : [ir.k];
+}
+
 // Every registration participates, including future tools: no tool-name allowlist.
 test("all registered tools treat every schema-optional empty argument as absent", async () => {
   const directory = mkdtempSync(join(tmpdir(), "playbook-optionals-"));
@@ -52,8 +56,8 @@ test("all registered tools treat every schema-optional empty argument as absent"
         const baseline = { ...required };
         delete baseline[prop.key];
         const absent = await invoke(tool, baseline);
-        const kinds = prop.val.k === "union" ? prop.val.members.map(v => v.k) : [prop.val.k];
-        const empties = ["", null, ...(kinds.includes("array") ? [[]] : []), ...(kinds.includes("object") ? [{}] : [])];
+        const types = kinds(prop.val);
+        const empties = ["", null, ...(types.includes("array") ? [[]] : []), ...(types.includes("object") ? [{}] : [])];
         for (const value of empties) {
           expect(await invoke(tool, { ...baseline, [prop.key]: value })).toEqual(absent);
         }

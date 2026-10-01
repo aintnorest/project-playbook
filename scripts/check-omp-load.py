@@ -18,11 +18,16 @@ def main():
         sys.exit('OMP load check unavailable: omp is not installed or not on PATH.')
     extension = ROOT / 'omp-extension.ts'
     expected = re.findall(r'^\s+name: "([^"]+)",', extension.read_text(), re.MULTILINE)
-    env = {key: value for key, value in os.environ.items()
-           if not key.endswith(('_API_KEY', '_TOKEN'))}
-    env.update(PI_CODING_AGENT_DIR='/Users/cjalatorre/development/scratch/orch-terminal-spike/.omp-sandbox/agent',
-               PI_PROXY='http://127.0.0.1:9', PI_NO_TITLE='1')
     with tempfile.TemporaryDirectory(prefix='playbook-omp-load-') as directory:
+        agent = Path(directory) / 'agent'
+        agent.mkdir()
+        (agent / 'models.yml').write_text(
+            'providers:\n  sandbox-dead:\n    baseUrl: http://127.0.0.1:9/v1\n'
+            '    auth: none\n    api: openai-completions\n    models:\n'
+            '      - id: sandbox-null\n        name: Sandbox (no backend)\n'
+            '        reasoning: false\n        input: [text]\n')
+        env = {'PATH': os.environ.get('PATH', os.defpath), 'HOME': directory,
+               'PI_CODING_AGENT_DIR': str(agent), 'PI_PROXY': 'http://127.0.0.1:9', 'PI_NO_TITLE': '1'}
         probe = Path(directory) / 'probe.ts'
         probe.write_text('import playbook from ' + json.dumps(str(extension)) + ';\n'
                          'export default function(pi) { const names = [];\n'

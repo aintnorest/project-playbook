@@ -35,30 +35,31 @@ function failure(mode: Mode, message: string, exitCode: number | null = null, st
 }
 
 async function runValidator(args: string[], cwd: string, signal: AbortSignal | undefined, label: string, stdinPayload?: string, timeoutMs = VALIDATOR_TIMEOUT_MS): Promise<ValidatorResult> {
+  if (signal?.aborted) return { stdout: "", stderr: "", exitCode: null, boundedFailure: `${label} aborted.` };
   return new Promise<ValidatorResult>((resolve, reject) => {
     const child = spawn("python3", args, {
       stdio: [stdinPayload === undefined ? "ignore" : "pipe", "pipe", "pipe"],
       cwd,
-      signal,
     });
     const output: Buffer[] = [];
     const errors: Buffer[] = [];
     let outputBytes = 0;
     let errorBytes = 0;
     let settled = false;
+    let boundedFailure: string | undefined;
+    let forceKill: NodeJS.Timeout | undefined;
+    let transportError: Error | undefined;
     const stop = (message: string) => {
-      if (settled) return;
-      settled = true;
+      if (settled || boundedFailure) return;
+      boundedFailure = message;
       clearTimeout(deadline);
-      child.kill("SIGKILL");
-      child.stdin?.destroy();
-      child.stdout.destroy();
-      child.stderr.destroy();
-      resolve({ stdout: "", stderr: "", exitCode: null, boundedFailure: message });
+      // The runner handles SIGTERM by killing its separate Bash process group.
+      child.kill("SIGTERM");
+      forceKill = setTimeout(() => child.kill("SIGKILL"), 1000);
     };
-    const deadline = setTimeout(() => {
-      stop(`${label} exceeded ${timeoutMs / 1000}-second deadline.`);
-    }, timeoutMs);
+    const abort = () => stop(`${label} aborted.`);
+    const deadline = setTimeout(() => stop(`${label} exceeded ${timeoutMs / 1000}-second deadline.`), timeoutMs);
+    signal?.addEventListener("abort", abort, { once: true });
     const collect = (stream: "stdout" | "stderr", chunk: Buffer) => {
       if (settled) return;
       const length = stream === "stdout" ? outputBytes : errorBytes;
@@ -76,29 +77,35 @@ async function runValidator(args: string[], cwd: string, signal: AbortSignal | u
     };
     child.stdout.on("data", (chunk: Buffer) => collect("stdout", chunk));
     child.stderr.on("data", (chunk: Buffer) => collect("stderr", chunk));
+    const cleanup = () => {
+      clearTimeout(deadline);
+      clearTimeout(forceKill);
+      signal?.removeEventListener("abort", abort);
+    };
     const fail = (error: Error) => {
       if (settled) return;
-      settled = true;
-      clearTimeout(deadline);
-      child.kill("SIGKILL");
-      child.stdin?.destroy();
-      child.stdout.destroy();
-      child.stderr.destroy();
-      reject(error);
+      transportError = error;
+      stop(`${label} transport failed.`);
     };
     child.on("error", fail);
     child.stdin?.on("error", fail);
     child.on("close", code => {
       if (settled) return;
       settled = true;
-      clearTimeout(deadline);
+      cleanup();
+      if (transportError) {
+        reject(transportError);
+        return;
+      }
       resolve({
         stdout: Buffer.concat(output, outputBytes).toString("utf8"),
         stderr: Buffer.concat(errors, errorBytes).toString("utf8"),
         exitCode: code,
+        boundedFailure,
       });
     });
     child.stdin?.end(stdinPayload);
+    if (signal?.aborted) abort();
   });
 }
 
@@ -311,7 +318,7 @@ export default function projectPlaybook(pi: ExtensionAPI) {
   pi.registerTool({
     name: "run_check",
     label: "Run Check",
-    description: "Run one project shell command with bash pipefail in cwd, with a timeout. Returns passed/failed/timed-out/unavailable, true exitCode, duration in seconds, last tailLines lines, and the full combined stdout/stderr log outside the repo. Unavailable means not verified, not a task-code failure; never merge on it. Project commands may write project files.",
+    description: "Run one foreground project shell command with bash pipefail in cwd, with a timeout. Returns passed/failed/timed-out/unavailable, true exitCode, duration in seconds, last tailLines lines (maximum 64 KiB), and full combined stdout/stderr log outside the repo. Leftover background processes are killed and fail the gate. Unavailable means not verified, not a task-code failure; never merge on it. Project commands may write project files.",
     parameters: z.object({
       command: z.string(),
       cwd: z.string(),
@@ -330,7 +337,14 @@ export default function projectPlaybook(pi: ExtensionAPI) {
           "--timeout", String(timeout), "--tail-lines", String(tailLines)], ctx.cwd, signal, "Check runner",
           undefined, (timeout + 5) * 1000);
         if (result.boundedFailure || result.exitCode !== 0 || result.stderr.trim()) {
-          return failure("check", result.boundedFailure || result.stderr || "Check runner failed.", result.exitCode);
+          const error = failure("check", result.boundedFailure || result.stderr || "Check runner failed.", result.exitCode, result.stderr, result.stdout);
+          const match = result.stdout.match(/"logPath"\s*:\s*("(?:\\.|[^"\\])*")/);
+          if (match) {
+            const logPath: string = JSON.parse(match[1]);
+            return { ...error, content: [{ type: "text" as const, text: `${error.details.message} Full log: ${logPath}` }],
+              details: { ...error.details, logPath } };
+          }
+          return error;
         }
         const report = JSON.parse(result.stdout);
         if (!["passed", "failed", "timed-out", "unavailable"].includes(report.status) ||

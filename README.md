@@ -38,7 +38,7 @@ mise install
 
 Install the extension test dependency with `bun install --frozen-lockfile`. The tests use the real `@oh-my-pi/omptype/zod` builder, pinned to the verified OMP 18.4.4 runtime, rather than a schema mock. OMP injects this Zod-compatible subset as `pi.zod`; it does not expose every Zod method. Empty optional arrays use `.max(0)` because the runtime has no `z.never()`.
 
-The pre-push hook runs the Python tests, OMP extension tests (using Bun), a real installed-OMP sandbox load check (no model turn), and a check-only Markdown lint. Run the same gate manually with `lefthook run pre-push --force` (`--force` runs it even without pending push files), or run its checks separately:
+The pre-push hook runs the Python tests, OMP extension tests (using Bun), a real installed-OMP sandbox load check (fresh temporary HOME/agent config and minimal environment, no model turn), and a check-only Markdown lint. Run the same gate manually with `lefthook run pre-push --force` (`--force` runs it even without pending push files), or run its checks separately:
 
 ```sh
 python3 -m unittest discover -s tests
@@ -49,4 +49,4 @@ mise run lint-markdown
 
 Markdown is checked with rumdl 0.2.77, pinned in `mise.toml` and the cross-platform `mise.lock`. Checks use the installed binary without network access and never rewrite files. `.rumdl.toml` permits long paragraph lines (MD013) and agent bodies without a leading H1 (MD041). Generated `skills/` are excluded; their source Markdown is checked instead.
 
-`run_check` (CLI: `python3 scripts/run-check.py --command 'your check' --cwd /path/to/repo`) runs project commands with Bash pipefail, a timeout, and a full combined-output log outside the repo. Results are `passed`, `failed`, `timed-out`, or `unavailable` (exit 127: missing command, not verified rather than a task-code failure); only `passed` permits integration. Optional `timeout` and `tailLines` default to 120 seconds and 40 lines.
+`run_check` (CLI: `python3 scripts/run-check.py --command 'your check' --cwd /path/to/repo`) runs foreground project commands with Bash pipefail, a timeout, and a full combined-output log outside the repo. Leftover background processes fail the gate and are killed; cancellation kills the command process group too. Results are `passed`, `failed`, `timed-out`, or `unavailable` (exit 127: missing command, not verified rather than a task-code failure); only `passed` permits integration. Optional `timeout` and `tailLines` default to 120 seconds and 40 lines; returned output is also capped at 64 KiB, without truncating the full log.
