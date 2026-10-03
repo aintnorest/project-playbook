@@ -24,5 +24,6 @@ This roadmap records current priorities and later opportunities. Developer appro
 - **Repositories that aren't products.** Repositories holding no product documents need a way to declare that scope so agents do not propose product documents there. This opportunity remains pending the developer's decision.
 - Per-finding review reporting: a tool through which reviewers publish each finding’s ID, severity and location so a supervising tool can track responses to individual findings; designed when such a consumer defines its need.
 - **Worker context packets.** Workers in a plan run explore the same code independently and guess the same missing paths, spending tokens the orchestrator already spent. The orchestrator could hand each worker the exact files, interfaces, and excerpts its task needs. Needs evidence first: measure repeated exploration and wasted reads across real plan runs before designing it.
+- **Feature record.** Once a feature is done, its system design, technical designs, and implementation plans have served their purpose. One shorter record of what still matters could replace them: decisions and their reasons, contracts still in force, deviations from plan, and known limitations or issues. Git history keeps the originals, and facts that outlive the feature move to the living documents that own them.
 
 ## Done
