@@ -323,7 +323,6 @@ export default function projectPlaybook(pi: ExtensionAPI) {
         const result = await approvalOperation(mode, resolve(params.repo || sessionRepo(ctx.cwd)),
           [...(path ? ["--path", path] : []), ...(reason ? ["--reason", reason] : []), ...(evidence ? ["--evidence", evidence] : [])], signal);
         invalidateStatus(resolve(params.repo || sessionRepo(ctx.cwd)));
-        if (result.details.status === "accepted" && ctx.agent && optedIn(sessionRepo(ctx.cwd))) resetRevisions(ctx);
         return result;
       } catch (error) { return failure(mode, String(error)); }
     },
@@ -415,7 +414,6 @@ export default function projectPlaybook(pi: ExtensionAPI) {
       draftSpawn.created = true;
     }
     if (event.isError) return;
-    if (event.toolName === "doc_approval" && event.details?.status === "accepted") resetRevisions(ctx);
     if (event.toolName !== "ask" || ctx.agent.kind !== "main") return;
     const details = event.details;
     if (!details || details.timedOut || details.chatRedirect) return;

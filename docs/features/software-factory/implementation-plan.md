@@ -29,10 +29,10 @@ Veto any of these before execution; each one changes several tasks.
    - **What resets it:**
      - a developer message typed in the main session's prompt;
      - an explicit answer to a main-session `ask` (not a timeout, a cancellation, or a redirect to chat);
-     - any recorded acceptance or approval, which ends that document's process.
+     - a developer approval via `/playbook-approve`.
    - **Where it lives:** in memory, keyed to the main session's agent tree, and lost when the session restarts.
 
-   Any developer message counts as a response: that approximation keeps agents free of bookkeeping.
+   Any developer message counts as a response: that approximation keeps agents free of bookkeeping. Agent acceptance does not reset the count; a TDD loop and the following plan loop share one budget of five revisions until the developer next responds.
 7. **Current work.** Factory status finds unfinished work in two places:
    - a PRD that is not `done`;
    - an unfinished system design, TDD, or plan beneath a `done` PRD, which covers fix slices.
@@ -188,7 +188,7 @@ Built from `factory-status.py`:
   - **Revision limit** (`before_subagent_spawn` and the creation guard): count and refuse `draft-*` spawns per decision 6, with an instruction to stop and summarize for the developer (SF-016).
     - Reset on main-session `input`.
     - Reset on a main-session `tool_result` for `ask` that carries an explicit answer; ignore `details.timedOut`, `details.chatRedirect`, and cancellation.
-    - Reset on any `doc_approval` acceptance or developer approval.
+    - Reset on developer approval via `/playbook-approve`, never on `doc_approval` acceptance.
   - **Status line** (`before_agent_start`, main session only, `ctx.agent.kind === "main"`): append one status line from T5 and a pointer to `skill://orchestrate-factory`, keeping the base prompt intact.
   - **`/playbook-approve <path>`:** show what approval means for that document type through `ctx.ui.confirm`, then call T3 `--developer-approve`. Refuse when `ctx.hasUI` is false or the developer declines.
   - **General:** every hook is inert per decision 5, and the test fakes gain `on` and `registerCommand`.

@@ -165,7 +165,7 @@ test("sixth revision blocks; main explicit ask answers reset but timeouts, cance
   expect(await spawn()).toBeUndefined();
 });
 
-test("revision counts share a main tree, reset on main input and acceptance, and ignore subagent answers", async () => {
+test("revision counts share a main tree, reset only on main input, and ignore agent acceptance and subagent answers", async () => {
   document(vision);
   const child = { ...ctx, agent: { kind: "sub", id: "Child", parentId: "Main", name: "task", depth: 1 } };
   const childRun = bind();
@@ -177,8 +177,27 @@ test("revision counts share a main tree, reset on main input and acceptance, and
   await runtime.hooks.input({}, ctx); expect(await spawn()).toBeUndefined();
   for (let n = 0; n < 4; n++) await spawn();
   document(`${feature}/tdd.md`);
-  await execute("doc_approval", { mode: "accept", path: `${feature}/tdd.md`, evidence: "Review and checks passed." });
+  const result = await execute("doc_approval", { mode: "accept", path: `${feature}/tdd.md`, evidence: "Review and checks passed." });
+  expect(result.details.status).toBe("accepted");
+  expect((await spawn())?.block).toBe(true);
+  for (const [run, context] of [[runtime, ctx], [childRun, child]]) {
+    await run.hooks.tool_result({ toolName: "doc_approval", toolCallId: "accept", details: result.details }, context);
+    expect((await spawn())?.block).toBe(true);
+  }
+  await runtime.hooks.input({}, ctx);
   expect(await spawn()).toBeUndefined();
+});
+
+test("TDD and plan revisions share five revisions across agent acceptance until the developer responds", async () => {
+  ready(true);
+  for (let n = 0; n < 3; n++) expect(await spawn("draft-technical-design-agent")).toBeUndefined();
+  const result = await execute("doc_approval", { mode: "accept", path: `${feature}/tdd.md`, evidence: "Review and checks passed." });
+  expect(result.details.status).toBe("accepted");
+  await runtime.hooks.tool_result({ toolName: "doc_approval", toolCallId: "accept", details: result.details }, ctx);
+  for (let n = 0; n < 2; n++) expect(await spawn("draft-implementation-plan-agent")).toBeUndefined();
+  expect((await spawn("draft-implementation-plan-agent"))?.block).toBe(true);
+  await runtime.hooks.input({}, ctx);
+  expect(await spawn("draft-implementation-plan-agent")).toBeUndefined();
 });
 
 test("first drafts do not consume revisions, and successful new-document creation refunds inferred revisions", async () => {
