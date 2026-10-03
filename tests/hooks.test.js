@@ -111,6 +111,7 @@ test("creation order blocks only new downstream product documents and preserves 
     const result = await call(tool, input);
     expect(result?.block).toBe(true); expect(result.reason).toContain(`${vision} is waiting for developer approval`);
     expect(result.reason).toContain("Next expected step:"); expect(result.reason).toContain("edits to existing documents");
+    expect(result.reason).not.toContain("..");
   }
   document(`${feature}/implementation-plan.md`);
   for (const tool of ["write", "edit"]) expect(await call(tool, { path: `${feature}/implementation-plan.md` })).toBeUndefined();
@@ -205,6 +206,7 @@ test("status line preserves string/array base prompts, includes documents and sk
   expect(result.systemPrompt.startsWith("BASE POLICY\n")).toBe(true);
   expect(result.systemPrompt).toContain(`${vision}: draft, not approved`);
   expect(result.systemPrompt).toContain("skill://orchestrate-factory");
+  expect(result.systemPrompt).not.toContain("..");
   const array = await runtime.hooks.before_agent_start({ systemPrompt: ["BASE POLICY"] }, ctx);
   expect(array.systemPrompt[0]).toBe("BASE POLICY");
   expect(await runtime.hooks.before_agent_start({ systemPrompt: "CHILD" }, { ...ctx, agent: { ...ctx.agent, kind: "sub", id: "Sub", parentId: "Main" } })).toBeUndefined();
@@ -274,4 +276,14 @@ test("feature ambiguity does not disable the drafting revision limit", async () 
   document(vision); document(`${feature}/prd.md`); document("docs/features/other/prd.md");
   for (let n = 0; n < 5; n++) expect(await spawn("draft-prd-agent")).toBeUndefined();
   expect((await spawn("draft-prd-agent"))?.block).toBe(true);
+});
+
+test("missing upstream document refusals and status use accurate wording and single periods", async () => {
+  const result = await call("write", { path: architecture });
+  expect(result?.block).toBe(true);
+  expect(result.reason).toBe(`${vision} does not exist yet. Next expected step: Create ${vision}. Discussion, research, and edits to existing documents are still open.`);
+  expect(result.reason).not.toContain("..");
+  const status = await runtime.hooks.before_agent_start({ systemPrompt: "BASE POLICY" }, ctx);
+  expect(status.systemPrompt).toContain(`next=Create ${vision}. Use skill://orchestrate-factory`);
+  expect(status.systemPrompt).not.toContain("..");
 });

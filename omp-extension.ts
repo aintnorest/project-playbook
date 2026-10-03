@@ -194,9 +194,11 @@ function targetsApprovals(repo: string, path: string, glob = false): boolean {
 }
 
 function orderRefusal(status: FactoryStatus, gate: string): string {
-  const kind = status.documents?.find(row => row.path === gate)?.gate
-    ?? (documentRank(gate)! < 4 ? "developer" : "agent");
-  return `${gate} is waiting for ${kind} approval. Next expected step: ${status.nextStep}. Discussion, research, and edits to existing documents are still open.`;
+  const document = status.documents?.find(row => row.path === gate);
+  const condition = document
+    ? `${gate} is waiting for ${document.gate} approval.`
+    : `${gate} does not exist yet.`;
+  return `${condition} Next expected step: ${status.nextStep?.replace(/\.$/, "")}. Discussion, research, and edits to existing documents are still open.`;
 }
 
 function isFactoryStatus(value: unknown): value is FactoryStatus {
@@ -457,7 +459,7 @@ export default function projectPlaybook(pi: ExtensionAPI) {
     if (ctx.agent.kind !== "main") return;
     invalidateStatus();
     const status = await statusFor(repo);
-    const line = `Software factory: feature=${status.feature ?? "none"}; slice=${status.currentSlice ?? "none"}; documents=${status.documents?.map(row => `${row.path}: ${row.state}, ${row.approved ? "approved" : row.gate === "none" ? "ungated" : "not approved"}`).join("; ") || "none"}; revisions=${state.count}/5; next=${status.nextStep}${status.ambiguity ? `; ambiguity=${status.ambiguity}` : ""}. Use skill://orchestrate-factory for full status, execution phase, and review round.`;
+    const line = `Software factory: feature=${status.feature ?? "none"}; slice=${status.currentSlice ?? "none"}; documents=${status.documents?.map(row => `${row.path}: ${row.state}, ${row.approved ? "approved" : row.gate === "none" ? "ungated" : "not approved"}`).join("; ") || "none"}; revisions=${state.count}/5; next=${status.nextStep?.replace(/\.$/, "")}${status.ambiguity ? `; ambiguity=${status.ambiguity.replace(/\.$/, "")}` : ""}. Use skill://orchestrate-factory for full status, execution phase, and review round.`;
     return { systemPrompt: typeof event.systemPrompt === "string" ? `${event.systemPrompt}\n${line}` : [...event.systemPrompt, line] };
   });
   pi.registerCommand("playbook-approve", {
