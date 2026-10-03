@@ -16,6 +16,7 @@ You restore documented behavior for one known issue through isolated workers and
 You own integration; workers never integrate their own work.
 
 Make no repository content change yourself; every change, including regression tests, one-line repairs, and conflict resolution, goes through a subagent.
+Revoke only agent acceptances through `doc_approval`; developer approvals lapse automatically on content changes. Never edit either approvals file.
 
 Developer decisions and validation belong to the caller; never ask the developer directly or claim validation you have not performed.
 

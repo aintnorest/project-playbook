@@ -3,17 +3,19 @@ Source: guides/product-documentation-process.md#approvals
 
 ### Approvals
 
-`docs/approvals.json` owns product-document approvals and opts a repository into factory enforcement; without it, factory hooks are inert. Its JSON object has `version: 1` and an `approvals` object keyed by repository-relative document paths with forward slashes, one entry per document. Each entry records `by`, `bodySha256` (64 lowercase hexadecimal SHA-256 digits), and `date` (`YYYY-MM-DD`), plus `revision` matching the document's revision. Omit `revision` for a document without one.
+`docs/user-approvals.json` holds developer approvals; its existence opts the repository into factory enforcement, and factory hooks are inert without it. Only the developer creates or edits this file, by hand. It is a JSON object mapping repository-relative forward-slash document paths to 64-lowercase-hex body hashes; `{}` is valid. `docs/agent-approvals.json` holds agent acceptances in a JSON object mapping paths to exactly `{"hash": "<64 lowercase hex>", "evidence": "<non-empty text>"}`. A missing agent file means no acceptances.
 
-| Document type | Gate | Required record |
+| Document type | Gate | Record location |
 | --- | --- | --- |
-| Product vision, PRD | Developer | `by: developer` |
-| Architecture, system design | Developer | `by: developer` |
-| Technical design, implementation plan | Agent | `by: agent`, `evidence` that the review loop concluded and checks passed |
-| Roadmap | None | No approvals-file record required |
+| Product vision, PRD | Developer | Hash in `docs/user-approvals.json` |
+| Architecture, system design | Developer | Hash in `docs/user-approvals.json` |
+| Technical design, implementation plan | Agent | Hash and review/check evidence in `docs/agent-approvals.json` |
+| Roadmap | None | No record allowed |
 
 Document type comes from its path, as in `check-doc-status.py`'s `document_type`. Developer approval means accepting the content after reading it in full, or understanding and agreeing with the technical decisions well enough to explain and defend them, respectively. Developer-facing gate requests follow [Gate requests](skill://draft-implementation-plan/references/communication-policy--rules.md).
 
-Hash the exact bytes after the line that closes frontmatter. For implementation plans only, remove complete lines matching `^- Assigned (?:worktree|branch):[^\r\n]*(?:\r?\n)?$` before hashing; task pickup may write these without invalidating acceptance. All other body changes invalidate approval, including editorial changes. Lifecycle-only frontmatter state changes do not. An approval is valid only when its entry exists, its revision matches frontmatter (or is absent when the document has none), and its hash matches the body. Gated types require a valid approval in `active` and `done`; `draft` and `superseded` do not.
+Hash the exact bytes after the line that closes frontmatter. For implementation plans only, remove complete lines matching `^- Assigned (?:worktree|branch):[^\r\n]*(?:\r?\n)?$` before hashing; task pickup may write these without invalidating acceptance. All other body changes automatically lapse approval, including editorial changes. Lifecycle-only frontmatter state changes do not. Approval is valid exactly when the appropriate file's entry hash matches the current body hash. Gated types require valid approval in `active` and `done`; `draft` and `superseded` do not.
 
-Agents may change approval records only through `doc_approval`: initialize with `init`, inspect with `status`, revoke with `revoke`, and accept a TDD or implementation plan with `accept` and evidence. Any document-writing agent may revoke any approval; review agents remain read-only. Agents never record developer approval or edit the approvals file by another route. The developer records approval directly through `/playbook-approve <path>` or by hand-editing `docs/approvals.json`; no default, timeout, or agent action substitutes for that approval.
+Both files are validated strictly and fail closed: a non-object top level, a wrong-gate path, an invalid hash, or extra or missing agent entry fields is malformed, with a diagnostic naming the file and offending key. Ungated documents may not appear in either file. Entries contain only the hash, plus evidence for agent acceptances; there are no approval metadata fields.
+
+Agents inspect approval state through `doc_approval` mode `status`, and accept or revoke only TDDs and implementation plans through modes `accept` (with evidence) and `revoke` (with a reason). These operations write only `docs/agent-approvals.json`; review agents remain read-only. Agents never edit either file directly and never revoke developer approvals. The developer runs `/playbook-hash <path>` and pastes its entry line into `docs/user-approvals.json` to record approval. That command only reads and hashes the document; no tool or script writes developer approvals. No default, timeout, or agent action substitutes for approval.

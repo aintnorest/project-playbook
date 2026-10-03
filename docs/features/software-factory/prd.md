@@ -70,7 +70,7 @@ Requirement identifiers use the prefix `SF`, for "software factory".
 ### Approval integrity (US-4, US-13)
 
 - **SF-028** An agent that tries to record developer approval, or to change approvals by any route other than the one provided for agents, is stopped. The same message appears whichever route it tried: the rule, the allowed path, and that stopping to ask the developer is the correct way to finish its turn.
-- **SF-029** Any agent that writes documents can mark any document as not approved. Review agents stay read-only.
+- **SF-029** Any agent that writes documents can withdraw an agent acceptance; developer approvals lapse automatically when the document changes. Review agents stay read-only.
 - **SF-030** An agent can record acceptance only of a technical design or implementation plan, and only together with evidence that its review loop concluded and its checks passed.
 - **SF-031** Any change to an approved or accepted document's content withdraws that approval automatically, without depending on an agent to withdraw it.
 - **SF-032** The developer can record an approval directly, without going through an agent.

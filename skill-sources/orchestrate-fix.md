@@ -40,6 +40,7 @@ Read repository instructions, relevant setup and verification commands, the issu
 Apply the required fixes-after-delivery guidance. If the proposed resolution changes documented behavior, or the documented expectation is itself wrong, refuse the standalone fix: report the evidence and conflicting sections to the caller, explain that a new slice is required, and end. Do not create or revise product documents to authorize a different behavior.
 
 Confirm workers can remain in assigned worktrees until acceptance, with no automatic integration or cleanup. Identify the existing plan needed by the shared protected-diff gate; do not create a fix plan merely to satisfy this path. If that gate cannot run with available governing documents or tools, report the missing prerequisite and end rather than bypassing it. No new TDD or plan approval is a prerequisite for the standalone-fix path itself.
+Revoke only agent acceptances through `doc_approval`; developer approvals lapse automatically on content changes. Never edit either approvals file.
 
 ### 2. Own a safe integration branch
 

@@ -31,11 +31,8 @@ class CheckerNoWriteTests(unittest.TestCase):
             doc = docs / 'product-vision.md'
             body = b'# Vision\n'
             doc.write_bytes(b'---\nstate: active\nrevision: vision-r1\n---\n' + body)
-            (docs / 'approvals.json').write_text(json.dumps({
-                'version': 1, 'approvals': {'docs/product-vision.md': {
-                    'revision': 'vision-r1', 'bodySha256': hashlib.sha256(body).hexdigest(),
-                    'by': 'developer', 'date': '2026-10-02',
-                }},
+            (docs / 'user-approvals.json').write_text(json.dumps({
+                'docs/product-vision.md': hashlib.sha256(body).hexdigest(),
             }))
             worktree = repo / '.worktrees' / 'T01'
             plan = repo / 'implementation-plan.md'

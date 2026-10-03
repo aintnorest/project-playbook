@@ -19,27 +19,23 @@ class CheckDocStatusTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory(prefix="playbook status ")
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
-
+        (self.root / "docs").mkdir()
+        (self.root / "docs/user-approvals.json").write_text("{}")
     def path(self, relative, body):
         path = self.root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(body, encoding="utf-8")
         return path
 
-    def approve(self, path, repo=None, date="2024-02-29"):
+    def approve(self, path, repo=None):
         repo = repo or self.root
-        manifest = repo / "docs/approvals.json"
-        data = json.loads(manifest.read_text()) if manifest.exists() else {"version": 1, "approvals": {}}
-        fields, body = path.read_bytes().split(b"---\n", 2)[1:]
-        revision = next(line[10:] for line in fields.decode().splitlines()
-                        if line.startswith("revision: "))
-        kind = path.name
-        agent = kind in ("tdd.md", "implementation-plan.md")
-        entry = {"revision": revision, "bodySha256": hashlib.sha256(body).hexdigest(),
-                 "by": "agent" if agent else "developer", "date": date}
-        if agent:
-            entry["evidence"] = "Review loop concluded and checks passed."
-        data["approvals"][path.relative_to(repo).as_posix()] = entry
+        agent = path.name in ("tdd.md", "implementation-plan.md")
+        manifest = repo / ("docs/agent-approvals.json" if agent else "docs/user-approvals.json")
+        data = json.loads(manifest.read_text()) if manifest.exists() else {}
+        body = path.read_bytes().split(b"---\n", 2)[2]
+        digest = hashlib.sha256(body).hexdigest()
+        entry = {"hash": digest, "evidence": "Review loop concluded and checks passed."} if agent else digest
+        data[path.relative_to(repo).as_posix()] = entry
         manifest.write_text(json.dumps(data))
 
 
@@ -85,11 +81,10 @@ class CheckDocStatusTests(unittest.TestCase):
                          [s[1] for s in samples] + ["roadmap", "roadmap", "guide"])
         self.assertEqual(rows[5], {"path": str(paths[5]), "type": "implementation-plan",
                                    "state": "done", "revision": "plan-r12",
-                                   "approval": {"gate": "agent", "by": "agent",
-                                                "date": "2024-02-29", "valid": True}})
+                                   "approval": {"gate": "agent", "valid": True}})
         self.assertIsNone(rows[-1]["revision"])
         self.assertEqual(rows[-1]["approval"],
-                         {"gate": "none", "by": None, "date": None, "valid": False})
+                         {"gate": "none", "valid": False})
 
     def test_missing_state_unknown_state_and_missing_revision(self):
         self.assert_error("docs/product-vision.md", "---\nrevision: vision-r1\n---\n", "missing state")
@@ -124,11 +119,11 @@ class CheckDocStatusTests(unittest.TestCase):
         path.write_text(path.read_text().replace("prd-r1", "prd-r2"))
         result = self.run_checker("--check", path)
         self.assertEqual(result.returncode, 1)
-        self.assertIn("revision mismatch", result.stderr)
+        self.assertIn("hash mismatch", result.stderr)
 
     def test_malformed_approval_manifest_is_a_json_diagnostic(self):
         path = self.path("docs/features/a/prd.md", "---\nstate: active\nrevision: prd-r1\n---\nBody.\n")
-        (self.root / "docs/approvals.json").write_text('{"version": 1, "approvals":')
+        (self.root / "docs/user-approvals.json").write_text('{')
         result = self.run_checker("--json", path)
         self.assertEqual(result.returncode, 1)
         payload = json.loads(result.stdout)
@@ -210,13 +205,12 @@ class CheckDocStatusTests(unittest.TestCase):
                  "commit", "-qm", "snapshot", "--allow-empty")
         return self.git(repo, "rev-parse", "HEAD")
 
-    def snapshot(self, repo, relative, state, revision, body="Original body.\n",
-                 approved="2025-01-01"):
+    def snapshot(self, repo, relative, state, revision, body="Original body.\n"):
         file = repo / relative
         file.parent.mkdir(parents=True, exist_ok=True)
         file.write_text(f"---\nstate: {state}\nrevision: {revision}\n---\n{body}", encoding="utf-8")
         if state in ("active", "done"):
-            self.approve(file, repo, approved)
+            self.approve(file, repo)
         return file
 
     def frozen(self, repo, base, head, *extra):
@@ -291,12 +285,10 @@ class CheckDocStatusTests(unittest.TestCase):
         self.snapshot(repo, relative, "draft", "sd-r3", "Changed body.\n")
         revised = self.commit(repo)
         self.assertEqual(self.frozen(repo, base, revised).returncode, 0)
-        self.snapshot(repo, relative, "active", "sd-r3", "Changed body.\n",
-                      approved="2025-02-01")
+        self.snapshot(repo, relative, "active", "sd-r3", "Changed body.\n")
         accepted = self.commit(repo)
         self.assertEqual(self.frozen(repo, revised, accepted).returncode, 0)
-        self.snapshot(repo, relative, "done", "sd-r3", "Changed body.\n",
-                      approved="2025-02-01")
+        self.snapshot(repo, relative, "done", "sd-r3", "Changed body.\n")
         done = self.commit(repo)
         self.assertEqual(self.frozen(repo, accepted, done).returncode, 0)
         self.snapshot(repo, relative, "draft", "sd-r4", "New slice design.\n")
@@ -320,9 +312,6 @@ class CheckDocStatusTests(unittest.TestCase):
         result = self.frozen(repo, base, changed)
         self.assertEqual(result.returncode, 1)
         self.assertIn("revision greater than sd-r7", result.stderr)
-        self.snapshot(repo, relative, "done", "sd-r7", approved="2025-02-01")
-        changed_date = self.commit(repo)
-        self.assertEqual(self.frozen(repo, base, changed_date).returncode, 0)
 
     def test_system_design_deletion_and_rename_fail_closed(self):
         for operation in ("delete", "rename"):
@@ -365,14 +354,32 @@ class CheckDocStatusTests(unittest.TestCase):
         repo = self.repository("approvals-only")
         path = self.snapshot(repo, "docs/features/x/prd.md", "done", "prd-r1")
         base = self.commit(repo)
-        self.approve(path, repo, "2025-03-01")
+        manifest = repo / "docs/user-approvals.json"
+        data = json.loads(manifest.read_text())
+        data["docs/product-vision.md"] = hashlib.sha256(b"Vision body.\n").hexdigest()
+        manifest.write_text(json.dumps(data))
         head = self.commit(repo)
         self.assertEqual(self.frozen(repo, base, head).returncode, 0)
-        manifest = repo / "docs/approvals.json"
-        manifest.write_text(json.dumps({"version": 1, "approvals": {}}))
+        manifest = repo / "docs/user-approvals.json"
+        manifest.write_text("{}")
         removed = self.frozen(repo, head, self.commit(repo))
         self.assertEqual(removed.returncode, 1)
         self.assertIn("approval entry must remain", removed.stderr)
+
+    def test_frozen_agent_approvals_only_changes_and_removed_done_entry(self):
+        repo = self.repository("agent-approvals-only")
+        path = self.snapshot(repo, "docs/features/x/tdd.md", "done", "tdd-r1")
+        base = self.commit(repo)
+        manifest = repo / "docs/agent-approvals.json"
+        data = json.loads(manifest.read_text())
+        data[path.relative_to(repo).as_posix()]["evidence"] = "A renewed review passed."
+        manifest.write_text(json.dumps(data))
+        head = self.commit(repo)
+        self.assertEqual(self.frozen(repo, base, head).returncode, 0)
+        manifest.write_text("{}")
+        result = self.frozen(repo, head, self.commit(repo))
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("docs/agent-approvals.json", result.stderr)
 
     def test_bare_relative_paths_and_explicit_repository(self):
         repo = self.repository("root-discovery")

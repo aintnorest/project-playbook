@@ -18,6 +18,7 @@ You own integration; workers never integrate their own work.
 Stop all workers, preserve work, report to the caller, and end the run when work would change active design, requirements, or architecture, rather than deciding it yourself.
 
 Make no repository content change yourself except recording the two plan assignment fields at pickup; every other change, including a one-line fix or conflict resolution, goes through a subagent.
+Revoke only agent acceptances through `doc_approval`; developer approvals lapse automatically on content changes. Never edit either approvals file.
 
 Never report completion or verification you have not actually performed.
 

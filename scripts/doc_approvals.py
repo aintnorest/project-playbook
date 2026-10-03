@@ -1,6 +1,5 @@
 """Content-bound approval records shared by Playbook contract programs."""
 
-import datetime
 import hashlib
 import json
 import os
@@ -8,7 +7,6 @@ import re
 import tempfile
 from pathlib import Path
 from typing import Optional
-
 
 ASSIGNMENT = re.compile(rb"^- Assigned (?:worktree|branch):[^\r\n]*(?:\r?\n)?$")
 DEVELOPER_GATED_TYPES = {"vision", "architecture", "prd", "system-design"}
@@ -64,13 +62,12 @@ def split_frontmatter(content: bytes) -> tuple:
 
 
 def normalize_plan_assignments(body: bytes) -> bytes:
-    """Ignore the plain assignment labels parsed by check-implementation-plans."""
     return b"".join(line for line in body.splitlines(keepends=True)
                     if not ASSIGNMENT.fullmatch(line))
 
 
 def body_bytes(content: bytes, kind: Optional[str] = None) -> bytes:
-    body = split_frontmatter(content)[1]
+    body = split_frontmatter(content)[1] if kind is not None else content
     return normalize_plan_assignments(body) if kind == "implementation-plan" else body
 
 
@@ -92,73 +89,72 @@ def _unique_object(pairs):
     result = {}
     for key, value in pairs:
         if key in result:
-            raise ApprovalError("duplicate approvals JSON key: " + key)
+            raise ApprovalError("duplicate JSON key: " + key)
         result[key] = value
     return result
 
 
-def _validate_approvals(data: dict) -> None:
-    if (not isinstance(data, dict) or set(data) != {"version", "approvals"}
-            or type(data["version"]) is not int or data["version"] != 1
-            or not isinstance(data["approvals"], dict)):
-        raise ApprovalError("invalid approvals JSON; expected version 1 and approvals object")
-    for name, entry in data["approvals"].items():
+def validate_approval_file(data, filename: str, gate: str) -> None:
+    def fail(key, message):
+        raise ApprovalError(f"{filename}: {key}: {message}")
+    if not isinstance(data, dict):
+        fail("<root>", "expected JSON object")
+    for name, entry in data.items():
         path = Path(name)
-        kind = document_type(path)
         if (path.is_absolute() or path.as_posix() != name or ".." in path.parts
-                or "\\" in name or kind is None or not isinstance(entry, dict)):
-            raise ApprovalError("invalid approval path or entry: " + name)
-        if "attestation" in entry:
-            raise ApprovalError("malformed approval entry contains obsolete attestation field: " + name)
-        digest = entry.get("bodySha256")
+                or "\\" in name or gate_for_type(document_type(path)) != gate):
+            fail(name, "invalid path or wrong approval gate")
+        digest = entry
+        if gate == "agent":
+            if not isinstance(entry, dict) or set(entry) != {"hash", "evidence"}:
+                fail(name, "expected exactly hash and evidence fields")
+            if not isinstance(entry["evidence"], str) or not entry["evidence"].strip():
+                fail(name, "evidence must be non-empty text")
+            digest = entry["hash"]
         if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
-            raise ApprovalError("invalid approval hash: " + name)
-        by = entry.get("by")
-        if by not in ("developer", "agent"):
-            raise ApprovalError("invalid approval author: " + name)
-        if by == "developer" and gate_for_type(kind) != "developer":
-            raise ApprovalError("invalid developer approval gate: " + name)
-        if gate_for_type(kind) == "none":
-            raise ApprovalError("ungated document cannot have an approval: " + name)
-        if by == "agent" and (gate_for_type(kind) != "agent"
-                              or not isinstance(entry.get("evidence"), str)
-                              or not entry["evidence"].strip()):
-            raise ApprovalError("invalid agent acceptance evidence or gate: " + name)
-        if not isinstance(entry.get("revision"), str) or not entry["revision"].strip():
-            raise ApprovalError("approval requires revision: " + name)
-        date = entry.get("date")
-        try:
-            if not isinstance(date, str) or not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", date):
-                raise ValueError()
-            datetime.date.fromisoformat(date)
-        except ValueError as error:
-            raise ApprovalError("invalid approval date: " + name) from error
+            fail(name, "hash must be 64 lowercase hexadecimal characters")
 
 
-def load_approvals(repo: Path) -> dict:
-    path = Path(repo) / "docs" / "approvals.json"
-    try:
-        text = path.read_text(encoding="utf-8")
-    except FileNotFoundError:
-        return {"version": 1, "approvals": {}}
-    except (OSError, UnicodeError) as error:
-        raise ApprovalError("cannot read approvals: " + str(error)) from error
+def parse_approval_file(text, filename: str, gate: str) -> dict:
     try:
         data = json.loads(text, object_pairs_hook=_unique_object)
-    except (ValueError, TypeError) as error:
-        raise ApprovalError("malformed approvals JSON: " + str(error)) from error
-    _validate_approvals(data)
+    except (ValueError, TypeError, UnicodeError) as error:
+        raise ApprovalError(f"{filename}: malformed approvals JSON: {error}") from error
+    validate_approval_file(data, filename, gate)
     return data
 
 
-def save_approvals(repo: Path, data: dict) -> None:
-    _validate_approvals(data)
-    path = Path(repo) / "docs" / "approvals.json"
+def _load_file(repo: Path, filename: str, gate: str) -> dict:
+    try:
+        text = (Path(repo) / filename).read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return {}
+    except (OSError, UnicodeError) as error:
+        raise ApprovalError(f"{filename}: cannot read approvals: {error}") from error
+    return parse_approval_file(text, filename, gate)
+
+
+def load_user_approvals(repo: Path) -> dict:
+    return _load_file(repo, "docs/user-approvals.json", "developer")
+
+
+def load_agent_approvals(repo: Path) -> dict:
+    return _load_file(repo, "docs/agent-approvals.json", "agent")
+
+
+def load_approval_files(repo: Path) -> dict:
+    return {"developer": load_user_approvals(repo), "agent": load_agent_approvals(repo)}
+
+
+def save_agent_approvals(repo: Path, data: dict) -> None:
+    filename = "docs/agent-approvals.json"
+    validate_approval_file(data, filename, "agent")
+    path = Path(repo) / filename
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = None
     try:
         with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", newline="\n",
-                                         dir=path.parent, prefix=".approvals-", delete=False) as stream:
+                                         dir=path.parent, prefix=".agent-approvals-", delete=False) as stream:
             temporary = stream.name
             stream.write(json.dumps(data, indent=2, sort_keys=True, ensure_ascii=True) + "\n")
         os.replace(temporary, path)
@@ -173,26 +169,14 @@ def approval_status(repo: Path, path: Path, approvals: Optional[dict] = None) ->
     kind = document_type(Path(name))
     if kind is None:
         raise ApprovalError("unknown document path/type: " + name)
-    data = load_approvals(repo) if approvals is None else approvals
-    entry = data["approvals"].get(name)
-    row = {"path": name, "type": kind, "gate": gate_for_type(kind),
-           "approved": False, "by": entry.get("by") if entry else None, "reason": "missing"}
-    if row["gate"] == "none":
-        row["reason"] = "ungated"
-        return row
-    if entry is None:
-        return row
-    content = (Path(repo) / name).read_bytes()
-    fields, _ = split_frontmatter(content)
-    if entry.get("revision") != fields.get("revision"):
-        row["reason"] = "revision mismatch"
-    elif entry["bodySha256"] != body_sha256(content, kind):
-        row["reason"] = "hash mismatch"
-    else:
-        row.update(approved=True, reason=None)
+    data = load_approval_files(repo) if approvals is None else approvals
+    gate = gate_for_type(kind)
+    entry = data.get(gate, {}).get(name)
+    row = {"path": name, "type": kind, "gate": gate, "approved": False, "reason": "missing"}
+    if entry is not None:
+        digest = entry if gate == "developer" else entry["hash"]
+        if digest == body_sha256((Path(repo) / name).read_bytes(), kind):
+            row.update(approved=True, reason=None)
+        else:
+            row["reason"] = "hash mismatch"
     return row
-
-
-def validity(repo: Path, path: Path) -> dict:
-    row = approval_status(repo, path)
-    return {"approved": row["approved"], "reason": row["reason"]}

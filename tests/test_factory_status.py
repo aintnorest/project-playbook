@@ -21,13 +21,15 @@ class FactoryStatusTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory(prefix="playbook factory status ")
         self.addCleanup(temporary.cleanup)
         self.repo = Path(temporary.name)
-        self.manifest = self.repo / "docs" / "approvals.json"
+        self.manifest = self.repo / "docs" / "user-approvals.json"
         self.manifest.parent.mkdir()
-        self.approvals = {"version": 1, "approvals": {}}
+        self.approvals = {}
+        self.agent_approvals = {}
         self.save()
 
     def save(self):
         self.manifest.write_text(json.dumps(self.approvals))
+        (self.manifest.parent / "agent-approvals.json").write_text(json.dumps(self.agent_approvals))
 
     def document(self, name, state="draft", approved=False, body="# Document\n"):
         kind = Path(name).name
@@ -41,14 +43,11 @@ class FactoryStatusTests(unittest.TestCase):
             frontmatter += "revision: " + revision + "\n"
         path.write_text(frontmatter + "---\n" + body)
         if approved:
-            entry = {"bodySha256": hashlib.sha256(body.encode()).hexdigest(), "date": "2026-10-02"}
-            if revision:
-                entry["revision"] = revision
+            digest = hashlib.sha256(body.encode()).hexdigest()
             if kind in ("tdd.md", "implementation-plan.md"):
-                entry.update(by="agent", evidence="Reviews and checks passed.")
+                self.agent_approvals[name] = {"hash": digest, "evidence": "Reviews and checks passed."}
             else:
-                entry.update(by="developer")
-            self.approvals["approvals"][name] = entry
+                self.approvals[name] = digest
             self.save()
         return path
 
@@ -70,6 +69,13 @@ class FactoryStatusTests(unittest.TestCase):
         status = self.status()
         self.assertEqual(status["nextStep"], sentence)
         return status
+
+    def test_opt_in_requires_user_file_not_agent_file(self):
+        self.manifest.unlink()
+        self.assertTrue((self.repo / "docs/agent-approvals.json").exists())
+        self.assertEqual(self.status(), {"optedIn": False})
+        self.manifest.write_text("{}")
+        self.assertTrue(self.status()["optedIn"])
 
     def test_empty_project_vision_architecture_then_prd_selection(self):
         status = self.assert_next("Create docs/product-vision.md.")

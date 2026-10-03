@@ -30,6 +30,7 @@ test("all registered tools treat every schema-optional empty argument as absent"
   projectPlaybook({ zod, registerTool: definition => tools.push(definition), on() {}, registerCommand() {} });
   const plan = join(directory, "plan.md");
   mkdirSync(join(directory, "docs"));
+  writeFileSync(join(directory, "docs", "user-approvals.json"), "{}");
   const doc = join(directory, "docs", "product-vision.md");
   writeFileSync(plan, "### T01 — Check\n- Depends on: none\n- Targets: none\n- Change: Check behavior.\n- Done when: Verified.\n- Verify: true\n");
   writeFileSync(doc, "---\nstate: draft\nrevision: vision-r1\n---\n# Vision\n");
@@ -50,7 +51,10 @@ test("all registered tools treat every schema-optional empty argument as absent"
       for (const [key, value] of Object.entries({ path: doc, needed: "Choose the input.", productBasisUnavailableReason: "No product document exists." })) {
         if (props.some(p => p.key === key)) required[key] = value;
       }
-      expect((await invoke(tool, required)).isError).toBeUndefined();
+      const result = await invoke(tool, required);
+      expect({ tool: tool.name, error: result.isError }).toEqual({
+        tool: tool.name, error: undefined,
+      });
       // Required-by-mode optional fields are left absent; execution must diagnose
       // them identically, while truly optional fields execute real programs.
       for (const prop of props.filter(p => p.opt)) {

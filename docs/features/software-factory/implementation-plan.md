@@ -11,8 +11,8 @@ This plan lists what has to change in the Playbook to meet the [software factory
 
 Veto any of these before execution; each one changes several tasks.
 
-1. **Approvals file and opt-in.** Approvals move out of frontmatter into `docs/approvals.json`. JSON, because the architecture keeps machine-readable contracts in JSON. Frontmatter keeps `state` and `revision`; the `approved` key is removed. A repository opts into factory enforcement by having this file. `doc_approval init` creates it, and the orchestrator skill runs that at the start of a new project.
-2. **Content binding.** An approval is valid only while the document's body still hashes to the recorded SHA-256 and its frontmatter revision still matches.
+1. **Two files and opt-in.** Approvals move out of frontmatter. The developer alone edits `docs/user-approvals.json`; its existence opts a consumer repository into enforcement. For a new project the orchestrator asks the developer to create `{}`. Agent acceptances live in `docs/agent-approvals.json`, written only through `doc_approval`. Frontmatter keeps `state` and `revision`; the `approved` key is removed.
+2. **Content binding.** An approval is valid only while the document's body hashes to its recorded SHA-256; frontmatter revision is not part of approval validity.
    - The body is everything after the frontmatter, so a lifecycle edit such as `state: active` → `done` does not void an approval.
    - For implementation plans, the hash skips task `Assigned worktree:` and `Assigned branch:` lines, because the implementation orchestrator writes them at task pickup.
    - Any other content change voids the approval.
@@ -20,16 +20,15 @@ Veto any of these before execution; each one changes several tasks.
    - **Developer:** the product vision, architecture, PRDs, and system designs.
    - **Agents:** technical designs and implementation plans, through `doc_approval`, with evidence attached.
    - **Nobody:** the roadmap is not gated, so recording an issue or trimming an item never reopens a gate. Playbook guides are Playbook internals, not product documents: they stay outside the approvals scheme and keep their current frontmatter rules.
-   - **Revoking:** any agent that writes documents can revoke any approval; review agents stay read-only.
+   - **Revoking:** document-writing agents may revoke only agent acceptances through `doc_approval`; developer approvals lapse automatically on content changes. Review agents stay read-only. Agents never edit either approval file.
 4. **One refusal text.** The hook blocks through OMP's native blocked-call result, with the shared message as its reason. `doc_approval` returns the same text as an ordinary result when it refuses. The text is defined once in `omp-extension.ts`.
-5. **Inert unless opted in.** Every hook does nothing in a repository without `docs/approvals.json`, so the Playbook adds no friction to projects that do not use its documents.
+5. **Inert unless opted in.** Every hook does nothing in a repository without `docs/user-approvals.json`, so the Playbook adds no friction to projects that do not use its documents.
 6. **Revision limit.**
    - **What counts:** the extension counts `draft-*` spawns. A spawn whose session creates a new document file is a first draft and does not count.
    - **The limit:** the sixth revision is refused.
    - **What resets it:**
      - a developer message typed in the main session's prompt;
-     - an explicit answer to a main-session `ask` (not a timeout, a cancellation, or a redirect to chat);
-     - a developer approval via `/playbook-approve`.
+     - an explicit answer to a main-session `ask` (not a timeout, a cancellation, or a redirect to chat).
    - **Where it lives:** in memory, keyed to the main session's agent tree, and lost when the session restarts.
 
    Any developer message counts as a response: that approximation keeps agents free of bookkeeping. Agent acceptance does not reset the count; a TDD loop and the following plan loop share one budget of five revisions until the developer next responds.
@@ -40,58 +39,51 @@ Veto any of these before execution; each one changes several tasks.
    The current slice is the first unfinished slice in the system design's order, or the feature's single TDD. When more than one feature has unfinished work, the hooks do not block; the status line reports the ambiguity.
 8. **Main-session skill.** The orchestrator is a skill, `orchestrate-factory`, loaded in the interactive session. It has no agent, because the session that talks to the developer must be the top session. It is listed in `agents/checks.json` `skillsWithoutAgents`.
 9. **Run state lives with the orchestrator.** Documents cannot show the execution phase (implementing, reviewing, awaiting validation) or the review round. Factory status reports only what the documents and approvals show, plus the revision count. The skill keeps the phase and round and shows the full status on request.
-10. **Version.** Moving approval out of frontmatter breaks existing documents, so `VERSION` goes from `0.1.0` to `1.0.0` and ships a guided migration.
+10. **Version.** No `v1.0.0` tag has been released. `VERSION` stays `1.0.0`; rewrite the existing migration guide in place for the two-file design.
 
 ## Shared contracts
 
 Every task uses these as written. A task that needs a different shape stops and reports instead of diverging.
 
-### `docs/approvals.json`
+### Two approval files
+
+`docs/user-approvals.json` is developer-owned:
 
 ```json
 {
-  "version": 1,
-  "approvals": {
-    "docs/product-vision.md": {
-      "revision": "vision-r7",
-      "bodySha256": "<64 lowercase hex>",
-      "by": "developer",
-      "date": "2026-10-02"
-    },
-    "docs/features/example/tdd.md": {
-      "revision": "tdd-r2",
-      "bodySha256": "<64 lowercase hex>",
-      "by": "agent",
-      "evidence": "Review rounds concluded with no open findings; check_doc_status passed.",
-      "date": "2026-10-02"
-    }
+  "docs/product-vision.md": "<64 lowercase hex>"
+}
+```
+
+`docs/agent-approvals.json` contains agent acceptances:
+
+```json
+{
+  "docs/features/example/tdd.md": {
+    "hash": "<64 lowercase hex>",
+    "evidence": "Review rounds concluded with no open findings; check_doc_status passed."
   }
 }
 ```
 
-- **Keys:** repository-relative paths with forward slashes, one entry per document.
-- **`by`:** `developer` or `agent`.
-  - `developer` is valid only for the product vision, architecture, PRDs, and system designs.
-  - `agent` requires `evidence`.
-- **`revision`:** omitted for documents without one.
-- **Body bytes:** everything after the line that closes the frontmatter, hashed exactly as stored. For implementation plans, lines matching `^- \*\*Assigned (worktree|branch):\*\*` are removed first; T3 confirms the exact pattern against `scripts/check-implementation-plans.py`.
-- **Gates by type** (type comes from the path, as in `check-doc-status.py` `document_type`):
-  - developer: product vision, architecture, PRD, system design;
-  - agent: technical design, implementation plan;
-  - none: roadmap, guide (guides keep their existing frontmatter rules).
-- **Validity:** an approval is valid when its entry exists, its revision matches the frontmatter, and its hash matches the body. `active` and `done` require a valid approval for gated types; `draft` and `superseded` never do.
+- **Keys:** repository-relative forward-slash document paths.
+- **Ownership:** only the developer edits the user file, by hand. No script or tool writes it. Only `doc_approval` accept/revoke writes the agent file; missing agent file means no acceptances. `{}` is valid for either file.
+- **Strict validation:** non-object top levels, wrong-gate keys, malformed hashes, and extra or missing agent-entry fields fail closed with a diagnostic naming the file and key. Hashes are exactly 64 lowercase hexadecimal characters; evidence is non-empty text. Roadmap and guide keys are forbidden.
+- **Body bytes:** unchanged `body_sha256` rule: everything after frontmatter, exactly as stored; for implementation plans strip plain `- Assigned worktree:` and `- Assigned branch:` lines first.
+- **Gates by type:** developer: product vision, architecture, PRD, system design; agent: technical design, implementation plan; none: roadmap, guide.
+- **Validity:** the entry hash equals the current body hash. Gated `active`/`done` documents require valid approval; `draft`/`superseded` do not. Approval records contain no metadata beyond the shown values.
 
 ### `scripts/doc-approval.py`
 
 A standard-library program in the style of the existing checkers: JSON on stdout, diagnostics on stderr, nonzero exit on failure. Helpers it shares with `check-doc-status.py` must not write `__pycache__` into a read-only install.
 
-- `--init --repo <root>`: creates an empty approvals file; does nothing if one exists.
-- `--status --repo <root> [--path <doc>]`: approval state per document, `{path, type, gate: "developer"|"agent"|"none", approved: bool, by, reason}`. `reason` explains an invalid approval: missing, hash mismatch, or revision mismatch.
-- `--revoke --repo <root> --path <doc> --reason <text>`: removes the entry. Allowed for any document.
-- `--accept --repo <root> --path <doc> --evidence <text>`: records an agent acceptance. It refuses developer-gated documents with exit status 3 and no file change.
-- `--developer-approve --repo <root> --path <doc>`: records a developer approval. Only the developer command calls this mode; the hook blocks agents from calling it through `bash` or `eval`.
+- `--status --repo <root> [--path <doc>]`: array of `{path, type, gate, approved, reason}`; reason is `"missing"`, `"hash mismatch"`, or null.
+- `--accept --repo <root> --path <doc> --evidence <text>`: agent-gated only; success `{status: "accepted", path}`.
+- `--revoke --repo <root> --path <doc> --reason <text>`: agent-gated only; removes entry; success `{status: "revoked"|"unchanged", path}`.
+- Accept/revoke refuse developer-gated or ungated documents with exit 3 and `{status: "refused", reason: "developer-gated"|"ungated"}`, without writing.
+- `--hash --repo <root> --path <file>`: any existing file inside the repo; read-only `{status: "hash", path, hash, line}`, where `line` is the paste-ready `"<path>": "<hash>",`.
 
-`doc_approval` writes the approvals file. That is a new exception to the architecture's rule that contract tools only read (task T2). All writes go into the consumer repository named by `--repo`, never into the Playbook install.
+Agent writes create the file if missing, with 2-space indentation, sorted keys, trailing newline, and atomic replacement. All writes target only the consumer repository's agent file, never the developer file or Playbook install. `doc_approval` modes are `status`, `accept`, and `revoke`.
 
 ### `scripts/factory-status.py`
 
@@ -103,13 +95,13 @@ A standard-library program in the style of the existing checkers: JSON on stdout
 
 - `nextStep` covers the document-derivable steps of the PRD's sequence (SF-001 to SF-009, SF-054). With an accepted TDD and plan that are not `done`, it says "implementation, review, or developer validation in progress".
 - It prints `{feature: null, ...}` when there is no unfinished work.
-- It prints `optedIn: false` and nothing else when `docs/approvals.json` is absent.
+- It prints `optedIn: false` and nothing else when `docs/user-approvals.json` is absent.
 
 ### Refusal message
 
-Draft text; T6 owns the final wording:
+Defined once in `omp-extension.ts`; hook and tool use identical text:
 
-> This file records approvals, and agents don't change it directly by any route. To mark a document not approved, or to accept a technical design or implementation plan after its review loop and checks pass, use `doc_approval`. Product vision, architecture, PRD, and system design approvals belong to the developer: stop, render a developer request, and ask. Stopping here is the correct way to finish this turn, not a failure.
+> Approval files are not edited directly. `docs/user-approvals.json` belongs to the developer: stop, render a developer request, and ask them to record approval; they can get the line to paste with `/playbook-hash <path>`. To accept or revoke a technical design or implementation plan, use `doc_approval`. Stopping here is the correct way to finish this turn, not a failure.
 
 ### Order-refusal message
 
@@ -127,10 +119,10 @@ Built from `factory-status.py`:
   - Covers SF-024, SF-028–SF-030. Gate: developer approval.
 - **T2 — Architecture.** Target: `docs/architecture.md`.
   - Change:
-    - a trust-boundary exception for `doc_approval` writing `docs/approvals.json` in the consumer repository (L58);
+    - a trust-boundary exception for `doc_approval` writing `docs/agent-approvals.json` in the consumer repository; the user file stays developer-only;
     - a "contract hooks" rule: hooks that enforce Playbook contracts live in `omp-extension.ts`, next to contract tools;
     - under "no persistence or service" (L59), record the in-memory revision counter as session state that is not persisted;
-    - consumer-contract entries for the approvals file, `doc_approval`, `factory_status`, and the hooks, each naming its readers;
+    - consumer-contract entries for both approval files, `doc_approval`, `factory_status`, and the hooks, each naming its readers;
     - replace the `approved`-date wording at L65;
     - mark migrations `[EXISTS]` once T13a lands;
     - add the technology index rows.
@@ -144,19 +136,19 @@ Built from `factory-status.py`:
     - developer-gated `--accept` is refused and leaves the file byte-identical;
     - a body edit invalidates an approval; a frontmatter-only edit does not;
     - writing a plan task's assignment lines does not invalidate the plan; any other plan edit does;
-    - a revision bump invalidates;
-    - the roadmap reports `gate: "none"`;
-    - revoke works on every type;
-    - malformed approvals JSON fails closed;
-    - `--init` is idempotent.
+    - a revision bump alone does not invalidate approval;
+    - roadmap and guide report `gate: "none"` and cannot have approval entries;
+    - accept/revoke refuse developer and ungated types without writing;
+    - malformed JSON, wrong-gate keys, invalid hashes, and extra/missing fields fail closed with precise file/key diagnostics;
+    - hash mode is read-only; agent writes create missing files atomically in canonical format.
   - Done when the tests pass.
   - Covers SF-029–SF-032.
 - **T4 — `check-doc-status.py` reads approvals.** Targets: `scripts/check-doc-status.py`, `tests/test_check_doc_status.py`, `tests/test_checker_no_write.py`, `tests/test_git_environment.py`. Depends on T3's hashing; share one helper module, or deliberately duplicate the few lines.
   - Change:
     - reject the `approved` frontmatter key, pointing to the migration guide;
     - for gated types, `active` and `done` require a valid approval; the roadmap needs none;
-    - the `--json` row becomes `{path, type, state, revision, approval: {gate, by, date, valid}}`;
-    - frozen-diff compares body and revision, requires a `done` document's approval entry to remain, and allows changes that only touch `docs/approvals.json`.
+    - the `--json` row becomes `{path, type, state, revision, approval: {gate, valid}}`;
+    - frozen-diff preserves delivered-document constraints and approval entries while allowing approval-file-only changes.
   - Done when the existing and updated tests pass, including a migrated active process-guide fixture.
   - Covers SF-024, SF-031, SF-056.
 - **T5 — `scripts/factory-status.py` and tests.** Targets: `scripts/factory-status.py`, `tests/test_factory_status.py`. Depends on T3's helpers.
@@ -167,7 +159,7 @@ Built from `factory-status.py`:
     - a fix slice under a `done` PRD, single-slice and multi-slice, is found and becomes `currentSlice`;
     - an open developer gate appears in `openGates`;
     - two features with unfinished work produce `ambiguity`;
-    - a repository without the approvals file yields `optedIn: false`.
+    - a repository without the user approval file yields `optedIn: false`.
   - Done when the tests pass.
   - Covers SF-002–SF-009, SF-034–SF-038.
 
@@ -175,12 +167,11 @@ Built from `factory-status.py`:
 
 - **T6 — Tools, hooks, and command.** Targets: `omp-extension.ts`, `tests/omp-extension.test.js`, `tests/optional-arguments.test.js`, `tests/run-check.test.js`, new `tests/hooks.test.js`.
   - **Tools:**
-    - `doc_approval` (`init`, `status`, `revoke`, `accept`) wraps T3, and returns the shared refusal message as an ordinary result when it refuses;
+    - `doc_approval` (`status`, `revoke`, `accept`) wraps T3, and returns the shared refusal message as an ordinary result when it refuses;
     - `factory_status` wraps T5.
   - **Approvals-file guard** (`tool_call`, all sessions): block with the shared refusal message when
-    - an `edit` or `write` path, or an `ast_edit` path or glob, resolves to `docs/approvals.json`; edit paths come from the edit input's file sections;
-    - a `bash` or `eval` text names `approvals.json` together with a write pattern (redirection, `tee`, `sed -i`, `mv`, `cp`, `rm`, `truncate`, write-mode `open(`, `writeFile`, `Bun.write`);
-    - a `bash` or `eval` text contains `--developer-approve`.
+    - an `edit` or `write` path, or an `ast_edit` path or glob, resolves to either approval file, including directories and aliases; edit paths come from the edit input's file sections;
+    - a `bash` or `eval` text names either approval filename together with a write pattern (redirection, `tee`, `sed -i`, `mv`, `cp`, `rm`, `truncate`, write-mode `open(`, `writeFile`, `Bun.write`).
 
     Reads such as `cat`, `jq` without in-place flags, and `git diff`, `log`, or `show` stay allowed.
   - **Creation guard** (`tool_call`, all sessions, including drafters): block a `write`, or an `edit` that creates a file, when it would create a document whose type is downstream of an open gate. Use the order-refusal message. Edits to existing documents always pass.
@@ -188,28 +179,27 @@ Built from `factory-status.py`:
   - **Revision limit** (`before_subagent_spawn` and the creation guard): count and refuse `draft-*` spawns per decision 6, with an instruction to stop and summarize for the developer (SF-016).
     - Reset on main-session `input`.
     - Reset on a main-session `tool_result` for `ask` that carries an explicit answer; ignore `details.timedOut`, `details.chatRedirect`, and cancellation.
-    - Reset on developer approval via `/playbook-approve`, never on `doc_approval` acceptance.
   - **Status line** (`before_agent_start`, main session only, `ctx.agent.kind === "main"`): append one status line from T5 and a pointer to `skill://orchestrate-factory`, keeping the base prompt intact.
-  - **`/playbook-approve <path>`:** show what approval means for that document type through `ctx.ui.confirm`, then call T3 `--developer-approve`. Refuse when `ctx.hasUI` is false or the developer declines.
+  - **`/playbook-hash <path>`:** register with the positional command API, call T3 `--hash`, and show its paste-ready `line` including the path through `ctx.ui.notify` at info level. Write nothing.
   - **General:** every hook is inert per decision 5, and the test fakes gain `on` and `registerCommand`.
   - **Done when** Bun tests prove each case below, and `scripts/check-omp-load.py` passes with the new tool names.
 
     | Area | Must block | Must allow |
     | --- | --- | --- |
-    | Approvals file | Edit, AST-glob, and shell writes; `--developer-approve` through `bash` | Shell reads |
+    | Approval files | Edit, AST-glob/directory/alias, and shell writes to either file | Shell reads |
     | Refusal text | — | Identical text from the hook and the tool |
     | Document order | Creating a downstream document while a gate is open | Revising an existing downstream document while a gate is open |
     | Implementation start | `orchestrate-implementation-plan-agent` without accepted TDD and plan | Nested worker and reviewer spawns |
     | Revision limit | The sixth revision | Resets after an `ask` answer; no reset on an `ask` timeout |
-    | Developer approval | The command after the developer declines, and without a UI | The command after the developer confirms |
-    | Opt-in | — | Every hook silent without the approvals file |
+    | Developer hash | — | Paste-ready entry through info notification; no write |
+    | Opt-in | — | Every hook silent without the user approval file |
 
   - Covers SF-016, SF-017, SF-021, SF-022, SF-027–SF-032, SF-034–SF-038.
 
 ### Phase 3: guidance (parallel, disjoint files; depends on the shared contracts only)
 
 - **T7 — Process guide.** Target: `guides/product-documentation-process.md`.
-  - **Document state and revision** (L102–L123): the approvals file, content binding, developer, agent, and no gate by type, and `done` set only after the developer validates.
+  - **Document state and revision** (L102–L123): the two approval files, content binding, developer, agent, and no gate by type, and `done` set only after the developer validates.
   - **Full-feature workflow** (L521–L571):
     - order: vision, then architecture once before the first PRD, then PRD, then a system design only for multi-slice features, then per slice TDD, plan, implementation, code review, and developer validation;
     - the review loop and its 5-revision limit, linking T8;
@@ -263,27 +253,27 @@ Built from `factory-status.py`:
 - **T12 — Integration notes.** Targets: `integrations/omp.md`, `README.md`.
   - Change:
     - list every tool, including `check_doc_status` and `run_check`, which `integrations/omp.md` omits today;
-    - list the hooks and `/playbook-approve`;
+    - list the hooks and `/playbook-hash`;
     - explain loading `/skill:orchestrate-factory` in the main session;
     - explain the opt-in file;
     - state the enforcement goal: forgotten steps, not deliberate circumvention.
   - Covers SF-039, SF-041.
 - **T13a — Migration guide and version.** Targets: `guides/migrations/0.1.0-to-1.0.0.md`, `VERSION`.
-  - Change: guided steps to create `docs/approvals.json` from existing `approved:` dates:
-    - recorded as developer approvals for developer-gated types, and as agent acceptances for TDDs and plans;
-    - the roadmap's date is simply dropped;
-    - then the frontmatter key is removed.
+  - Change: rewrite the existing migration guide in place:
+    - developer-gated documents: the developer creates `docs/user-approvals.json`, obtains each entry through `/playbook-hash <path>`, and pastes it by hand;
+    - TDDs and plans: review and check, then accept through `doc_approval` with evidence;
+    - remove legacy frontmatter approval keys and obsolete records; roadmap remains ungated.
 
-    Bump `VERSION` to `1.0.0`.
+    Keep `VERSION` at `1.0.0`; no `v1.0.0` tag has shipped.
   - Covers SF-024.
 
 ### Phase 4: skills and agents (parallel; depends on T7–T10 for link targets)
 
 - **T14 — Main-session orchestrator skill.** Targets: `skill-sources/orchestrate-factory.md`, `agents/checks.json`.
-  - **Starting:** initialize the approvals file for a new project, then ask the developer for the next feature, offering roadmap Now and Next items.
+  - **Starting:** ask the developer to create `docs/user-approvals.json` containing `{}` for a new project, then ask for the next feature, offering roadmap Now and Next items.
   - **Sequence:** vision, then architecture once, then PRD, then a system design only for multiple slices. Per slice: TDD, plan, implementation through the implementation orchestrator, the review cycle, and developer validation.
   - **Document loop:** triage findings, have the drafter apply them, and respect the revision limit; run coherence reviews and cascade re-reviews.
-  - **Approvals:** developer gates through `request_developer` and `/playbook-approve`; agent acceptance through `doc_approval`.
+  - **Approvals:** render developer gates through `request_developer`, ask for `/playbook-hash <path>` and a hand-pasted user-file entry, then end the turn; agent acceptance/revocation through `doc_approval` only. Never edit either file.
   - **Run state:** keep the execution phase, review round, and rejected-finding reasons, and show them with `factory_status` on request. Offer the next step itself.
   - **Implementation reports:** on a large-issue report, pick the wrong document, run its loop and gate, re-review below it, replan the unfinished part, and resume the implementation orchestrator.
   - **After validation:** collect deviations, then revise, review, and re-accept the TDD, then mark the plan and TDD `done`.
@@ -327,10 +317,11 @@ Built from `factory-status.py`:
   - the plan drafter requires an agent-accepted TDD instead of developer acceptance (L24, L34);
   - remove the system-design exception that allows a single-slice system design (draft-system-design L44);
   - add `doc_approval` to the six drafter agents' tools.
+  - allow revocation only of agent acceptances through `doc_approval`; developer approvals lapse automatically on content changes; never edit either approvals file or accept one's own document.
 
   One task, because the edit is the same in each file. Covers SF-007, SF-012, SF-013, SF-024, SF-029.
 - **T18 — Reviewers.** Targets: `skill-sources/review-doc-implementation-plan.md` (L39), `skill-sources/review-doc-coherence.md` (L50–L51, L65).
-  - Change: approval state comes from the approvals file through `check_doc_status`. The plan reviewer confirms the TDD's agent acceptance, not developer acceptance. Reviewer tools stay read-only.
+  - Change: approval state comes from the two files through `check_doc_status` as `{gate, valid}`. The plan reviewer confirms the TDD's agent acceptance, not developer acceptance. Reviewer tools stay read-only.
   - Covers SF-024.
 
 ### Phase 5: developer environment
@@ -356,19 +347,19 @@ This repository is not a factory project and is not migrated: its own documents 
   ```
 
 - **T21 — Smoke run in a scratch repository.** Create a throwaway Git repository. Load the extension in a real interactive OMP session; the existing load check has no UI and cannot exercise approvals or `ask`. Observe:
-  1. **Starting from nothing:** an empty repository after `doc_approval init` shows the vision step, and creating a PRD before the vision and architecture are approved is refused.
-  2. **Protecting the approvals file:**
-     - editing `docs/approvals.json` with `edit` is blocked, and so is a write through `bash`;
-     - a `cat` of the file is allowed;
+  1. **Starting from nothing:** after the developer creates `docs/user-approvals.json` containing `{}`, the empty repository shows the vision step, and creating a PRD before vision and architecture approval is refused.
+  2. **Protecting both approval files:**
+     - editing either approval file with `edit` is blocked, and so is a write through `bash`;
+     - reading either file is allowed;
      - `doc_approval accept` on the PRD returns the same message as the hook.
-  3. **Developer approval:** `/playbook-approve` records an approval, and a later body edit voids it.
+  3. **Developer approval:** `/playbook-hash <path>` displays the paste-ready entry without writing; the developer pastes it into the user file, and a later body edit voids approval.
   4. **Agent gates and document order:**
      - `doc_approval accept` on a TDD records an acceptance;
      - a drafter revising an existing TDD while the PRD gate is open is allowed;
      - creating a new TDD while that gate is open is refused.
   5. **Revision limit:** the sixth revision is refused; answering the summary through `ask` resets the count.
   6. **Status line:** it appears in the main session and not in subagents.
-  7. **Opt-in:** the hooks are silent in a repository without `docs/approvals.json`.
+  7. **Opt-in:** hooks are silent in a repository without `docs/user-approvals.json`.
 
   Then delete the scratch repository.
 

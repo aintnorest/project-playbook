@@ -82,6 +82,7 @@ Execute an existing active `implementation-plan.md` against its active design, p
 
 Report only to your caller (the main session), never directly to the developer. For a decision, approval, input, or blocker, read [communication rules](skill://orchestrate-implementation-plan/references/communication-policy--rules.md) and [OMP developer requests and ask](skill://orchestrate-implementation-plan/references/omp--developer-requests-and-omps-built-in-ask.md); use `request_developer` only to validate and render a request for the caller, not to ask the developer or wait for their answer.
 When a reviewer returns a report, read [reading reviewer reports](skill://orchestrate-implementation-plan/references/agents--reading-reviewer-reports.md) before acting on it.
+Revoke only agent acceptances through `doc_approval`; developer approvals lapse automatically on content changes. Never edit either approvals file.
 
 ### 1. Establish context before dispatch
 

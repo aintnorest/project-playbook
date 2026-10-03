@@ -13,7 +13,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from doc_approvals import (ApprovalError, approval_status, body_bytes, document_type,
-                           gate_for_type, load_approvals, _unique_object, _validate_approvals)
+                           gate_for_type, load_approval_files, parse_approval_file)
 from git_environment import clean_git_environment
 
 
@@ -155,7 +155,7 @@ def check_document(path: Path, kind: str, text: str) -> Tuple[Optional[dict], Li
                     fail(positions["approved"], "invalid approved date; expected a real calendar date")
     return {"path": str(path), "type": kind, "state": state,
             "revision": revision, "approval": {"gate": gate_for_type(kind),
-                                               "by": None, "date": None, "valid": False}}, errors
+                                               "valid": False}}, errors
 
 
 class GitFailure(Exception):
@@ -211,28 +211,25 @@ def checked_snapshot(name: str, kind: str, content: bytes, commit: str) -> Tuple
 
 
 def approvals_at(repo: Path, commit: str) -> dict:
-    paths = git_bytes(repo, "ls-tree", "--name-only", commit, "--", "docs/approvals.json")
-    if not paths.strip():
-        return {"version": 1, "approvals": {}}
-    try:
-        data = json.loads(document_at(repo, commit, "docs/approvals.json"),
-                          object_pairs_hook=_unique_object)
-        _validate_approvals(data)
-        return data
-    except (ValueError, TypeError, UnicodeError) as error:
-        raise GitFailure(f"{commit}: docs/approvals.json: {error}") from error
+    result = {}
+    for gate, filename in (("developer", "docs/user-approvals.json"),
+                           ("agent", "docs/agent-approvals.json")):
+        paths = git_bytes(repo, "ls-tree", "--name-only", commit, "--", filename)
+        try:
+            result[gate] = parse_approval_file(document_at(repo, commit, filename),
+                                               filename, gate) if paths.strip() else {}
+        except ApprovalError as error:
+            raise GitFailure(f"{commit}: {error}") from error
+    return result
 
 
 def repository_for(path: Path) -> Path:
     """Discover from the document, never from the checker's installation."""
     directory = path.resolve().parent
-    try:
-        return Path(os.fsdecode(git_bytes(directory, "rev-parse", "--show-toplevel")).strip())
-    except GitFailure:
-        for ancestor in (directory, *directory.parents):
-            if (ancestor / "docs").is_dir():
-                return ancestor
-    raise ApprovalError("cannot find repository root; use --repo or an ancestor containing docs/")
+    for ancestor in (directory, *directory.parents):
+        if (ancestor / ".git").exists() or (ancestor / "docs/user-approvals.json").exists():
+            return ancestor
+    raise ApprovalError("cannot find repository root; use --repo or an ancestor containing .git or docs/user-approvals.json")
 
 
 def check_frozen_diff(repo: Path, base: str, head: str) -> int:
@@ -288,11 +285,13 @@ def check_frozen_diff(repo: Path, base: str, head: str) -> int:
         # Inspect every delivered document, including approvals-only commits.
         for name in sorted(head_paths):
             kind = document_type(Path(name))
-            if kind not in ("prd", "tdd", "implementation-plan", "system-design"):
+            if gate_for_type(kind) == "none":
                 continue
             row, _ = checked_snapshot(name, kind, document_at(repo, head_id, name), head_id)
-            if row["state"] == "done" and name not in head_approvals["approvals"]:
-                raise GitFailure(f"{name}: done {kind} approval entry must remain in docs/approvals.json")
+            gate = gate_for_type(kind)
+            if row["state"] == "done" and name not in head_approvals[gate]:
+                filename = "user-approvals.json" if gate == "developer" else "agent-approvals.json"
+                raise GitFailure(f"{name}: done {kind} approval entry must remain in docs/{filename}")
     except GitFailure as error:
         print(f"frozen-diff: {error}", file=sys.stderr)
         return 1
@@ -307,8 +306,8 @@ def main(arguments: Optional[Sequence[str]] = None) -> int:
     mode.add_argument("--frozen-diff", action="store_true",
                       help="check frozen documents and system-design revisions between commits")
     parser.add_argument("--repo", type=Path, help="repository root; required for --frozen-diff. "
-                        "For --check/--json, defaults to git rev-parse --show-toplevel from "
-                        "each document's parent, then the nearest ancestor containing docs/")
+                        "For --check/--json, defaults to the nearest ancestor containing "
+                        ".git or docs/user-approvals.json")
     parser.add_argument("--base", help="base commit for --frozen-diff")
     parser.add_argument("--head", help="head commit for --frozen-diff")
     parser.add_argument("paths", nargs="*", type=Path, help="document paths")
@@ -335,16 +334,14 @@ def main(arguments: Optional[Sequence[str]] = None) -> int:
         if row is not None and gate_for_type(kind) != "none" and not problems:
             try:
                 repo = args.repo.resolve() if args.repo else repository_for(path)
-                approvals = load_approvals(repo)
+                approvals = load_approval_files(repo)
                 status = approval_status(repo, path.resolve(), approvals)
-                name = path.resolve().relative_to(repo).as_posix()
-                entry = approvals["approvals"].get(name)
-                row["approval"].update(by=status["by"], date=entry["date"] if entry else None,
-                                       valid=status["approved"])
+                row["approval"]["valid"] = status["approved"]
                 if row["state"] in ("active", "done") and not status["approved"]:
                     problems.append({"path": str(path), "line": 1,
-                                     "message": "valid approval required in docs/approvals.json: "
-                                                + str(status["reason"])})
+                                     "message": "valid approval required in docs/"
+                                                + ("user-approvals.json" if status["gate"] == "developer"
+                                                   else "agent-approvals.json") + ": " + str(status["reason"])})
             except (ApprovalError, OSError, ValueError) as error:
                 problems.append({"path": str(path), "line": 1, "message": str(error)})
         if row is not None:

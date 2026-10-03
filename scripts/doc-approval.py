@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-"""Initialize, inspect, revoke, or record content-bound document approvals."""
+"""Inspect hashes and record or revoke agent document acceptances."""
 
 import argparse
-import datetime
 import json
-import re
 import sys
 from pathlib import Path
 from typing import Optional, Sequence
@@ -12,8 +10,8 @@ from typing import Optional, Sequence
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from doc_approvals import (ApprovalError, approval_status, body_sha256,
-                           document_type, gate_for_type, load_approvals, relative_path,
-                           save_approvals, split_frontmatter)
+                           document_type, gate_for_type, load_approval_files, relative_path,
+                           save_agent_approvals)
 
 
 def emit(payload) -> None:
@@ -33,7 +31,7 @@ def document_paths(repo: Path):
 def main(arguments: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
-    for name in ("init", "status", "revoke", "accept", "developer-approve"):
+    for name in ("status", "revoke", "accept", "hash"):
         mode.add_argument("--" + name, action="store_true")
     parser.add_argument("--repo", required=True, type=Path)
     parser.add_argument("--path", type=Path)
@@ -41,9 +39,7 @@ def main(arguments: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--evidence")
     args = parser.parse_args(arguments)
     required_text = "reason" if args.revoke else "evidence" if args.accept else None
-    if args.init and args.path is not None:
-        parser.error("--init does not accept --path")
-    if not (args.init or args.status) and args.path is None:
+    if not args.status and args.path is None:
         parser.error("this mode requires --path")
     for field in ("reason", "evidence"):
         value = getattr(args, field)
@@ -58,42 +54,31 @@ def main(arguments: Optional[Sequence[str]] = None) -> int:
             raise ApprovalError("--repo must name an existing directory")
         name = relative_path(repo, args.path) if args.path is not None else None
         kind = document_type(Path(name)) if name is not None else None
+        if args.hash:
+            digest = body_sha256((repo / name).read_bytes(), kind)
+            emit({"status": "hash", "path": name, "hash": digest,
+                  "line": json.dumps(name) + ": " + json.dumps(digest) + ","})
+            return 0
         if name is not None and kind is None:
             raise ApprovalError("unknown document path/type: " + name)
-        # Refuse before inspecting or writing either document or approvals file.
-        if args.accept and gate_for_type(kind) != "agent":
+        if (args.accept or args.revoke) and gate_for_type(kind) != "agent":
             emit({"status": "refused", "reason": "developer-gated" if gate_for_type(kind) == "developer" else "ungated"})
             return 3
-        if args.developer_approve and gate_for_type(kind) != "developer":
-            raise ApprovalError("--developer-approve requires a developer-gated document")
-        data = load_approvals(repo)
-        if args.init:
-            exists = (repo / "docs" / "approvals.json").exists()
-            if not exists:
-                save_approvals(repo, data)
-            emit({"status": "unchanged" if exists else "initialized"})
-        elif args.status:
+        data = load_approval_files(repo)
+        if args.status:
             paths = [name] if name is not None else document_paths(repo)
             emit([approval_status(repo, Path(path), data) for path in paths])
         elif args.revoke:
-            if name in data["approvals"]:
-                del data["approvals"][name]
-                save_approvals(repo, data)
-            emit({"status": "revoked", "path": name})
+            changed = name in data["agent"]
+            if changed:
+                del data["agent"][name]
+                save_agent_approvals(repo, data["agent"])
+            emit({"status": "revoked" if changed else "unchanged", "path": name})
         else:
-            content = (repo / name).read_bytes()
-            fields, _ = split_frontmatter(content)
-            prefixes = {"vision": "vision", "architecture": "arch", "prd": "prd",
-                        "system-design": "sd", "tdd": "tdd", "implementation-plan": "plan"}
-            if not re.fullmatch(prefixes[kind] + r"-r[1-9][0-9]*", fields.get("revision", "")):
-                raise ApprovalError("missing or invalid document revision")
-            entry = {"bodySha256": body_sha256(content, kind), "date": datetime.date.today().isoformat(),
-                     "revision": fields["revision"], "by": "agent" if args.accept else "developer"}
-            if args.accept:
-                entry["evidence"] = args.evidence
-            data["approvals"][name] = entry
-            save_approvals(repo, data)
-            emit({"status": "accepted" if args.accept else "approved", "path": name})
+            data["agent"][name] = {"hash": body_sha256((repo / name).read_bytes(), kind),
+                                   "evidence": args.evidence}
+            save_agent_approvals(repo, data["agent"])
+            emit({"status": "accepted", "path": name})
     except (ApprovalError, OSError, UnicodeError) as error:
         print("doc-approval: " + str(error), file=sys.stderr)
         return 1

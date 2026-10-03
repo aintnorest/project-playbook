@@ -90,16 +90,15 @@ test("document status tool reads metadata and rejects legacy prose", async () =>
   const path = join(docs, "product-vision.md");
   const body = "# Product vision\n\n## Status\n\nReviewed against product research.\n";
   writeFileSync(path, "---\nstate: active\nrevision: vision-r2\n---\n" + body);
-  writeFileSync(join(docs, "approvals.json"), JSON.stringify({ version: 1, approvals: {
-    "docs/product-vision.md": { revision: "vision-r2", bodySha256: createHash("sha256").update(body).digest("hex"),
-      by: "developer", date: "2026-09-28" },
-  } }));
+  writeFileSync(join(docs, "user-approvals.json"), JSON.stringify({
+    "docs/product-vision.md": createHash("sha256").update(body).digest("hex"),
+  }));
   const parsed = await statusTool.execute("test", { mode: "json", path, repo },
     undefined, undefined, { cwd: repo });
   expect(parsed.isError).toBeUndefined();
   expect(parsed.details.documents).toEqual([
     { path, type: "vision", state: "active", revision: "vision-r2",
-      approval: { gate: "developer", by: "developer", date: "2026-09-28", valid: true } },
+      approval: { gate: "developer", valid: true } },
   ]);
 
   writeFileSync(path, "# Product vision\n\n## Status\n\nApproved.\n");
@@ -115,10 +114,9 @@ test("document frozen-diff tool rejects edits to a delivered PRD", async () => {
   const path = join(feature, "prd.md");
   const body = "# Search\n\nThe delivered contract.\n";
   writeFileSync(path, "---\nstate: done\nrevision: prd-r3\n---\n" + body);
-  writeFileSync(join(repo, "docs", "approvals.json"), JSON.stringify({ version: 1, approvals: {
-    "docs/features/search/prd.md": { revision: "prd-r3", bodySha256: createHash("sha256").update(body).digest("hex"),
-      by: "developer", date: "2026-09-28" },
-  } }));
+  writeFileSync(join(repo, "docs", "user-approvals.json"), JSON.stringify({
+    "docs/features/search/prd.md": createHash("sha256").update(body).digest("hex"),
+  }));
   git("add", "docs");
   git("-c", "user.name=Test", "-c", "user.email=test@example.invalid",
     "commit", "-q", "-m", "deliver feature");

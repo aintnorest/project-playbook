@@ -51,7 +51,7 @@ Before any developer-facing message, read and apply [communication rules](../gui
 
 ### 1. Establish or resume the consuming project
 
-Read repository instructions and relevant documents. Read [software factory integration](../integrations/omp.md#software-factory), [approvals](../guides/product-documentation-process.md#approvals), and [document state and revision](../guides/product-documentation-process.md#document-state-and-revision) before changing lifecycle or approval state. For a new project initialize approvals through `doc_approval` with mode `init`; never write the approvals file directly. For an existing consumer project follow the integration's opt-in/migration path before treating legacy gates as valid. The Playbook repository itself is not a factory project.
+Read repository instructions and relevant documents. Read [software factory integration](../integrations/omp.md#software-factory), [approvals](../guides/product-documentation-process.md#approvals), and [document state and revision](../guides/product-documentation-process.md#document-state-and-revision) before changing lifecycle or approval state. For a new project ask the developer to create `docs/user-approvals.json` containing `{}` to opt in; never edit either approvals file. For an existing consumer project follow the integration's opt-in/migration path before treating legacy gates as valid.
 
 Call `factory_status` for this repository. Reconcile document-derived status with preserved run context; do not infer implementation completion or review rounds from documents. When status reports multiple unfinished features, render a decision and ask which to resume; do not exploit the hooks' ambiguity exception to choose silently.
 
@@ -123,9 +123,9 @@ When a system design or TDD is ready, read [when coherence review runs](../guide
 
 ### 12. Pass the document's actual gate
 
-Read [approvals](../guides/product-documentation-process.md#approvals) and Gate requests in [communication rules](../guides/communication-policy.md#rules). For vision, architecture, PRD, or system design, render an approval request through `request_developer` identifying path/revision, what the developer is asked to agree to, reason, changes since prior approval, changed decisions, and what follows. Ask the developer to record approval using `/playbook-approve <path>`. End the blocked turn; never record developer approval yourself. On requested changes return to step 10 and the same gate; on recorded approval inspect its validity through `doc_approval` status before proceeding.
+Read [approvals](../guides/product-documentation-process.md#approvals) and Gate requests in [communication rules](../guides/communication-policy.md#rules). For vision, architecture, PRD, or system design, render an approval request through `request_developer` identifying path/revision, what the developer is asked to agree to, reason, changes since prior approval, changed decisions, and what follows. Ask the developer to run `/playbook-hash <path>` and paste the entry into `docs/user-approvals.json`. End the blocked turn; never record developer approval yourself. On requested changes return to step 10 and the same gate; on recorded approval inspect its validity through `doc_approval` status before proceeding.
 
-For TDD or plan, after review and required checks pass, use `doc_approval` accept with concrete evidence; no developer gate is needed. Roadmaps and Playbook guides have no approval gate. Revoke stale records through `doc_approval` when needed, never through direct file edits.
+For TDD or plan, after review and required checks pass, use `doc_approval` accept with concrete evidence; no developer gate is needed. The roadmap has no approval gate. Revoke only agent acceptances through `doc_approval`; developer approvals lapse automatically on content changes. Never edit either approvals file.
 
 **Complete when:** the current document has its valid type-appropriate record and lifecycle, or this turn ends successfully with a rendered developer gate and precise resumption condition.
 

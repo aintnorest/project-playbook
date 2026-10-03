@@ -22,12 +22,12 @@ function document(path, approved = false, state = "draft", body = "# Document\n"
   mkdirSync(dirname(join(repo, path)), { recursive: true });
   writeFileSync(join(repo, path), `---\nstate: ${state}\nrevision: ${type}-r1\n---\n${body}`);
   if (approved) {
-    const manifest = JSON.parse(readFileSync(join(repo, "docs/approvals.json"), "utf8"));
     const agent = type === "tdd" || type === "plan";
-    manifest.approvals[path] = { revision: `${type}-r1`, bodySha256: createHash("sha256").update(body).digest("hex"),
-      by: agent ? "agent" : "developer", date: "2026-10-02", ...(agent ? { evidence: "Reviews and checks passed." }
-        : {}) };
-    writeFileSync(join(repo, "docs/approvals.json"), JSON.stringify(manifest));
+    const file = join(repo, "docs", agent ? "agent-approvals.json" : "user-approvals.json");
+    const manifest = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : {};
+    const hash = createHash("sha256").update(body).digest("hex");
+    manifest[path] = agent ? { hash, evidence: "Reviews and checks passed." } : hash;
+    writeFileSync(file, JSON.stringify(manifest));
   }
 }
 function ready(plan = false) {
@@ -47,7 +47,7 @@ async function execute(name, params, context = ctx) {
 beforeEach(() => {
   repo = mkdtempSync(join(tmpdir(), "playbook-hooks-"));
   mkdirSync(join(repo, "docs"));
-  writeFileSync(join(repo, "docs/approvals.json"), JSON.stringify({ version: 1, approvals: {} }));
+  writeFileSync(join(repo, "docs/user-approvals.json"), "{}");
   runtime = bind(); sequence = 0;
   ctx = { cwd: repo, agent: { kind: "main", id: "Main", name: "main", depth: 0 }, hasUI: true,
     ui: { confirm: async () => true, notify() {} } };
@@ -56,47 +56,64 @@ afterEach(() => rmSync(repo, { recursive: true, force: true }));
 
 test("approval guard blocks write, edit sections, derived paths, AST globs/directories and aliases", async () => {
   symlinkSync(join(repo, "docs"), join(repo, "alias"));
-  for (const [tool, input] of [
-    ["write", { path: "docs/approvals.json" }], ["write", { path: join(repo, "docs/../docs/approvals.json") }],
-    ["write", { path: "alias/approvals.json" }], ["edit", { input: "[docs/approvals.json#A123]\nPUT 1.=1:\n+{}" }],
-    ["edit", { paths: ["docs/approvals.json"] }], ["edit", { input: "[other.json#A123]\nMV docs/approvals.json" }],
-    ["ast_edit", { paths: ["docs/*.json"] }], ["ast_edit", { paths: ["**/*"] }], ["ast_edit", { paths: ["docs"] }],
-  ]) expect((await call(tool, input))?.block).toBe(true);
-  expect(await call("write", { path: "elsewhere/approvals.json" })).toBeUndefined();
+  for (const name of ["user-approvals.json", "agent-approvals.json"]) {
+    for (const [tool, input] of [
+      ["write", { path: `docs/${name}` }], ["write", { path: join(repo, `docs/../docs/${name}`) }],
+      ["write", { path: `alias/${name}` }], ["edit", { input: `[docs/${name}#A123]\nPUT 1.=1:\n+{}` }],
+      ["edit", { paths: [`docs/${name}`] }], ["edit", { input: `[other.json#A123]\nMV docs/${name}` }],
+      ["ast_edit", { paths: ["docs/*.json"] }], ["ast_edit", { paths: ["**/*"] }], ["ast_edit", { paths: ["docs"] }],
+    ]) expect((await call(tool, input))?.block).toBe(true);
+    expect(await call("write", { path: `elsewhere/${name}` })).toBeUndefined();
+    expect(await call("read", { path: `docs/${name}` })).toBeUndefined();
+    for (const tool of ["write", "edit"])
+      for (const path of ["docs", "docs/*.json", "alias"])
+        expect((await call(tool, { path }))?.block).toBe(true);
+  }
 });
 
-test("approval guard blocks shell/eval write patterns and developer mode but allows reads", async () => {
-  for (const text of ["printf x > docs/approvals.json", "tee docs/approvals.json", "sed -i '' 's/x/y/' docs/approvals.json",
-    "mv tmp docs/approvals.json", "cp tmp docs/approvals.json", "rm docs/approvals.json", "truncate -s 0 docs/approvals.json",
-    "open('docs/approvals.json', 'w').write('{}')", "writeFileSync('docs/approvals.json', '{}')", "Bun.write('docs/approvals.json', '{}')",
-    "python3 scripts/doc-approval.py --developer-approve --path docs/product-vision.md"])
-    for (const tool of ["bash", "eval"]) expect((await call(tool, tool === "bash" ? { command: text } : { code: text }))?.block).toBe(true);
-  for (const command of ["cat docs/approvals.json", "jq . docs/approvals.json", "git diff -- docs/approvals.json",
-    "git log -- docs/approvals.json", "git show HEAD:docs/approvals.json"])
-    expect(await call("bash", { command })).toBeUndefined();
+test("approval guard blocks shell/eval write patterns but allows reads", async () => {
+  for (const name of ["user-approvals.json", "agent-approvals.json"]) {
+    for (const text of [`printf x > docs/${name}`, `tee docs/${name}`, `sed -i '' 's/x/y/' docs/${name}`,
+      `mv tmp docs/${name}`, `cp tmp docs/${name}`, `rm docs/${name}`, `truncate -s 0 docs/${name}`,
+      `open('docs/${name}', 'w').write('{}')`, `writeFileSync('docs/${name}', '{}')`, `Bun.write('docs/${name}', '{}')`])
+      for (const tool of ["bash", "eval"]) expect((await call(tool, tool === "bash" ? { command: text } : { code: text }))?.block).toBe(true);
+    for (const command of [`cat docs/${name}`, `jq . docs/${name}`, `git diff -- docs/${name}`,
+      `git log -- docs/${name}`, `git show HEAD:docs/${name}`])
+      expect(await call("bash", { command })).toBeUndefined();
+  }
 });
 
 test("doc_approval wraps modes and shares the hook's exact refusal text", async () => {
   document(vision);
-  const before = readFileSync(join(repo, "docs/approvals.json"), "utf8");
-  const refused = await execute("doc_approval", { mode: "accept", path: vision, evidence: "Reviewed and checked." });
-  const blocked = await call("write", { path: "docs/approvals.json" });
-  expect(refused.isError).toBeUndefined(); expect(refused.details.status).toBe("refused");
-  expect(refused.content[0].text).toBe(blocked.reason);
-  expect(readFileSync(join(repo, "docs/approvals.json"), "utf8")).toBe(before);
-  expect((await execute("doc_approval", { mode: "init" })).details.status).toBe("unchanged");
+  const before = readFileSync(join(repo, "docs/user-approvals.json"), "utf8");
+  for (const mode of ["accept", "revoke"]) {
+    const refused = await execute("doc_approval", { mode, path: vision,
+      ...(mode === "accept" ? { evidence: "Reviewed and checked." } : { reason: "Changed." }) });
+    expect(refused.isError).toBeUndefined(); expect(refused.details.status).toBe("refused");
+    for (const name of ["user-approvals.json", "agent-approvals.json"])
+      expect(refused.content[0].text).toBe((await call("write", { path: `docs/${name}` })).reason);
+  }
+  expect(readFileSync(join(repo, "docs/user-approvals.json"), "utf8")).toBe(before);
+  document("docs/roadmap.md");
+  for (const mode of ["accept", "revoke"]) {
+    const refused = await execute("doc_approval", { mode, path: "docs/roadmap.md",
+      ...(mode === "accept" ? { evidence: "Reviewed." } : { reason: "Changed." }) });
+    expect(refused.details.data.reason).toBe("ungated");
+    expect(refused.content[0].text).toBe((await call("write", { path: "docs/user-approvals.json" })).reason);
+  }
   document(`${feature}/tdd.md`);
   expect((await execute("doc_approval", { mode: "accept", path: `${feature}/tdd.md`, evidence: "Reviews and checks passed." })).details.status).toBe("accepted");
   const status = await execute("doc_approval", { mode: "status", path: `${feature}/tdd.md` });
   expect(status.details.data[0].approved).toBe(true);
   expect((await execute("doc_approval", { mode: "revoke", path: `${feature}/tdd.md`, reason: "Changed design." })).details.status).toBe("revoked");
-  for (const params of [{ mode: "accept", path: `${feature}/tdd.md` }, { mode: "status", evidence: "wrong mode" }, { mode: "init", path: vision }])
+  expect((await execute("doc_approval", { mode: "revoke", path: `${feature}/tdd.md`, reason: "Already removed." })).details.status).toBe("unchanged");
+  for (const params of [{ mode: "accept", path: `${feature}/tdd.md` }, { mode: "status", evidence: "wrong mode" }])
     expect((await execute("doc_approval", params)).isError).toBe(true);
 });
 
 test("factory_status and approval tools fail closed on malformed approvals", async () => {
   expect((await execute("factory_status", {})).details.nextStep).toContain(vision);
-  writeFileSync(join(repo, "docs/approvals.json"), "{");
+  writeFileSync(join(repo, "docs/user-approvals.json"), "{");
   expect((await execute("factory_status", {})).isError).toBe(true);
   expect((await execute("doc_approval", { mode: "status" })).isError).toBe(true);
   await runtime.hooks.turn_start({}, ctx);
@@ -231,36 +248,31 @@ test("status line preserves string/array base prompts, includes documents and sk
   expect(await runtime.hooks.before_agent_start({ systemPrompt: "CHILD" }, { ...ctx, agent: { ...ctx.agent, kind: "sub", id: "Sub", parentId: "Main" } })).toBeUndefined();
 });
 
-test("developer command refuses without UI or after decline, confirms approval meaning, records approval and resets", async () => {
-  document(vision); document(architecture);
-  const before = readFileSync(join(repo, "docs/approvals.json"), "utf8");
-  const command = runtime.commands["playbook-approve"];
-  await command.handler(vision, { ...ctx, hasUI: false });
-  await command.handler(vision, { ...ctx, ui: { ...ctx.ui, confirm: async () => false } });
-  expect(readFileSync(join(repo, "docs/approvals.json"), "utf8")).toBe(before);
+test("hash command shows a paste-ready line, writes nothing, and does not reset revisions", async () => {
+  document(vision);
+  const before = readFileSync(join(repo, "docs/user-approvals.json"), "utf8");
+  const command = runtime.commands["playbook-hash"];
+  await command.handler(vision, { ...ctx, hasUI: false, ui: undefined });
+  expect(readFileSync(join(repo, "docs/user-approvals.json"), "utf8")).toBe(before);
   for (let n = 0; n < 5; n++) await spawn();
-  let confirmation;
-  await command.handler(vision, { ...ctx, ui: { ...ctx.ui, confirm: async (_title, text) => { confirmation = text; return true; } } });
-  expect(confirmation).toContain("read docs/product-vision.md in full");
-  expect((await execute("doc_approval", { mode: "status", path: vision })).details.data[0].approved).toBe(true);
-  expect(await spawn()).toBeUndefined();
-  await command.handler(architecture, { ...ctx, ui: { ...ctx.ui, confirm: async (_title, text) => { confirmation = text; return true; } } });
-  expect(confirmation).toContain("defend its technical decisions");
-  expect((await execute("doc_approval", { mode: "status", path: architecture })).details.data[0].approved).toBe(true);
-  const approvals = JSON.parse(readFileSync(join(repo, "docs/approvals.json"), "utf8")).approvals;
-  for (const path of [vision, architecture])
-    expect(Object.keys(approvals[path]).sort()).toEqual(["bodySha256", "by", "date", "revision"]);
+  const notifications = [];
+  await command.handler(vision, { ...ctx, ui: { notify: (...args) => notifications.push(args) } });
+  const hash = createHash("sha256").update("# Document\n").digest("hex");
+  expect(notifications).toEqual([[`${vision}\n"${vision}": "${hash}",`, "info"]]);
+  expect(readFileSync(join(repo, "docs/user-approvals.json"), "utf8")).toBe(before);
+  expect(existsSync(join(repo, "docs/agent-approvals.json"))).toBe(false);
+  expect((await spawn())?.block).toBe(true);
 });
 
-test("every hook is inert without approvals and factory_status reports optedOut", async () => {
-  rmSync(join(repo, "docs/approvals.json"));
-  for (const [event, input] of [["tool_call", { toolName: "bash", input: { command: "--developer-approve > docs/approvals.json" } }],
+test("every hook is inert without user approvals even when agent approvals exist", async () => {
+  rmSync(join(repo, "docs/user-approvals.json"));
+  writeFileSync(join(repo, "docs/agent-approvals.json"), "{}");
+  for (const [event, input] of [["tool_call", { toolName: "bash", input: { command: "printf x > docs/user-approvals.json" } }],
     ["before_subagent_spawn", { agent: "orchestrate-implementation-plan-agent" }], ["before_agent_start", { systemPrompt: "BASE" }],
     ["input", {}], ["turn_start", {}], ["tool_result", { toolName: "ask", details: { selectedOptions: ["yes"] } }]])
     expect(await runtime.hooks[event](input, ctx)).toBeUndefined();
   expect((await execute("factory_status", {})).details.optedIn).toBe(false);
-  expect((await execute("doc_approval", { mode: "init" })).details.status).toBe("initialized");
-  expect(existsSync(join(repo, "docs/approvals.json"))).toBe(true);
+  expect(existsSync(join(repo, "docs/user-approvals.json"))).toBe(false);
 });
 
 test("cached status is invalidated by child acceptance in the same main turn", async () => {

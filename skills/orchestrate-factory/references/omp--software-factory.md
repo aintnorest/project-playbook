@@ -9,22 +9,26 @@ In the consuming project's main interactive OMP session, enter:
 /skill:orchestrate-factory
 ```
 
-This loads the factory procedure into the session that talks to the developer; there is no `orchestrate-factory-agent`. The main session drives the next step and dispatches drafting, review, implementation, and fix agents. The skill initializes `docs/approvals.json` for a new project. To opt an existing consumer project in, use `doc_approval` with mode `init`; migrate its legacy product-document approvals using the [consumer migration guide (source: guides/migrations/0.1.0-to-1.0.0.md)].
+This loads the factory procedure into the session that talks to the developer; there is no `orchestrate-factory-agent`. The main session drives the next step and dispatches drafting, review, implementation, and fix agents. To opt a new or existing consumer project in, the developer creates `docs/user-approvals.json` by hand; `{}` is valid initially. Migrate legacy product-document approvals using the [consumer migration guide (source: guides/migrations/0.1.0-to-1.0.0.md)].
 
-The presence of `docs/approvals.json` opts that repository into enforcement. Every factory hook is inert when the file is absent. The [process guide's approvals section](skill://orchestrate-factory/references/product-documentation-process--approvals.md) owns approval rules, and the [code-review cycle](skill://orchestrate-factory/references/code-review--review-cycle.md) owns implementation and fix review rules.
+The presence of `docs/user-approvals.json` opts that repository into enforcement. Every factory hook is inert when the file is absent. `docs/agent-approvals.json` may be absent until the first agent acceptance. The [process guide's approvals section](skill://orchestrate-factory/references/product-documentation-process--approvals.md) owns approval rules, and the [code-review cycle](skill://orchestrate-factory/references/code-review--review-cycle.md) owns implementation and fix review rules.
 
 The extension registers these hooks:
 
 | Hook | Runtime effect in an opted-in repository |
 | --- | --- |
-| Approvals-file guard (`tool_call`, all sessions) | Blocks direct `edit`, `write`, and `ast_edit` paths or globs targeting `docs/approvals.json`; blocks shell/eval text that names the file with a write pattern, or invokes `--developer-approve`. Reads remain allowed. Agents use `doc_approval` instead. |
+| Approvals-file guard (`tool_call`, all sessions) | Blocks direct `edit`, `write`, and `ast_edit` paths, globs, directories, or aliases targeting `docs/user-approvals.json` or `docs/agent-approvals.json`; blocks shell/eval text that names either file with a write pattern. Reads remain allowed. The developer edits the user file by hand; agents use `doc_approval` for the agent file. |
 | Creation guard (`tool_call`, all sessions) | Blocks creation of a downstream document while a prerequisite approval gate is open. Edits to existing documents remain allowed. The refusal names the open gate and expected next step. |
 | Implementation gate (`before_subagent_spawn`) | Blocks `orchestrate-implementation-plan-agent` until the current slice's TDD and plan have valid approvals and its upstream developer gates are approved. Worker, reviewer, and fix-agent spawns are not gated. |
-| Revision limit (`before_subagent_spawn` and creation guard) | Counts `draft-*` revisions in memory for the main session's agent tree; creating a new document is a first draft, not a revision. The sixth revision is refused with an instruction to stop and summarize for the developer. Only a main-session developer message, explicit main-session `ask` answer, or developer approval via `/playbook-approve` resets the count; agent acceptance, timeouts, cancellation, and chat redirects do not. A TDD loop and the following plan loop share one budget of five revisions until the developer next responds. A session restart loses the count. |
+| Revision limit (`before_subagent_spawn` and creation guard) | Counts `draft-*` revisions in memory for the main session's agent tree; creating a new document is a first draft, not a revision. The sixth revision is refused with an instruction to stop and summarize for the developer. Only a main-session developer message or explicit main-session `ask` answer resets the count; agent acceptance, timeouts, cancellation, and chat redirects do not. A TDD loop and the following plan loop share one budget of five revisions until the developer next responds. A session restart loses the count. |
 | Status line (`before_agent_start`, main session only) | Appends document-derived factory status, the revision count, and a pointer to `skill://orchestrate-factory` without replacing the base prompt. Execution phase and review round remain with the skill; ask it for full status. |
 
 When unfinished work spans multiple features, order and implementation hooks do not block; status reports the ambiguity instead.
 
-To record a developer approval, enter `/playbook-approve <path>` in the interactive session, using a repository-relative document path. The command presents what approval means for the document type through OMP's confirmation UI, then records approval only after the developer confirms. It refuses without a UI or when confirmation is declined; agents cannot substitute a shell invocation.
+| Command | Effect |
+| --- | --- |
+| `/playbook-hash <path>` | Reads and hashes any existing file inside the repository, then shows its path and paste-ready `"<path>": "<hash>",` entry line in an informational notification. Writes nothing. |
+
+To record developer approval, run `/playbook-hash <path>` with a repository-relative document path and paste the displayed entry into `docs/user-approvals.json` after accepting the document under its gate's meaning. Agents stop and render a developer request at that gate; they cannot paste the entry on the developer's behalf. After review and checks, agents use `doc_approval` mode `accept` with evidence for a TDD or implementation plan, or mode `revoke` with a reason to withdraw an agent acceptance. Body changes automatically lapse either kind of approval.
 
 These checks target forgotten or skipped steps, not deliberate circumvention. The factory needs only OMP and the Playbook; it is not a security sandbox.

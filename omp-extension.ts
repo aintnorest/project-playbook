@@ -16,13 +16,13 @@ const runCollector = fileURLToPath(new URL("./scripts/collect-agent-runs.py", im
 const checkRunner = fileURLToPath(new URL("./scripts/run-check.py", import.meta.url));
 const approvalProgram = fileURLToPath(new URL("./scripts/doc-approval.py", import.meta.url));
 const factoryProgram = fileURLToPath(new URL("./scripts/factory-status.py", import.meta.url));
-const APPROVAL_REFUSAL = "This file records approvals, and agents don't change it directly by any route. To mark a document not approved, or to accept a technical design or implementation plan after its review loop and checks pass, use `doc_approval`. Product vision, architecture, PRD, and system design approvals belong to the developer: stop, render a developer request, and ask. Stopping here is the correct way to finish this turn, not a failure.";
+const APPROVAL_REFUSAL = "Approval files are not edited directly. `docs/user-approvals.json` belongs to the developer: stop, render a developer request, and ask them to record approval; they can get the line to paste with `/playbook-hash <path>`. To accept or revoke a technical design or implementation plan, use `doc_approval`. Stopping here is the correct way to finish this turn, not a failure.";
 const REVISION_REFUSAL = "Five drafting-agent revisions have been used. Stop and summarize for the developer what remains unresolved, why it is not converging, the options, and a recommendation. Stopping here is the correct way to finish this turn, not a failure.";
 // Bound each output stream independently; checkers have 120 seconds, runner timeout adds transport grace.
 const MAX_STREAM_BYTES = 16 * 1024 * 1024;
 const VALIDATOR_TIMEOUT_MS = 120_000;
 
-type Mode = "check" | "json" | "protected-diff" | "frozen-diff" | "init" | "status" | "revoke" | "accept" | "developer-approve";
+type Mode = "check" | "json" | "protected-diff" | "frozen-diff" | "status" | "revoke" | "accept";
 
 interface ValidatorResult {
   stdout: string;
@@ -149,7 +149,7 @@ const DRAFT_DOCUMENT: Record<string, string> = {
 function sessionRepo(cwd: string): string {
   let path = resolve(cwd);
   while (true) {
-    if (existsSync(resolve(path, ".git")) || existsSync(resolve(path, "docs/approvals.json"))) return path;
+    if (existsSync(resolve(path, ".git")) || existsSync(resolve(path, "docs/user-approvals.json"))) return path;
     const parent = dirname(path);
     if (parent === path) return resolve(cwd);
     path = parent;
@@ -181,16 +181,18 @@ function targetPaths(input: Record<string, unknown>): string[] {
   return [...new Set(paths)];
 }
 
-function targetsApprovals(repo: string, path: string, glob = false): boolean {
-  const target = canonicalPath(resolve(repo, "docs/approvals.json"));
+function targetsApprovals(repo: string, path: string): boolean {
   const absolute = resolve(repo, path);
-  if (canonicalPath(absolute) === target) return true;
-  if (!glob) return false;
-  if (existsSync(absolute) && statSync(absolute).isDirectory()) {
-    const below = relative(canonicalPath(absolute), target);
-    if (!below.startsWith("..") && !below.startsWith(sep)) return true;
-  }
-  return new Bun.Glob(absolute).match(target) || new Bun.Glob(absolute).match(resolve(repo, "docs/approvals.json"));
+  return ["user-approvals.json", "agent-approvals.json"].some(name => {
+    const lexicalTarget = resolve(repo, "docs", name);
+    const target = canonicalPath(lexicalTarget);
+    if (canonicalPath(absolute) === target) return true;
+    if (existsSync(absolute) && statSync(absolute).isDirectory()) {
+      const below = relative(canonicalPath(absolute), target);
+      if (!below.startsWith("..") && !below.startsWith(sep)) return true;
+    }
+    return new Bun.Glob(absolute).match(target) || new Bun.Glob(absolute).match(lexicalTarget);
+  });
 }
 
 function orderRefusal(status: FactoryStatus, gate: string): string {
@@ -236,14 +238,14 @@ async function approvalOperation(mode: Mode, repo: string, args: string[], signa
   if (mode === "status") {
     if (result.exitCode !== 0 || !Array.isArray(data) || !data.every(row => row && typeof row.path === "string"
       && typeof row.type === "string" && ["developer", "agent", "none"].includes(row.gate)
-      && typeof row.approved === "boolean" && (row.by === null || ["developer", "agent"].includes(row.by))
-      && (row.reason === null || typeof row.reason === "string"))) throw new Error("Approval status returned an invalid result envelope.");
+      && typeof row.approved === "boolean"
+      && (row.reason === null || ["missing", "hash mismatch"].includes(row.reason)))) throw new Error("Approval status returned an invalid result envelope.");
   } else {
-    const expected: Record<string, string[]> = { init: ["initialized", "unchanged"], revoke: ["revoked"], accept: ["accepted"], "developer-approve": ["approved"] };
-    const refused = mode === "accept" && result.exitCode === 3 && value?.status === "refused"
+    const expected: Record<string, string[]> = { revoke: ["revoked", "unchanged"], accept: ["accepted"] };
+    const refused = result.exitCode === 3 && value?.status === "refused"
       && ["developer-gated", "ungated"].includes(String(value.reason));
     if (!refused && (result.exitCode !== 0 || !expected[mode]?.includes(String(value?.status))
-      || (mode !== "init" && typeof value?.path !== "string"))) throw new Error("Approval operation returned an invalid result envelope.");
+      || typeof value?.path !== "string")) throw new Error("Approval operation returned an invalid result envelope.");
   }
   return { content: [{ type: "text" as const, text: value?.status === "refused" ? APPROVAL_REFUSAL : result.stdout }],
     details: { status: mode === "status" ? "ok" : value.status, mode, exitCode: result.exitCode, data } };
@@ -256,7 +258,7 @@ export default function projectPlaybook(pi: ExtensionAPI) {
   let cachedVersion = -1;
   let draftSpawn: DraftSpawn | undefined;
   const newDocuments = new Map<string, string[]>();
-  const optedIn = (repo: string) => existsSync(resolve(repo, "docs/approvals.json"));
+  const optedIn = (repo: string) => existsSync(resolve(repo, "docs/user-approvals.json"));
   const invalidateStatus = (repo = cachedRepo) => {
     cachedStatus = undefined;
     if (repo) statusVersions.set(repo, (statusVersions.get(repo) ?? 0) + 1);
@@ -301,11 +303,11 @@ export default function projectPlaybook(pi: ExtensionAPI) {
   pi.registerTool({
     name: "doc_approval",
     label: "Document Approval",
-    description: "Initialize or inspect product-document approvals, revoke any approval with a reason, or accept a technical design/implementation plan with review and check evidence. Developer-gated and ungated documents cannot be accepted by agents. Writes only the consumer repository's docs/approvals.json.",
+    description: "Inspect document approvals or accept/revoke a technical design or implementation plan with evidence/a reason. Developer-gated and ungated documents cannot be accepted or revoked by agents. Writes only docs/agent-approvals.json through the approval script.",
     parameters: z.object({
-      mode: z.enum(["init", "status", "revoke", "accept"]),
+      mode: z.enum(["status", "revoke", "accept"]),
       repo: z.string().nullable().optional().describe("Consumer repository root; absent means the session repository."),
-      path: z.string().nullable().optional().describe("Document path; optional for status, required for revoke/accept, not accepted by init."),
+      path: z.string().nullable().optional().describe("Document path; optional for status, required for revoke/accept."),
       reason: z.string().nullable().optional().describe("Required non-empty revocation reason; revoke only."),
       evidence: z.string().nullable().optional().describe("Required non-empty review-loop and check evidence; accept only."),
     }),
@@ -314,7 +316,7 @@ export default function projectPlaybook(pi: ExtensionAPI) {
       const path = params.path || undefined;
       const reason = params.reason || undefined;
       const evidence = params.evidence || undefined;
-      if ((mode === "init" && path) || (["revoke", "accept"].includes(mode) && !path)
+      if ((["revoke", "accept"].includes(mode) && !path)
         || (mode === "revoke" ? !reason?.trim() : reason !== undefined)
         || (mode === "accept" ? !evidence?.trim() : evidence !== undefined)) {
         return failure(mode, "Approval mode requires its document path and non-empty reason/evidence, and does not accept fields belonging to another mode.");
@@ -357,13 +359,13 @@ export default function projectPlaybook(pi: ExtensionAPI) {
     treeFor(ctx);
     const input = event.input;
     const paths = ["edit", "write", "ast_edit"].includes(event.toolName) ? targetPaths(input) : [];
-    if (paths.some(path => targetsApprovals(repo, path, event.toolName === "ast_edit"))) {
+    if (paths.some(path => targetsApprovals(repo, path))) {
       return { block: true, reason: APPROVAL_REFUSAL };
     }
     if (["bash", "eval"].includes(event.toolName)) {
       const text = String(event.toolName === "bash" ? input.command ?? "" : input.code ?? "");
       const writes = /(?:>>?|(?:^|[;&|\s])(?:tee|mv|cp|rm|truncate)\b|sed\s+[^\n;]*-[^\s]*i|jq\s+[^\n;]*--in-place|\bopen\s*\([^)]*,\s*["'][wax+][^"']*["']|\b(?:writeFile(?:Sync)?|write_text|write_bytes)\s*\(|\bBun\.write\s*\()/m;
-      if (text.includes("--developer-approve") || (text.includes("approvals.json") && writes.test(text))) {
+      if (/(?:user|agent)-approvals\.json/.test(text) && writes.test(text)) {
         return { block: true, reason: APPROVAL_REFUSAL };
       }
     }
@@ -460,26 +462,20 @@ export default function projectPlaybook(pi: ExtensionAPI) {
     const line = `Software factory: feature=${status.feature ?? "none"}; slice=${status.currentSlice ?? "none"}; documents=${status.documents?.map(row => `${row.path}: ${row.state}, ${row.approved ? "approved" : row.gate === "none" ? "ungated" : "not approved"}`).join("; ") || "none"}; revisions=${state.count}/5; next=${status.nextStep?.replace(/\.$/, "")}${status.ambiguity ? `; ambiguity=${status.ambiguity.replace(/\.$/, "")}` : ""}. Use skill://orchestrate-factory for full status, execution phase, and review round.`;
     return { systemPrompt: typeof event.systemPrompt === "string" ? `${event.systemPrompt}\n${line}` : [...event.systemPrompt, line] };
   });
-  pi.registerCommand("playbook-approve", {
-    description: "Record developer approval after confirming the document type's approval meaning.",
+  pi.registerCommand("playbook-hash", {
+    description: "Show a read-only, paste-ready body-hash entry for developer approval.",
     async handler(args, ctx) {
+      if (!ctx.hasUI) return;
       const repo = sessionRepo(ctx.cwd);
-      const notify = (text: string, error = true) => ctx.ui.notify(text, error ? "error" : "info");
-      if (!optedIn(repo)) return notify("Software factory is not enabled: initialize docs/approvals.json through doc_approval first.");
-      if (!ctx.hasUI || ctx.agent.kind !== "main") return notify("Developer approval requires the main session's confirmation UI.");
-      const path = relative(repo, resolve(repo, args.trim())).split(sep).join("/");
-      const rank = documentRank(path);
-      if (rank === undefined || rank > 3) return notify("This command only approves product vision, architecture, PRD, and system design documents.");
-      const text = rank === 0 || rank === 2
-        ? `I have read ${path} in full and accept its content.`
-        : `I understand ${path} well enough to explain it and defend its technical decisions, and I agree with them.`;
-      if (!await ctx.ui.confirm(`Approve ${path}`, text)) return notify("Developer approval declined; no approval was recorded.");
       try {
-        const result = await approvalOperation("developer-approve", repo, ["--path", path]);
-        resetRevisions(ctx);
-        invalidateStatus(repo);
-        notify(result.content[0].text, false);
-      } catch (error) { notify(String(error)); }
+        const { data, result } = await runJsonProgram(approvalProgram, ["--hash", "--repo", repo, "--path", args.trim()], repo);
+        const value = data as Record<string, unknown>;
+        if (result.exitCode !== 0 || value?.status !== "hash" || typeof value.path !== "string"
+          || typeof value.hash !== "string" || !/^[0-9a-f]{64}$/.test(value.hash) || typeof value.line !== "string") {
+          throw new Error("Document hash returned an invalid result envelope.");
+        }
+        ctx.ui.notify(`${value.path}\n${value.line}`, "info");
+      } catch (error) { ctx.ui.notify(String(error), "error"); }
     },
   });
 

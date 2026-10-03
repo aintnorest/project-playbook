@@ -11,7 +11,7 @@ from typing import Optional, Sequence
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from doc_approvals import (ApprovalError, approval_status, document_type,
-                           load_approvals, split_frontmatter)
+                           load_approval_files, split_frontmatter)
 
 VISION = "docs/product-vision.md"
 ARCHITECTURE = "docs/architecture.md"
@@ -67,9 +67,9 @@ def slice_order(repo: Path, feature: str, documents: dict) -> tuple:
 
 
 def factory_status(repo: Path) -> dict:
-    if not (repo / "docs" / "approvals.json").exists():
+    if not (repo / "docs" / "user-approvals.json").exists():
         return {"optedIn": False}
-    approvals = load_approvals(repo)
+    approvals = load_approval_files(repo)
     documents = {}
     for path in sorted((repo / "docs").rglob("*.md")):
         name = path.relative_to(repo).as_posix()
