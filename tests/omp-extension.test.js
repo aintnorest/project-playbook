@@ -92,7 +92,7 @@ test("document status tool reads metadata and rejects legacy prose", async () =>
   writeFileSync(path, "---\nstate: active\nrevision: vision-r2\n---\n" + body);
   writeFileSync(join(docs, "approvals.json"), JSON.stringify({ version: 1, approvals: {
     "docs/product-vision.md": { revision: "vision-r2", bodySha256: createHash("sha256").update(body).digest("hex"),
-      by: "developer", attestation: "read-in-full", date: "2026-09-28" },
+      by: "developer", date: "2026-09-28" },
   } }));
   const parsed = await statusTool.execute("test", { mode: "json", path, repo },
     undefined, undefined, { cwd: repo });
@@ -117,7 +117,7 @@ test("document frozen-diff tool rejects edits to a delivered PRD", async () => {
   writeFileSync(path, "---\nstate: done\nrevision: prd-r3\n---\n" + body);
   writeFileSync(join(repo, "docs", "approvals.json"), JSON.stringify({ version: 1, approvals: {
     "docs/features/search/prd.md": { revision: "prd-r3", bodySha256: createHash("sha256").update(body).digest("hex"),
-      by: "developer", attestation: "read-in-full", date: "2026-09-28" },
+      by: "developer", date: "2026-09-28" },
   } }));
   git("add", "docs");
   git("-c", "user.name=Test", "-c", "user.email=test@example.invalid",

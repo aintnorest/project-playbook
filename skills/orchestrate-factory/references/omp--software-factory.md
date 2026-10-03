@@ -25,6 +25,6 @@ The extension registers these hooks:
 
 When unfinished work spans multiple features, order and implementation hooks do not block; status reports the ambiguity instead.
 
-To record a developer approval, enter `/playbook-approve <path>` in the interactive session, using a repository-relative document path. The command presents the document type's attestation through OMP's confirmation UI, then records approval only after the developer confirms. It refuses without a UI or when confirmation is declined; agents cannot substitute a shell invocation.
+To record a developer approval, enter `/playbook-approve <path>` in the interactive session, using a repository-relative document path. The command presents what approval means for the document type through OMP's confirmation UI, then records approval only after the developer confirms. It refuses without a UI or when confirmation is declined; agents cannot substitute a shell invocation.
 
 These checks target forgotten or skipped steps, not deliberate circumvention. The factory needs only OMP and the Playbook; it is not a security sandbox.

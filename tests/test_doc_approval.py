@@ -15,16 +15,16 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 PROGRAM = ROOT / "scripts" / "doc-approval.py"
 SAMPLES = [
-    ("docs/product-vision.md", "vision-r1", "read-in-full"),
-    ("docs/architecture.md", "arch-r1", "explain-and-defend"),
-    ("docs/features/example/prd.md", "prd-r1", "read-in-full"),
-    ("docs/features/example/system-design.md", "sd-r1", "explain-and-defend"),
-    ("docs/features/example/tdd.md", "tdd-r1", None),
-    ("docs/features/example/implementation-plan.md", "plan-r1", None),
-    ("docs/features/example/slices/first/tdd.md", "tdd-r1", None),
-    ("docs/features/example/slices/first/implementation-plan.md", "plan-r1", None),
-    ("guides/example.md", None, None),
-    ("docs/roadmap.md", None, None),
+    ("docs/product-vision.md", "vision-r1", True),
+    ("docs/architecture.md", "arch-r1", True),
+    ("docs/features/example/prd.md", "prd-r1", True),
+    ("docs/features/example/system-design.md", "sd-r1", True),
+    ("docs/features/example/tdd.md", "tdd-r1", False),
+    ("docs/features/example/implementation-plan.md", "plan-r1", False),
+    ("docs/features/example/slices/first/tdd.md", "tdd-r1", False),
+    ("docs/features/example/slices/first/implementation-plan.md", "plan-r1", False),
+    ("guides/example.md", None, False),
+    ("docs/roadmap.md", None, False),
 ]
 
 
@@ -59,9 +59,8 @@ class DocApprovalTests(unittest.TestCase):
         return self.successful("--accept", "--path", relative, "--evidence",
                                "Review concluded with no open findings; checks passed.")
 
-    def approve(self, relative, attestation):
-        return self.successful("--developer-approve", "--path", relative,
-                               "--attestation", attestation)
+    def approve(self, relative):
+        return self.successful("--developer-approve", "--path", relative)
 
     def test_init_is_idempotent_and_stably_formatted(self):
         self.assertEqual(self.successful("--init"), {"status": "initialized"})
@@ -73,8 +72,8 @@ class DocApprovalTests(unittest.TestCase):
 
     def test_accept_refuses_every_developer_gate_without_writing(self):
         self.successful("--init")
-        for relative, revision, attestation in SAMPLES:
-            if not attestation:
+        for relative, revision, developer_gated in SAMPLES:
+            if not developer_gated:
                 continue
             with self.subTest(path=relative):
                 document = self.document(relative, revision)
@@ -144,26 +143,52 @@ class DocApprovalTests(unittest.TestCase):
         path.write_bytes(original.replace(b"Implement.", b"Change behavior."))
         self.assertEqual(self.status(relative)["reason"], "hash mismatch")
 
-    def test_developer_approval_attestations_and_documents_are_unchanged(self):
-        for relative, revision, attestation in SAMPLES:
-            if not attestation:
+    def test_developer_approval_records_and_documents_are_unchanged(self):
+        for relative, revision, developer_gated in SAMPLES:
+            if not developer_gated:
                 continue
             with self.subTest(path=relative):
                 path = self.document(relative, revision)
                 before = path.read_bytes()
-                self.approve(relative, attestation)
+                self.approve(relative)
                 entry = json.loads(self.manifest.read_text())["approvals"][relative]
-                self.assertEqual(entry["attestation"], attestation)
-                self.assertEqual(entry["by"], "developer")
+                self.assertEqual(entry, {
+                    "by": "developer", "revision": revision,
+                    "bodySha256": hashlib.sha256(b"# Document\n").hexdigest(),
+                    "date": datetime.date.today().isoformat(),
+                })
                 self.assertEqual(path.read_bytes(), before)
                 self.assertTrue(self.status(relative)["approved"])
-                incorrect = "explain-and-defend" if attestation == "read-in-full" else "read-in-full"
-                manifest_before = self.manifest.read_bytes()
-                result = self.run_cli("--developer-approve", "--path", relative, "--attestation", incorrect)
+
+    def test_approval_entry_with_attestation_is_malformed(self):
+        for relative, revision, developer_gated in SAMPLES:
+            if not revision:
+                continue
+            with self.subTest(path=relative):
+                self.document(relative, revision)
+                if developer_gated:
+                    self.approve(relative)
+                else:
+                    self.accept(relative)
+                data = json.loads(self.manifest.read_text())
+                data["approvals"][relative]["attestation"] = "read-in-full"
+                self.manifest.write_text(json.dumps(data))
+                before = self.manifest.read_bytes()
+                result = self.run_cli("--status", "--path", relative)
                 self.assertEqual(result.returncode, 1, result.stderr)
                 self.assertEqual(result.stdout, "")
-                self.assertIn("requires attestation", result.stderr)
-                self.assertEqual(self.manifest.read_bytes(), manifest_before)
+                self.assertIn("malformed approval entry", result.stderr)
+                self.assertEqual(self.manifest.read_bytes(), before)
+                self.manifest.unlink()
+
+    def test_removed_attestation_argument_is_rejected_without_writes(self):
+        relative = "docs/product-vision.md"
+        self.document(relative, "vision-r1")
+        result = self.run_cli("--developer-approve", "--path", relative,
+                              "--attestation", "read-in-full")
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("unrecognized arguments: --attestation", result.stderr)
+        self.assertFalse(self.manifest.exists())
 
     def test_guides_and_roadmap_are_ungated_without_revisions(self):
         for relative in ("guides/example.md", "docs/roadmap.md", "templates/roadmap.md"):
@@ -181,12 +206,12 @@ class DocApprovalTests(unittest.TestCase):
                 self.assertFalse(self.manifest.exists())
 
     def test_revoke_works_for_every_type_and_is_idempotent(self):
-        for relative, revision, attestation in SAMPLES:
+        for relative, revision, developer_gated in SAMPLES:
             with self.subTest(path=relative):
                 path = self.document(relative, revision)
                 original = path.read_bytes()
-                if attestation:
-                    self.approve(relative, attestation)
+                if developer_gated:
+                    self.approve(relative)
                 elif revision:
                     self.accept(relative)
                 for _ in range(2):

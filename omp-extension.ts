@@ -463,7 +463,7 @@ export default function projectPlaybook(pi: ExtensionAPI) {
     return { systemPrompt: typeof event.systemPrompt === "string" ? `${event.systemPrompt}\n${line}` : [...event.systemPrompt, line] };
   });
   pi.registerCommand("playbook-approve", {
-    description: "Record developer approval after confirming the document type's attestation.",
+    description: "Record developer approval after confirming the document type's approval meaning.",
     async handler(args, ctx) {
       const repo = sessionRepo(ctx.cwd);
       const notify = (text: string, error = true) => ctx.ui.notify(text, error ? "error" : "info");
@@ -472,13 +472,12 @@ export default function projectPlaybook(pi: ExtensionAPI) {
       const path = relative(repo, resolve(repo, args.trim())).split(sep).join("/");
       const rank = documentRank(path);
       if (rank === undefined || rank > 3) return notify("This command only approves product vision, architecture, PRD, and system design documents.");
-      const attestation = rank === 0 || rank === 2 ? "read-in-full" : "explain-and-defend";
-      const text = attestation === "read-in-full"
+      const text = rank === 0 || rank === 2
         ? `I have read ${path} in full and accept its content.`
         : `I understand ${path} well enough to explain it and defend its technical decisions, and I agree with them.`;
       if (!await ctx.ui.confirm(`Approve ${path}`, text)) return notify("Developer approval declined; no approval was recorded.");
       try {
-        const result = await approvalOperation("developer-approve", repo, ["--path", path, "--attestation", attestation]);
+        const result = await approvalOperation("developer-approve", repo, ["--path", path]);
         resetRevisions(ctx);
         invalidateStatus(repo);
         notify(result.content[0].text, false);

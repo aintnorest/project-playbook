@@ -11,8 +11,7 @@ from typing import Optional
 
 
 ASSIGNMENT = re.compile(rb"^- Assigned (?:worktree|branch):[^\r\n]*(?:\r?\n)?$")
-ATTESTATIONS = {"vision": "read-in-full", "architecture": "explain-and-defend",
-                "prd": "read-in-full", "system-design": "explain-and-defend"}
+DEVELOPER_GATED_TYPES = {"vision", "architecture", "prd", "system-design"}
 
 
 class ApprovalError(ValueError):
@@ -38,7 +37,7 @@ def document_type(path: Path) -> Optional[str]:
 
 
 def gate_for_type(kind: Optional[str]) -> str:
-    if kind in ATTESTATIONS:
+    if kind in DEVELOPER_GATED_TYPES:
         return "developer"
     if kind in ("tdd", "implementation-plan"):
         return "agent"
@@ -109,15 +108,16 @@ def _validate_approvals(data: dict) -> None:
         if (path.is_absolute() or path.as_posix() != name or ".." in path.parts
                 or "\\" in name or kind is None or not isinstance(entry, dict)):
             raise ApprovalError("invalid approval path or entry: " + name)
+        if "attestation" in entry:
+            raise ApprovalError("malformed approval entry contains obsolete attestation field: " + name)
         digest = entry.get("bodySha256")
         if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
             raise ApprovalError("invalid approval hash: " + name)
         by = entry.get("by")
         if by not in ("developer", "agent"):
             raise ApprovalError("invalid approval author: " + name)
-        if by == "developer" and (gate_for_type(kind) != "developer"
-                                  or entry.get("attestation") != ATTESTATIONS.get(kind)):
-            raise ApprovalError("invalid developer attestation or gate: " + name)
+        if by == "developer" and gate_for_type(kind) != "developer":
+            raise ApprovalError("invalid developer approval gate: " + name)
         if gate_for_type(kind) == "none":
             raise ApprovalError("ungated document cannot have an approval: " + name)
         if by == "agent" and (gate_for_type(kind) != "agent"

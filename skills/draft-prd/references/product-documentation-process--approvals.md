@@ -7,12 +7,12 @@ Source: guides/product-documentation-process.md#approvals
 
 | Document type | Gate | Required record |
 | --- | --- | --- |
-| Product vision, PRD | Developer | `by: developer`, `attestation: read-in-full` |
-| Architecture, system design | Developer | `by: developer`, `attestation: explain-and-defend` |
+| Product vision, PRD | Developer | `by: developer` |
+| Architecture, system design | Developer | `by: developer` |
 | Technical design, implementation plan | Agent | `by: agent`, `evidence` that the review loop concluded and checks passed |
 | Roadmap | None | No approvals-file record required |
 
-Document type comes from its path, as in `check-doc-status.py`'s `document_type`. Developer attestations mean accepting the content after reading it in full, or understanding and agreeing with the technical decisions well enough to explain and defend them, respectively. Developer-facing gate requests follow [Gate requests](skill://draft-prd/references/communication-policy--rules.md).
+Document type comes from its path, as in `check-doc-status.py`'s `document_type`. Developer approval means accepting the content after reading it in full, or understanding and agreeing with the technical decisions well enough to explain and defend them, respectively. Developer-facing gate requests follow [Gate requests](skill://draft-prd/references/communication-policy--rules.md).
 
 Hash the exact bytes after the line that closes frontmatter. For implementation plans only, remove complete lines matching `^- Assigned (?:worktree|branch):[^\r\n]*(?:\r?\n)?$` before hashing; task pickup may write these without invalidating acceptance. All other body changes invalidate approval, including editorial changes. Lifecycle-only frontmatter state changes do not. An approval is valid only when its entry exists, its revision matches frontmatter (or is absent when the document has none), and its hash matches the body. Gated types require a valid approval in `active` and `done`; `draft` and `superseded` do not.
 

@@ -47,8 +47,7 @@ class FactoryStatusTests(unittest.TestCase):
             if kind in ("tdd.md", "implementation-plan.md"):
                 entry.update(by="agent", evidence="Reviews and checks passed.")
             else:
-                entry.update(by="developer", attestation="explain-and-defend" if kind in
-                             ("architecture.md", "system-design.md") else "read-in-full")
+                entry.update(by="developer")
             self.approvals["approvals"][name] = entry
             self.save()
         return path

@@ -123,7 +123,7 @@ When a system design or TDD is ready, read [when coherence review runs](../guide
 
 ### 12. Pass the document's actual gate
 
-Read [approvals](../guides/product-documentation-process.md#approvals) and Gate requests in [communication rules](../guides/communication-policy.md#rules). For vision, architecture, PRD, or system design, render an approval request through `request_developer` identifying path/revision, attestation, reason, changes since prior approval, changed decisions, and what follows. Ask the developer to record approval using `/playbook-approve <path>`. End the blocked turn; never record developer approval yourself. On requested changes return to step 10 and the same gate; on recorded approval inspect its validity through `doc_approval` status before proceeding.
+Read [approvals](../guides/product-documentation-process.md#approvals) and Gate requests in [communication rules](../guides/communication-policy.md#rules). For vision, architecture, PRD, or system design, render an approval request through `request_developer` identifying path/revision, what the developer is asked to agree to, reason, changes since prior approval, changed decisions, and what follows. Ask the developer to record approval using `/playbook-approve <path>`. End the blocked turn; never record developer approval yourself. On requested changes return to step 10 and the same gate; on recorded approval inspect its validity through `doc_approval` status before proceeding.
 
 For TDD or plan, after review and required checks pass, use `doc_approval` accept with concrete evidence; no developer gate is needed. Roadmaps and Playbook guides have no approval gate. Revoke stale records through `doc_approval` when needed, never through direct file edits.
 

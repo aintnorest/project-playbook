@@ -11,7 +11,7 @@ from typing import Optional, Sequence
 
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from doc_approvals import (ATTESTATIONS, ApprovalError, approval_status, body_sha256,
+from doc_approvals import (ApprovalError, approval_status, body_sha256,
                            document_type, gate_for_type, load_approvals, relative_path,
                            save_approvals, split_frontmatter)
 
@@ -39,14 +39,13 @@ def main(arguments: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--path", type=Path)
     parser.add_argument("--reason")
     parser.add_argument("--evidence")
-    parser.add_argument("--attestation", choices=sorted(set(ATTESTATIONS.values())))
     args = parser.parse_args(arguments)
-    required_text = "reason" if args.revoke else "evidence" if args.accept else "attestation" if args.developer_approve else None
+    required_text = "reason" if args.revoke else "evidence" if args.accept else None
     if args.init and args.path is not None:
         parser.error("--init does not accept --path")
     if not (args.init or args.status) and args.path is None:
         parser.error("this mode requires --path")
-    for field in ("reason", "evidence", "attestation"):
+    for field in ("reason", "evidence"):
         value = getattr(args, field)
         if field == required_text:
             if value is None or not value.strip():
@@ -82,8 +81,6 @@ def main(arguments: Optional[Sequence[str]] = None) -> int:
                 save_approvals(repo, data)
             emit({"status": "revoked", "path": name})
         else:
-            if args.developer_approve and args.attestation != ATTESTATIONS[kind]:
-                raise ApprovalError("this document requires attestation: " + ATTESTATIONS[kind])
             content = (repo / name).read_bytes()
             fields, _ = split_frontmatter(content)
             prefixes = {"vision": "vision", "architecture": "arch", "prd": "prd",
@@ -94,8 +91,6 @@ def main(arguments: Optional[Sequence[str]] = None) -> int:
                      "revision": fields["revision"], "by": "agent" if args.accept else "developer"}
             if args.accept:
                 entry["evidence"] = args.evidence
-            else:
-                entry["attestation"] = args.attestation
             data["approvals"][name] = entry
             save_approvals(repo, data)
             emit({"status": "accepted" if args.accept else "approved", "path": name})

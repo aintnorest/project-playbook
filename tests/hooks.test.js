@@ -26,7 +26,7 @@ function document(path, approved = false, state = "draft", body = "# Document\n"
     const agent = type === "tdd" || type === "plan";
     manifest.approvals[path] = { revision: `${type}-r1`, bodySha256: createHash("sha256").update(body).digest("hex"),
       by: agent ? "agent" : "developer", date: "2026-10-02", ...(agent ? { evidence: "Reviews and checks passed." }
-        : { attestation: type === "arch" || type === "sd" ? "explain-and-defend" : "read-in-full" }) };
+        : {}) };
     writeFileSync(join(repo, "docs/approvals.json"), JSON.stringify(manifest));
   }
 }
@@ -212,7 +212,7 @@ test("status line preserves string/array base prompts, includes documents and sk
   expect(await runtime.hooks.before_agent_start({ systemPrompt: "CHILD" }, { ...ctx, agent: { ...ctx.agent, kind: "sub", id: "Sub", parentId: "Main" } })).toBeUndefined();
 });
 
-test("developer command refuses without UI or after decline, confirms attestations, records approval and resets", async () => {
+test("developer command refuses without UI or after decline, confirms approval meaning, records approval and resets", async () => {
   document(vision); document(architecture);
   const before = readFileSync(join(repo, "docs/approvals.json"), "utf8");
   const command = runtime.commands["playbook-approve"];
@@ -228,6 +228,9 @@ test("developer command refuses without UI or after decline, confirms attestatio
   await command.handler(architecture, { ...ctx, ui: { ...ctx.ui, confirm: async (_title, text) => { confirmation = text; return true; } } });
   expect(confirmation).toContain("defend its technical decisions");
   expect((await execute("doc_approval", { mode: "status", path: architecture })).details.data[0].approved).toBe(true);
+  const approvals = JSON.parse(readFileSync(join(repo, "docs/approvals.json"), "utf8")).approvals;
+  for (const path of [vision, architecture])
+    expect(Object.keys(approvals[path]).sort()).toEqual(["bodySha256", "by", "date", "revision"]);
 });
 
 test("every hook is inert without approvals and factory_status reports optedOut", async () => {

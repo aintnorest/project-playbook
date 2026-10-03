@@ -56,7 +56,6 @@ Every task uses these as written. A task that needs a different shape stops and 
       "revision": "vision-r7",
       "bodySha256": "<64 lowercase hex>",
       "by": "developer",
-      "attestation": "read-in-full",
       "date": "2026-10-02"
     },
     "docs/features/example/tdd.md": {
@@ -72,7 +71,7 @@ Every task uses these as written. A task that needs a different shape stops and 
 
 - **Keys:** repository-relative paths with forward slashes, one entry per document.
 - **`by`:** `developer` or `agent`.
-  - `developer` requires `attestation`: `read-in-full` for the product vision and PRDs; `explain-and-defend` for architecture and system designs.
+  - `developer` is valid only for the product vision, architecture, PRDs, and system designs.
   - `agent` requires `evidence`.
 - **`revision`:** omitted for documents without one.
 - **Body bytes:** everything after the line that closes the frontmatter, hashed exactly as stored. For implementation plans, lines matching `^- \*\*Assigned (worktree|branch):\*\*` are removed first; T3 confirms the exact pattern against `scripts/check-implementation-plans.py`.
@@ -90,7 +89,7 @@ A standard-library program in the style of the existing checkers: JSON on stdout
 - `--status --repo <root> [--path <doc>]`: approval state per document, `{path, type, gate: "developer"|"agent"|"none", approved: bool, by, reason}`. `reason` explains an invalid approval: missing, hash mismatch, or revision mismatch.
 - `--revoke --repo <root> --path <doc> --reason <text>`: removes the entry. Allowed for any document.
 - `--accept --repo <root> --path <doc> --evidence <text>`: records an agent acceptance. It refuses developer-gated documents with exit status 3 and no file change.
-- `--developer-approve --repo <root> --path <doc> --attestation <value>`: records a developer approval. Only the developer command calls this mode; the hook blocks agents from calling it through `bash` or `eval`.
+- `--developer-approve --repo <root> --path <doc>`: records a developer approval. Only the developer command calls this mode; the hook blocks agents from calling it through `bash` or `eval`.
 
 `doc_approval` writes the approvals file. That is a new exception to the architecture's rule that contract tools only read (task T2). All writes go into the consumer repository named by `--repo`, never into the Playbook install.
 
@@ -191,7 +190,7 @@ Built from `factory-status.py`:
     - Reset on a main-session `tool_result` for `ask` that carries an explicit answer; ignore `details.timedOut`, `details.chatRedirect`, and cancellation.
     - Reset on any `doc_approval` acceptance or developer approval.
   - **Status line** (`before_agent_start`, main session only, `ctx.agent.kind === "main"`): append one status line from T5 and a pointer to `skill://orchestrate-factory`, keeping the base prompt intact.
-  - **`/playbook-approve <path>`:** show the attestation for that document type through `ctx.ui.confirm`, then call T3 `--developer-approve`. Refuse when `ctx.hasUI` is false or the developer declines.
+  - **`/playbook-approve <path>`:** show what approval means for that document type through `ctx.ui.confirm`, then call T3 `--developer-approve`. Refuse when `ctx.hasUI` is false or the developer declines.
   - **General:** every hook is inert per decision 5, and the test fakes gain `on` and `registerCommand`.
   - **Done when** Bun tests prove each case below, and `scripts/check-omp-load.py` passes with the new tool names.
 
@@ -245,7 +244,7 @@ Built from `factory-status.py`:
   - Covers SF-010–SF-020.
 - **T9 — Developer gates in communication.** Target: `guides/communication-policy.md`.
   - Change:
-    - approval requests name the attestation: read in full for the vision and PRD, explain and defend for architecture and system design;
+    - approval requests name what the developer is asked to agree to: read in full and accept for the vision and PRD, understand well enough to explain and defend, and agree for architecture and system design;
     - a re-approval request shows what changed and which decisions changed since the last approval;
     - stopping at a developer gate or a limit is a correct finish to the turn.
   - Done when the rules attach to Developer requests (L31–L40).

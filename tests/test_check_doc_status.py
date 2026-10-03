@@ -39,9 +39,6 @@ class CheckDocStatusTests(unittest.TestCase):
                  "by": "agent" if agent else "developer", "date": date}
         if agent:
             entry["evidence"] = "Review loop concluded and checks passed."
-        else:
-            entry["attestation"] = ("explain-and-defend" if kind in ("architecture.md", "system-design.md")
-                                    else "read-in-full")
         data["approvals"][path.relative_to(repo).as_posix()] = entry
         manifest.write_text(json.dumps(data))
 
