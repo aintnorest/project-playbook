@@ -3,6 +3,6 @@ Source: guides/product-documentation-process.md#lightweight-path-for-minor-chang
 
 ## Lightweight path for minor changes
 
-For a minor fix or change, update the existing living document that owns the changed product fact or technical contract, if one exists, and verify the actual changed behavior. A `done` feature document is historical and must not be revised; later fixes or repeated work use a new slice as [document state and revision](skill://review-doc-coherence/references/product-documentation-process--document-state-and-revision.md) specifies. Do not create a Product Requirements Document, technical design, system design, or implementation plan merely to satisfy this process.
+For a minor fix or change, update the existing living document that owns the changed product fact or technical contract, if one exists, and verify the actual changed behavior. A `done` feature document is historical and must not be revised; later fixes or repeated work follow [Fixes after delivery (source: guides/product-documentation-process.md#fixes-after-delivery)]. Do not create a Product Requirements Document, technical design, system design, or implementation plan merely to satisfy this process.
 
 Use the full-feature workflow instead when the change introduces a material requirement or non-goal, a new or changed cross-boundary interface, an unresolved product or architecture decision, a separately reviewable delivery, or work that needs ordered task decomposition. Record a concise decision in the owning document when the boundary is not obvious.

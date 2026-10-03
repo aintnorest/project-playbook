@@ -4,9 +4,15 @@ Project Playbook provides reusable guidance and task instructions for planning, 
 
 ## Use the playbook
 
-[Install the playbook in OMP](integrations/omp.md), then dispatch a playbook agent by name or describe the task and let OMP choose one.
+[Install the playbook in OMP](integrations/omp.md), then load `/skill:orchestrate-factory` in the consuming project's main interactive session to drive the software factory. For an individual task, dispatch a playbook agent by name or describe the task and let OMP choose one.
 
 Guides define the shared rules for the work. Agents route tasks and enforce their boundaries. Generated skill directories (`SKILL.md` plus `references/`) give each agent the task-specific instructions and guidance it needs. Templates in `templates/` give documents you maintain by hand, such as the roadmap, their starting structure.
+
+The factory skill has no agent: the main session talks to the developer and starts the next step. Generated skills are hidden from the global menu but remain available through `/skill:<name>` when skill commands are enabled. See [factory setup and runtime enforcement](integrations/omp.md#software-factory).
+
+Factory enforcement is opt-in through the consuming repository's `docs/approvals.json`; the skill initializes it for new projects, or `doc_approval` mode `init` creates it for an existing project. Without that file, the factory hooks are inert. Use `/playbook-approve <path>` to confirm a developer approval in OMP's UI. The [approvals rules](guides/product-documentation-process.md#approvals) and [code-review cycle](guides/code-review.md#review-cycle) own the workflow; the extension checks for forgotten or skipped steps, not deliberate circumvention.
+
+The extension exposes `check_implementation_plan`, `check_doc_status`, `collect_agent_runs`, `run_check`, `request_developer`, `doc_approval`, and `factory_status`. Its hooks guard approval-file writes, downstream document creation, implementation starts, and revision limits, and add a main-session status line. [OMP integration](integrations/omp.md) describes each tool, hook, and command.
 
 Top-level agents and callers follow the [agent guidance](guides/agents.md#developer-communication-and-escalation) and [communication policy](guides/communication-policy.md#rules) before asking the developer for a decision, approval, input, or unblock action. Shared request framing stays in that policy; project-specific product authority stays in the project's own documents.
 
@@ -15,6 +21,8 @@ To review how a project's documents work together, dispatch `review-doc-coherenc
 To improve an agent from its real runs, dispatch `review-friction-agent` for it over a time window. It finds the agent's runs in OMP's session transcripts through the `collect_agent_runs` tool and reports friction as evidence records. Then dispatch `review-prompt-agent` with those records and apply the corrections you choose; [failure-driven maintenance](guides/skill-design.md#failure-driven-maintenance) describes the loop.
 
 ## Changing the playbook
+
+This repository is not a factory project and does not use the approvals scheme. Its own guides keep frontmatter `state` (`active`/`superseded`), with an `approved: YYYY-MM-DD` date required for `active` and forbidden for `superseded`, as checked by the `guide` type in `scripts/check-doc-status.py`.
 
 When you remove a mechanism, or learn that the reason for one was wrong, list everything that exists only to serve it — fields, report sections, skill wording, checks, tests, and docs — and in the same change either delete each one or give it a current reason. For example, removing the reviewer JSON schema also had to remove the report section that existed only to carry the schema's top-level fields.
 

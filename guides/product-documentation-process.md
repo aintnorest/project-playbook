@@ -9,7 +9,7 @@ This process keeps product intent, system architecture, technical design, and im
 
 It governs document roles, hierarchy, workflow, and [non-goals and boundaries](#non-goals-and-boundaries). General developer-facing output follows [the communication policy](communication-policy.md); confidence labels and the rules for expressing mechanisms, interfaces, failures, and tradeoffs follow [the technical-writing standards](technical-writing-standards.md). Those shared guides are authoritative for their subjects. Project-specific facts remain in the document that owns them; any deviation from shared guidance must name the affected rule, scope, reason, and replacement.
 
-This is the full-feature workflow for material product work. The [lightweight path](#lightweight-path-for-minor-changes) applies to a minor fix or change that does not introduce a material product decision, cross-boundary technical contract, or independently planned delivery.
+This is the full-feature workflow for material product work. Problems found after delivery follow [fixes after delivery](#fixes-after-delivery).
 
 ## Status
 
@@ -81,9 +81,17 @@ Every full feature lives under `docs/features/<feature-name>/` and starts with `
 
 ## Lightweight path for minor changes
 
-For a minor fix or change, update the existing living document that owns the changed product fact or technical contract, if one exists, and verify the actual changed behavior. A `done` feature document is historical and must not be revised; later fixes or repeated work use a new slice as [document state and revision](#document-state-and-revision) specifies. Do not create a Product Requirements Document, technical design, system design, or implementation plan merely to satisfy this process.
+For a minor fix or change, update the existing living document that owns the changed product fact or technical contract, if one exists, and verify the actual changed behavior. A `done` feature document is historical and must not be revised; later fixes or repeated work follow [Fixes after delivery](#fixes-after-delivery). Do not create a Product Requirements Document, technical design, system design, or implementation plan merely to satisfy this process.
 
 Use the full-feature workflow instead when the change introduces a material requirement or non-goal, a new or changed cross-boundary interface, an unresolved product or architecture decision, a separately reviewable delivery, or work that needs ordered task decomposition. Record a concise decision in the owning document when the boundary is not obvious.
+
+## Fixes after delivery
+
+Record a problem found after a slice is `done` as a known issue in Beads when the repository has `.beads/`; otherwise record it in the roadmap's [Known issues](#roadmap) section. It does not interrupt current work unless the developer says so. The main session offers the developer a choice between a standalone fix and a new slice.
+
+A standalone fix restores behavior the documents already specify and adds a regression test that would have caught the problem. It goes through the same [code review cycle](code-review.md#review-cycle) and [developer validation](#11-validate-and-close-the-milestone) as a slice. Do not revise frozen documents or create a PRD, system design, TDD, or plan merely to satisfy this path.
+
+When the documented behavior itself is wrong, use a new slice. A fix-only slice adds its own TDD and implementation plan; it does not by itself require a system design. For an existing multi-slice feature, update or reopen its system design under [document state and revision](#document-state-and-revision), preserving delivered-slice sections. Take changed documents through their review loops and [gates](#approvals).
 
 ## When a feature needs slices
 
@@ -101,7 +109,7 @@ Do not create slices merely because the code crosses directories, crates, compon
 
 ### Document state and revision
 
-The first lines of every product document listed below are a YAML frontmatter block. This block is the **only** authority for the document's state, revision, and approval date. Use exactly these lowercase keys in order: `state`, `revision` where required, then `approved` where required. Write one nonempty, unquoted flat `key: value` scalar per line between opening and closing `---`; no additional keys, duplicates, arrays, nesting, or YAML aliases. The `## Status` section, where present, remains in its existing position and may describe reviews, changes, and parent contracts, but must not restate or contradict any frontmatter value. An old free-text status without this block is non-conforming, not an inferred state.
+The first lines of every product document listed below are a YAML frontmatter block. This block is the **only** authority for the document's state and revision; [approvals](#approvals) live separately. Product documents use exactly these lowercase keys in order: `state`, then `revision` where required. Write one nonempty, unquoted flat `key: value` scalar per line between opening and closing `---`; no additional keys beyond the applicable contract, duplicates, arrays, nesting, or YAML aliases. The `## Status` section, where present, remains in its existing position and may describe reviews, changes, and parent contracts, but must not restate or contradict any frontmatter value. An old free-text status without this block is non-conforming, not an inferred state.
 
 | Document | Allowed `state` values | `revision` |
 | --- | --- | --- |
@@ -112,15 +120,31 @@ The first lines of every product document listed below are a YAML frontmatter bl
 | `docs/features/<feature>/system-design.md` | `draft`, `active`, `done`, `superseded` | Required: `sd-r<N>` |
 | Feature or slice `tdd.md` | `draft`, `active`, `done`, `superseded` | Required: `tdd-r<N>` |
 | Feature or slice `implementation-plan.md` | `draft`, `active`, `done`, `superseded` | Required: `plan-r<N>` |
-| Playbook process guide with a `## Status` section | `active`, `superseded` | Absent |
 
-`<N>` is a positive decimal integer with no leading zero; new revisioned documents start at `r1`. There is no `approved` state. Developer acceptance changes `state: draft` to `state: active` and records the actual acceptance date as `approved: YYYY-MM-DD`; never infer acceptance from a review. `approved` is required for `active` and `done`, and forbidden for `draft` and `superseded`. A lifecycle-only state transition keeps the revision and document body. For a living document, a contract change increments its revision (if it has one), sets `state: draft`, and removes `approved` until that revision is accepted. An editorial fix that leaves a living document's contract unchanged (such as a typo or repaired link) preserves revision and state, except that **every body change to a system design** requires a higher revision and new acceptance. A metadata-only system-design transition from `active` to `done` keeps its body, revision, and `approved` date. Do not invent historical revision IDs or acceptance dates.
+`<N>` is a positive decimal integer with no leading zero; new revisioned documents start at `r1`. Passing the applicable [approval gate](#approvals) permits `state: draft` to become `state: active`; never infer developer approval from a review. A lifecycle-only state transition keeps the revision and document body. For a living document, a contract change increments its revision (if it has one) and returns it to `draft` where that state is allowed. Editorial changes may preserve revision and state, but still invalidate a content-bound approval. Every system-design body change requires a higher revision and a new approval. Do not invent historical revision IDs or approval dates.
 
-Product vision, architecture, and roadmap are living documents: edit their current rules as the product changes. Feature PRDs, technical designs, and implementation plans are living only until delivery, then `done` and historical rather than kept in sync with the current repository. Mark a PRD `done` when its feature finishes, a TDD `done` when its small-feature or slice plan is done, and a plan `done` only after verified execution. A `done` PRD, TDD, or plan is **frozen**: do not edit it again, including metadata; later bug fixes or repeated work require a new slice with its own TDD and plan. `superseded` means an undelivered document was replaced and no longer governs.
+Product vision, architecture, and roadmap are living documents: edit their current rules as the product changes. Feature PRDs, technical designs, and implementation plans are living only until delivery, then `done` and historical rather than kept in sync with the current repository. A plan and its TDD become `done` only after developer validation and the post-validation update in [the full-feature workflow](#11-validate-and-close-the-milestone). Mark a PRD `done` when its feature finishes. A `done` PRD, TDD, or plan is **frozen**: do not edit it again, including metadata. Later problems follow [fixes after delivery](#fixes-after-delivery). `superseded` means an undelivered document was replaced and no longer governs.
 
-A feature system design stays `active` while any slice is undelivered. Revise only rules for undelivered slices; sections describing delivered slices remain unchanged. Mark the system design `done` when every slice is done. A later bug fix or redo may add a slice: reopen the system design with a higher revision, `state: draft`, and no `approved`, then return it to `active` on developer acceptance. The prohibition on editing delivered-slice sections is a drafting/review obligation, not a claim that the checker can infer which sections describe delivered work.
+A feature system design stays `active` while any slice is undelivered. Revise only rules for undelivered slices; sections describing delivered slices remain unchanged. Mark the system design `done` when every slice is done. A later new slice may reopen the system design with a higher revision and `state: draft`, then return it to `active` through its approval gate. The prohibition on editing delivered-slice sections is a drafting/review obligation, not a claim that the checker can infer which sections describe delivered work.
 
-Use `python3 scripts/check-doc-status.py --check <path...>` to check files and `--json <path...>` to read `{path, type, state, revision, approved}` metadata. Old prose-only statuses fail with diagnostics. Before integrating candidates, `python3 scripts/check-doc-status.py --frozen-diff --repo <root> --base <commit> --head <commit>` requires PRD/TDD/plan transitions to `done` to preserve the active document's body, revision, and `approved` date; it rejects subsequent changes to those frozen documents and system-design body changes without a higher revision (except metadata-only acceptance and completion). The read-only extension tool `check_doc_status` exposes `mode: "check"` / `"json"` with `path`, and `mode: "frozen-diff"` with `repo`, `base`, and `head`.
+Use `python3 scripts/check-doc-status.py --check <path...>` to check files and `--json <path...>` to read metadata, including derived approval validity. Old prose-only statuses fail with diagnostics. Before integrating candidates, `python3 scripts/check-doc-status.py --frozen-diff --repo <root> --base <commit> --head <commit>` requires PRD/TDD/plan transitions to `done` to preserve the active document's body and revision; it rejects subsequent changes to those frozen documents and system-design body changes without a higher revision (except metadata-only acceptance and completion). The read-only extension tool `check_doc_status` exposes `mode: "check"` / `"json"` with `path`, and `mode: "frozen-diff"` with `repo`, `base`, and `head`.
+
+### Approvals
+
+`docs/approvals.json` owns product-document approvals and opts a repository into factory enforcement; without it, factory hooks are inert. Its JSON object has `version: 1` and an `approvals` object keyed by repository-relative document paths with forward slashes, one entry per document. Each entry records `by`, `bodySha256` (64 lowercase hexadecimal SHA-256 digits), and `date` (`YYYY-MM-DD`), plus `revision` matching the document's revision. Omit `revision` for a document without one.
+
+| Document type | Gate | Required record |
+| --- | --- | --- |
+| Product vision, PRD | Developer | `by: developer`, `attestation: read-in-full` |
+| Architecture, system design | Developer | `by: developer`, `attestation: explain-and-defend` |
+| Technical design, implementation plan | Agent | `by: agent`, `evidence` that the review loop concluded and checks passed |
+| Roadmap | None | No approvals-file record required |
+
+Document type comes from its path, as in `check-doc-status.py`'s `document_type`. Developer attestations mean accepting the content after reading it in full, or understanding and agreeing with the technical decisions well enough to explain and defend them, respectively. Developer-facing gate requests follow [Gate requests](communication-policy.md#gate-requests).
+
+Hash the exact bytes after the line that closes frontmatter. For implementation plans only, remove complete lines matching `^- Assigned (?:worktree|branch):[^\r\n]*(?:\r?\n)?$` before hashing; task pickup may write these without invalidating acceptance. All other body changes invalidate approval, including editorial changes. Lifecycle-only frontmatter state changes do not. An approval is valid only when its entry exists, its revision matches frontmatter (or is absent when the document has none), and its hash matches the body. Gated types require a valid approval in `active` and `done`; `draft` and `superseded` do not.
+
+Agents may change approval records only through `doc_approval`: initialize with `init`, inspect with `status`, revoke with `revoke`, and accept a TDD or implementation plan with `accept` and evidence. Any document-writing agent may revoke any approval; review agents remain read-only. Agents never record developer approval or edit the approvals file by another route. The developer records approval directly through `/playbook-approve <path>` or by hand-editing `docs/approvals.json`; no default, timeout, or agent action substitutes for that approval.
 
 ### Product vision
 
@@ -219,6 +243,7 @@ This document states each current system-wide rule without a separate decision r
 - **Next:** ideas likely to come next. Any level of detail.
 - **Later:** ideas worth keeping. A single line is enough.
 - **Done:** finished features, each with its name, start date, and finish date.
+- **Known issues:** problems found after delivery that are waiting for a fix when the repository has no `.beads/` tracker.
 
 **Rules:**
 
@@ -226,6 +251,7 @@ This document states each current system-wide rule without a separate decision r
 - Items in Next and Later are deliberately loose. They may hold partial ideas, problem statements, and early requirements.
 - When a feature's documents are created, the ideas that belong in them move out of the roadmap and into those documents. Drafting agents read the matching Now item as source material but do not edit the roadmap; the developer or the orchestrator trims it. Once the feature's documents exist, its Now entry keeps only a short summary, its start date, and the link to its feature directory.
 - A dropped idea is deleted. A deferred one moves back to Later.
+- The roadmap is ungated. Recording known issues, trimming ideas, and moving entries do not require approval or reopen a gate.
 
 **Excludes:**
 
@@ -362,8 +388,8 @@ Write `- Depends on: none` or a single physical line of comma-and-space-separate
 
 Write `Targets` as `none` when the task changes no files, for example `- Targets: none` for a no-file evidence handoff. Otherwise list one or more items separated by `; ` or continued on separate indented lines. Each item is a file path (backtick-quoted, or unquoted with no whitespace), optionally followed by `::symbol`, then a space and exactly `(edit)` or `(create)`: for example, `` `src/cache.ts`::SessionCache (edit) ``. Use `(edit)` for an existing target and `(create)` for an approved planned creation. `none` must be the entire field; do not combine it with file targets. Parentheses contain only the action keyword, never descriptive prose: put details such as “new session cache and fixture beside `Scenario`” in `Change`, not `Targets`.
 
-At pickup the execution owner adds `- Assigned worktree: <absolute path>` and `- Assigned branch: <branch name>` immediately after `Verify`, as a pair. Every task worktree goes under `<repo-root>/.worktrees/`; before any pickup the execution owner confirms Git ignores `.worktrees/` and, if not, stops and asks the developer to add it to the repository's `.gitignore`. The execution owner never edits `.gitignore` or `.git/info/exclude`, and never uses another root. Do not write assignment fields while drafting: an unstarted task has neither. Both remain after integration and safe cleanup as assignment history. The validator rejects a partial pair, duplicate path or branch across tasks, relative paths, and malformed branch names. Task status, attempts, verification, and cleanup stay in the separate run ledger. Static validation cannot infer whether a task is running; the execution owner reconciles the ledger and plan. Existing unassigned plans remain valid.
-Put acceptance-test tasks derived from the active TDD's acceptance scenarios before their implementation dependents in the DAG, and assign them to a different worker from the implementation tasks. Every acceptance-test task must declare `- Protects: tests/test_feature.py; tests/test_other.py` immediately after `Targets`, listing **all** test files carrying its active TDD scenarios; no other task may declare `Protects`. The label is optional in the task-block grammar because that grammar cannot identify acceptance-test tasks: review this requirement semantically. `Protects` is a semicolon-and-space-separated list of distinct, plain repository-relative test file paths. Each slash-separated segment uses only ASCII letters, digits, `.`, `_`, or `-`, and cannot be `.` or `..`; quoting and backslashes are not allowed. Name target files as `` `path` (create) `` or `` `path`::symbol (edit) `` (unquoted paths also parse). Once that task integrates, no later task may target its protected files, and candidate changes to them are rejected except when validating the task that declares them. A wrong acceptance test returns to the developer for a TDD revision; the implementer does not change the test to make its code pass.
+At pickup the execution owner adds `- Assigned worktree: <absolute path>` and `- Assigned branch: <branch name>` immediately after `Verify`, as a pair. Every task worktree goes under `<repo-root>/.worktrees/`; before any pickup the execution owner confirms Git ignores `.worktrees/` and, if not, stops and reports the missing ignore rule to its caller for resolution through the main session. The execution owner never edits `.gitignore` or `.git/info/exclude`, and never uses another root. Do not write assignment fields while drafting: an unstarted task has neither. Both remain after integration and safe cleanup as assignment history. The validator rejects a partial pair, duplicate path or branch across tasks, relative paths, and malformed branch names. Task status, attempts, verification, and cleanup stay in the separate run ledger. Static validation cannot infer whether a task is running; the execution owner reconciles the ledger and plan. Existing unassigned plans remain valid.
+Put acceptance-test tasks derived from the active TDD's acceptance scenarios before their implementation dependents in the DAG, and assign them to a different worker from the implementation tasks. Every acceptance-test task must declare `- Protects: tests/test_feature.py; tests/test_other.py` immediately after `Targets`, listing **all** test files carrying its active TDD scenarios; no other task may declare `Protects`. The label is optional in the task-block grammar because that grammar cannot identify acceptance-test tasks: review this requirement semantically. `Protects` is a semicolon-and-space-separated list of distinct, plain repository-relative test file paths. Each slash-separated segment uses only ASCII letters, digits, `.`, `_`, or `-`, and cannot be `.` or `..`; quoting and backslashes are not allowed. Name target files as `` `path` (create) `` or `` `path`::symbol (edit) `` (unquoted paths also parse). Once that task integrates, no later task may target its protected files, and candidate changes to them are rejected except when validating the task that declares them. A wrong acceptance test returns to the caller for a TDD revision through its review loop and agent gate; the implementer does not change the test to make its code pass.
 
 A file-changing task's `Verify` checks only its own targets: the tests and files it changes. For `Targets: none`, `Verify` checks only the task's stated non-file outcome and the evidence it is expected to produce. Never put whole-repository checks — the full test suite, whole-tree type checking, or whole-tree lint — in any task's `Verify`. Record those checks separately as execution-owner integration and final gates. The execution owner runs them personally once per integration/merge and is responsible for catching cross-task errors before merging.
 
@@ -520,55 +546,59 @@ Use only the sections that apply, but preserve this reasoning order. Apply [the 
 
 ## Full-feature workflow
 
-The following steps apply to material product work. Use the [lightweight path](#lightweight-path-for-minor-changes) for a qualifying minor change instead.
+The main session drives this sequence and is the only session that talks to the developer. Subagents needing a developer decision stop and report to their caller. Every draft goes through the [document review loop](document-review.md#review-loop), including its five-revision limit, then its [gate](#approvals). Developer requests follow [Gate requests](communication-policy.md#gate-requests).
 
 ### 1. Maintain product direction
 
-Update `docs/product-vision.md` only when durable product direction changes. A feature may propose a vision change, but feature work does not silently rewrite the product vision.
+Create the product vision if it is missing. Otherwise update it only when durable product direction changes; feature work does not silently rewrite it. Complete its review loop and gate before proceeding.
 
-### 2. Define one feature
+### 2. Establish system architecture
 
-Start from the feature's roadmap item when one exists: move it to Now with its start date, and use its ideas as source material. Create `docs/features/<feature-name>/prd.md`. Assign permanent requirement IDs after the requirements are stable enough for technical design.
+Create `docs/architecture.md` after the vision and before the first PRD if it is missing. The project has one architecture. Later features update it only when they change a system-wide foundation; feature-wide and slice-local choices belong in their respective designs.
 
-### 3. Decide whether to slice
+### 3. Define one feature
 
-Apply the slice criteria in this document. Record the decision and the independently testable handoff for every proposed slice.
+Start from the feature's roadmap item when one exists: move it to Now with its start date and use its ideas as source material. Create and obtain approval for `docs/features/<feature-name>/prd.md`. Assign permanent requirement IDs after the requirements are stable enough for technical design.
 
-### 4. Maintain system architecture
+### 4. Decide whether to slice
 
-Check `docs/architecture.md` for system-wide foundations affected by the feature. Update it when a foundation changes; route feature-wide choices to the feature system design and slice-local choices to the applicable technical design.
+Apply [the slice criteria](#when-a-feature-needs-slices). A single-slice feature has no system design; its TDD follows the PRD directly. For a multi-slice feature, the system design decides the slice count, names each slice, and orders independently testable handoffs.
 
 ### 5. Define feature-wide architecture when needed
 
-For a large feature, create `system-design.md`. Define only architecture and contracts shared across slices, then map each requirement ID to an owning slice.
+For a multi-slice feature, create `system-design.md`, defining only shared architecture and contracts and mapping each requirement ID to an owning slice. When it is ready, run [document-set coherence review](document-review.md#when-coherence-review-runs) before its developer gate.
 
 ### 6. Write the technical design
 
-Create one `tdd.md` for a small feature or one per slice for a large feature. Resolve choices contained within that small feature or slice that change its implementation contract. Route product choices to the product vision or PRD, system-wide choices to `docs/architecture.md`, and feature-wide choices to the feature system design.
+Create one `tdd.md` for the single-slice feature or the next slice in the system design's order. Resolve choices contained within its implementation contract. Route product choices to the vision or PRD, system-wide choices to architecture, and feature-wide choices to the system design.
 
 ### 7. Define acceptance and verification
 
-Use Gherkin as the default notation for observable acceptance, or justify and name the single authoritative alternate notation. Add technical contracts for internal invariants and identify the verification that will prove each contract.
+Use Gherkin as the default notation for observable acceptance, or justify and name the single authoritative alternate notation. Add technical contracts for internal invariants and identify verification for each contract.
 
 ### 8. Accept the design
 
-Resolve interface confidence according to [the technical-writing standards](technical-writing-standards.md#label-interface-confidence-in-ai-written-specifications), resolve every `[NEEDS YOUR CALL]` decision, and give every requirement an owner before creating an implementation plan. Developer acceptance makes the TDD `active` with its actual `approved` date; planned work must establish proposed interfaces before dependent tasks use them.
+Resolve interface confidence under [the technical-writing standards](technical-writing-standards.md#label-interface-confidence-in-ai-written-specifications), resolve every `[NEEDS YOUR CALL]` decision, and give every requirement an owner. Run [coherence review](document-review.md#when-coherence-review-runs) when the TDD is ready. Changed documents repeat their own review loop and gate; review dependent downstream documents again. Agents accept the TDD through [Approvals](#approvals) after its review loop concludes and checks pass. Planned work must establish proposed interfaces before dependent tasks use them.
 
 ### 9. Create the implementation plan
 
-Create `implementation-plan.md` from the active technical design using the [implementation plan contract](#implementation-plan). Each task identifies its direct prerequisites and the scenario, contract, or technical criterion it implements. Execute the plan only after the developer has accepted that plan as `active`.
+Create `implementation-plan.md` from the active TDD using the [implementation plan contract](#implementation-plan). Each task identifies its direct prerequisites and the criterion it implements. Agents accept the plan after its review loop and checks; implementation starts only with valid TDD and plan acceptance and approval of every developer-gated parent.
 
-Once the feature's documents exist, trim its roadmap Now entry to the short summary, start date, and link that the [roadmap](#roadmap) contract describes.
+Once the feature's documents exist, trim its roadmap Now entry under the [roadmap contract](#roadmap).
 
-### 10. Implement and verify
+### 10. Implement and review
 
-Build tasks in dependency order, run narrow checks while iterating, and exercise the actual changed surface. Finish with the repository's required verification command.
+Dispatch [Orchestrate an implementation plan](../skill-sources/orchestrate-implementation-plan.md) beneath the main session. It builds tasks in dependency order, verifies the integrated result, runs the [post-integration code review cycle](code-review.md#review-cycle), and returns evidence and deviations without marking documents `done`. The main session then owns developer validation and document completion.
 
-For subagent execution with an owned integration branch and isolated task worktrees, use [Orchestrate an implementation plan](../skill-sources/orchestrate-implementation-plan.md). Its procedure loads the phase-bound [implementation execution](#implementation-execution) references at the point of need.
+When implementation stops for a large issue or repeated failure, the main session identifies the wrong document, takes it through its review loop and gate, and reviews documents below it that depend on the change. Replan only unfinished work, preserving completed work; resume from the ledger with accepted documentation and refreshed handoffs.
 
-### 11. Close the milestone
+### 11. Validate and close the milestone
 
-Apply [document state and revision](#document-state-and-revision) on delivery: mark a verified plan `done`, then its TDD `done`; mark the PRD `done` when the feature finishes, and the system design `done` when all slices finish. Keep their actual `approved` dates; do not revise frozen documents. Move the finished feature from the roadmap's Now section to Done with its finish date. Revise superseded decisions in the living document that owns them rather than leaving conflicting current contracts.
+After code review, the main session gives the developer the delivery summary, corrections, remaining risks, and exact validation steps under [Gate requests](communication-policy.md#gate-requests). A slice is not done until the developer confirms it works.
+
+If validation fails, the developer chooses an in-slice correction, a document correction with replanning of unfinished work, or a new slice. Small corrections go through workers without changing documented behavior; larger corrections use the stop-and-replan path above. Repeat code review and developer validation after the correction.
+
+After successful validation, return all TDD deviations to the main session. Revise the still-active TDD to match the delivered result, repeat its document review loop and coherence review as applicable, and record agent acceptance again. Only then mark the plan and TDD `done` with metadata-only transitions. Mark the PRD `done` after the last slice and the system design `done` when all its slices finish. Preserve frozen documents; move the finished feature from Now to Done with its finish date. Start the next slice's TDD after the preceding slice is validated; after the final slice, return to choosing the next feature with the developer.
 
 ## Implementation execution
 
@@ -580,15 +610,15 @@ Inspect the current branch and commit, local changes, registered worktrees, and 
 
 Use the supplied integration branch, creating it if it does not exist. If none is supplied, create a unique branch using repository naming conventions, or `impl/<plan-name>-<unique-suffix>` when none exist; start a new branch at the supplied base, otherwise the current committed `HEAD`, and report the chosen base SHA.
 
-An existing integration branch retains its history; a supplied base is not permission to reset it. Resolve a remote-only branch to its intended remote ref instead of creating an unrelated local branch, and ask if that identity is ambiguous.
+An existing integration branch retains its history; a supplied base is not permission to reset it. Resolve a remote-only branch to its intended remote ref instead of creating an unrelated local branch; if that identity is ambiguous, stop and report it to the caller.
 
 Use a clean integration checkout dedicated to this run. If the branch is already checked out, use that checkout only when it is clean and available to this run; otherwise stop for ownership resolution, while unrelated local changes may remain untouched in a different checkout.
 
-Do not silently omit local changes the implementation needs: have the developer make them available in the agreed base before dispatch. Only you advance the integration branch; never push, merge to the default/release branch, or rewrite published history without separate authorization.
+Do not silently omit local changes the implementation needs: stop and report the missing base prerequisites to the caller so the main session can obtain them before dispatch. Only you advance the integration branch; never push, merge to the default/release branch, or rewrite published history without separate authorization.
 
 ### 4. Create each worktree and hand off bounded work
 
-Before pickup, require `<repo-root>/.worktrees/` to be ignored by Git (`git check-ignore <repo-root>/.worktrees/`). If not ignored, stop before creating any task worktree and ask the developer to add `.worktrees/` to the repository's `.gitignore`; never edit `.gitignore` or `.git/info/exclude` yourself, or use another location. At pickup choose a unique branch and absolute path `<repo-root>/.worktrees/<name>`; use `<repo-root>/.worktrees` as `worktreeRoot` at the candidate gate. Never overwrite existing branches or paths. Add `Assigned worktree` and `Assigned branch` after `Verify`, check the plan, and commit only this metadata when tracked. Stop if unable to persist it. From the resulting accepted SHA create the task worktree (`git worktree add -b <branch> <path> <sha>`). If creation fails, preserve the assignment for reconciliation; do not dispatch.
+Before pickup, require `<repo-root>/.worktrees/` to be ignored by Git (`git check-ignore <repo-root>/.worktrees/`). If not ignored, stop before creating any task worktree and report the missing ignore rule to the caller for resolution through the main session; never edit `.gitignore` or `.git/info/exclude` yourself, or use another location. At pickup choose a unique branch and absolute path `<repo-root>/.worktrees/<name>`; use `<repo-root>/.worktrees` as `worktreeRoot` at the candidate gate. Never overwrite existing branches or paths. Add `Assigned worktree` and `Assigned branch` after `Verify`, check the plan, and commit only this metadata when tracked. Stop and report if unable to persist it. From the resulting accepted SHA create the task worktree (`git worktree add -b <branch> <path> <sha>`). If creation fails, preserve the assignment for reconciliation; do not dispatch.
 
 Verify registered path, branch, and base SHA before dispatch. Require work only in that worktree/branch: absolute paths for file tools, explicit worktree selection for shell/Git, never bare relative paths that may resolve against the parent's directory. Assign acceptance tests to a worker distinct from implementation; that worker edits every protected test and demonstrates the specified failure. Implementation workers cannot edit protected tests; a wrong oracle requires design review.
 
@@ -621,7 +651,7 @@ Before integrating **any** candidate, run `check_doc_status` frozen-diff and `ch
 Call `check_doc_status` with `mode: "frozen-diff"`, `repo`, `base`, `head`; call `check_implementation_plan` with `mode: "protected-diff"`, `plan`, `repo`, `base`, `head`, plus `task` and `worktreeRoot` for assigned tasks. The first guards done documents and system-design revision increments; the second guards protected tests, worktree identity, clean tip, and ancestry. Personally check delivered system-design slice sections: the tool cannot infer ownership. Git cannot prove where a commit originated or prevent outside writes.
 
 Require the current accepted integration tip to be an ancestor of the candidate; validation of an older isolated result does not prove the combined result. Personally inspect the resulting diff and run the task's acceptance checks plus relevant cross-task checks against that exact candidate, exercising the actual changed surface when applicable; worker logs and reviewer opinions supplement but never replace your own validation.
-Workers run only their task's scoped `Verify`. Run every command used for task `Verify`, integration checks, post-integration smoke checks, final verification, or integrated acceptance through `run_check` with command, cwd, and timeout. Use foreground commands only. Personally run the project's whole-repository checks once per integration/merge, catching cross-task errors before merging. Every required command must return `passed`; do not merge, release dependents, or declare completion before its applicable checks pass. Expected-red commands must exit zero only for the specified failure. Preserve each `logPath` as evidence. `unavailable` means not verified, not a code failure: raise the missing command through `request_developer`; never skip it or proceed past the gate. The runner uses pipefail and keeps full output outside the repository. Observing UI and other non-command surfaces is a separate, additional obligation, not a substitute for these command gates.
+Workers run only their task's scoped `Verify`. Run every command used for task `Verify`, integration checks, post-integration smoke checks, final verification, or integrated acceptance through `run_check` with command, cwd, and timeout. Use foreground commands only. Personally run the project's whole-repository checks once per integration/merge, catching cross-task errors before merging. Every required command must return `passed`; do not merge, release dependents, or declare completion before its applicable checks pass. Expected-red commands must exit zero only for the specified failure. Preserve each `logPath` as evidence. `unavailable` means not verified, not a code failure: stop and report the missing command to the caller; never skip it or proceed past the gate. The runner uses pipefail and keeps full output outside the repository. Observing UI and other non-command surfaces is a separate, additional obligation, not a substitute for these command gates.
 For an acceptance-test task, the red check succeeds **only** when each protected approved TDD scenario fails because its specified behavior is missing, with no unrelated failure; a premature pass or unexpected failure rejects the candidate. For its implementation dependent, verify the applicable protected scenarios pass without editing their tests. A check "fails" when it misses the task-specific expected result, not merely because its command returns a nonzero status.
 If a check misses its expected result, keep the task unaccepted and delegate diagnosis or repair in its worktree. Distinguish a verified pre-existing failure or missing environment from a regression, but do not weaken acceptance, silently skip a required check, or call incomplete validation a pass; report a blocking prerequisite when it cannot be resolved within authorized scope.
 
@@ -633,20 +663,20 @@ Only after the task's work is merged into the integration branch (or main, if th
 
 ### 6. Handle bounded issues; halt for significant design changes
 
-A small issue is a local implementation correction or plan clarification that preserves approved behavior, interfaces, invariants, and acceptance. Delegate it with explicit scope, keep its evidence under the affected task, and have a subagent update the owning documentation or plan when needed; read [reference rules](../guides/product-documentation-process.md#reference-rules) when updating any governing document or plan during issue resolution. Do not turn incidental cleanup into new product work. Record every repair attempt and result in the ledger; after three failed repairs for one task, halt the entire run and escalate the unresolved issue to the developer rather than retrying indefinitely.
+A small issue is a local implementation correction or plan clarification that preserves documented behavior, interfaces, invariants, and acceptance. Delegate it to a worker with explicit scope, keep evidence under the affected task, and have a worker update the owning living documentation or plan when needed under [reference rules](#reference-rules). Do not turn incidental cleanup into new product work. Record every TDD departure, repair attempt, and result in the ledger. After three failed repairs for one task, use the stop-and-report procedure below rather than retrying indefinitely.
 
-A significant issue changes a material TDD or system-design decision, product behavior, a shared interface/invariant, compatibility, security, or data ownership; also escalate an issue spanning multiple tasks when its resolution is complex or far-reaching. A wrong acceptance-test oracle requires a developer-reviewed TDD revision, not a fix by an implementation worker. A repair that changes a produced interface or `Done when` outcome relied upon by dependent tasks halts the whole run for plan revision through the draft and review agents, even when that output has not yet been produced. Examples include replacing the persistence strategy, changing an API consumed by several tasks, or discovering a shared transaction assumption is false; the number of changed files alone does not decide severity, and uncertainty about material impact is itself a reason to pause.
+A significant issue changes a material TDD or system-design decision, product behavior, a shared interface/invariant, compatibility, security, or data ownership; also stop for a complex or far-reaching issue spanning multiple tasks. A wrong acceptance-test oracle needs a TDD revision through its review loop and agent gate, not a fix by an implementation worker. Changing a produced interface or `Done when` outcome relied upon by dependent tasks requires replanning even if that output has not yet been produced. Examples include replacing persistence strategy, changing a shared API, or discovering a false transaction assumption; file count alone does not determine severity, and uncertainty about material impact is a reason to stop.
 
-On a significant issue:
+On a significant issue or repeated repair failure:
 
-1. Immediately stop new dispatch, acceptance, and merges for the entire run, including independent tasks; tell every active worker to stop and preserve its current work, and cancel/terminate through the harness if needed.
-2. Confirm each worker and its task processes are stopped; record any inability to stop as an unresolved safety blocker, reject late returns from automatic acceptance, and preserve all worktrees and commits without cleanup or destructive rollback.
-3. Present the evidence, conflicting document sections, affected tasks and already integrated work, viable resolutions and tradeoffs, and your recommendation; ask the developer for the consequential decision, not permission to keep silently redesigning.
-4. Wait for the developer's decision before dispatch, including documentation workers. Preserve done PRD/TDD/plan documents; bugfix or redo work gets a new slice TDD and plan. Keep delivered system-design slice sections unchanged; reopening a done design for a new slice requires a draft revision without `approved`. Delegate authorized document changes, draft or revise the unfinished plan, then independently review it. Pause implementation until the developer accepts changed drafts as `active` with the actual date.
-5. Integrate the developer-accepted active documentation through both candidate validation gates, rerun the `check_implementation_plan` static check on the revised plan, recheck previously accepted work, and obtain explicit authorization to resume. Reassign affected tasks from the updated integration tip with new handoffs, repairing or replacing stale work through subagents rather than merging old-design returns unchanged.
+1. Stop new dispatch, acceptance, and merges for the entire run, including independent tasks. Tell every active worker to stop and preserve work; cancel or terminate through the harness if needed.
+2. Confirm workers and task processes are stopped. Record any inability to stop as a safety blocker, reject late returns from automatic acceptance, and preserve worktrees, commits, ledger, and evidence without cleanup or destructive rollback.
+3. Report to the caller what happened, the evidence, conflicting document sections, the document believed wrong, affected tasks, completed and unfinished work, viable resolutions, tradeoffs, and a recommendation. Then end the implementation run; do not ask the developer directly or wait within this subagent for a decision.
+
+The main session follows [the correction and replanning path](#10-implement-and-review). A resumed implementation run reads the preserved ledger, keeps completed work, validates accepted revised documentation through both candidate gates, reruns the plan static check, and rechecks affected previously accepted work. Reassign unfinished tasks from the updated integration tip with refreshed handoffs; repair or replace stale candidates through workers rather than merging old-design returns unchanged.
 
 ### 7. Verify the complete branch and deliver it
 
 After all planned outcomes are integrated, run the repository's required final verification and integrated feature acceptance on the final branch tip. Before executing their commands, read and apply the [command verification gate](#5-validate-integrate-then-remove-the-worktree), using `run_check`; observing the actual CLI, UI, service, or other changed surface remains an additional obligation. If documents declare invariants, dispatch `review-code-invariants-agent` on the final tip against the run's base; findings follow step 6. Delegate every discovered fix and repeat affected acceptance and final checks after integration; no task count, green worker report, or successful merge substitutes for working end-to-end behavior.
 
-After integrated acceptance and final verification, read [document state and revision](../guides/product-documentation-process.md#document-state-and-revision) and delegate metadata-only transitions: active plan to `done` with its revision and `approved` date; TDD when its plan is done; PRD when its feature finishes; system design when all slices finish. Run `check_doc_status`, validate the candidate through both gates, and integrate. Delegate other delivery material; clean up safe worktrees and report blockers.
+After integrated acceptance and final verification, run the [post-integration review cycle](code-review.md#review-cycle). Once that cycle concludes, return the delivered branch, exact evidence, corrections, risks, preserved ledger, all TDD deviations, and concrete developer validation steps to the caller. The main session owns [developer validation and completion](#11-validate-and-close-the-milestone). Do not mark any document `done` in the implementation run. Delegate other authorized delivery material, clean up only safe worktrees, and report blockers.

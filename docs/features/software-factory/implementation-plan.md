@@ -17,9 +17,9 @@ Veto any of these before execution; each one changes several tasks.
    - For implementation plans, the hash skips task `Assigned worktree:` and `Assigned branch:` lines, because the implementation orchestrator writes them at task pickup.
    - Any other content change voids the approval.
 3. **Who approves what.**
-   - **Developer:** the product vision, architecture, PRDs, system designs, and status-bearing Playbook guides.
+   - **Developer:** the product vision, architecture, PRDs, and system designs.
    - **Agents:** technical designs and implementation plans, through `doc_approval`, with evidence attached.
-   - **Nobody:** the roadmap is not gated, so recording an issue or trimming an item never reopens a gate.
+   - **Nobody:** the roadmap is not gated, so recording an issue or trimming an item never reopens a gate. Playbook guides are Playbook internals, not product documents: they stay outside the approvals scheme and keep their current frontmatter rules.
    - **Revoking:** any agent that writes documents can revoke any approval; review agents stay read-only.
 4. **One refusal text.** The hook blocks through OMP's native blocked-call result, with the shared message as its reason. `doc_approval` returns the same text as an ordinary result when it refuses. The text is defined once in `omp-extension.ts`.
 5. **Inert unless opted in.** Every hook does nothing in a repository without `docs/approvals.json`, so the Playbook adds no friction to projects that do not use its documents.
@@ -72,14 +72,14 @@ Every task uses these as written. A task that needs a different shape stops and 
 
 - **Keys:** repository-relative paths with forward slashes, one entry per document.
 - **`by`:** `developer` or `agent`.
-  - `developer` requires `attestation`: `read-in-full` for the product vision, PRDs, and guides; `explain-and-defend` for architecture and system designs.
+  - `developer` requires `attestation`: `read-in-full` for the product vision and PRDs; `explain-and-defend` for architecture and system designs.
   - `agent` requires `evidence`.
-- **`revision`:** omitted for documents without one (guides).
+- **`revision`:** omitted for documents without one.
 - **Body bytes:** everything after the line that closes the frontmatter, hashed exactly as stored. For implementation plans, lines matching `^- \*\*Assigned (worktree|branch):\*\*` are removed first; T3 confirms the exact pattern against `scripts/check-implementation-plans.py`.
 - **Gates by type** (type comes from the path, as in `check-doc-status.py` `document_type`):
-  - developer: product vision, architecture, PRD, system design, guide;
+  - developer: product vision, architecture, PRD, system design;
   - agent: technical design, implementation plan;
-  - none: roadmap.
+  - none: roadmap, guide (guides keep their existing frontmatter rules).
 - **Validity:** an approval is valid when its entry exists, its revision matches the frontmatter, and its hash matches the body. `active` and `done` require a valid approval for gated types; `draft` and `superseded` never do.
 
 ### `scripts/doc-approval.py`
@@ -146,7 +146,6 @@ Built from `factory-status.py`:
     - a body edit invalidates an approval; a frontmatter-only edit does not;
     - writing a plan task's assignment lines does not invalidate the plan; any other plan edit does;
     - a revision bump invalidates;
-    - a guide approval needs no revision;
     - the roadmap reports `gate: "none"`;
     - revoke works on every type;
     - malformed approvals JSON fails closed;
@@ -335,11 +334,10 @@ Built from `factory-status.py`:
   - Change: approval state comes from the approvals file through `check_doc_status`. The plan reviewer confirms the TDD's agent acceptance, not developer acceptance. Reviewer tools stay read-only.
   - Covers SF-024.
 
-### Phase 5: migration and developer environment (after Phases 1–4)
+### Phase 5: developer environment
 
-- **T13b — Apply the migration to this repository.** Targets: `docs/approvals.json` (new), `docs/roadmap.md`, `guides/product-documentation-process.md`. One owner, after every document edit in this plan has landed.
-  - Change: remove `approved:` from `docs/roadmap.md` (L3) and `guides/product-documentation-process.md` (L3). Record a developer approval for the process guide only after the developer confirms it. The roadmap needs none.
-  - Done when `check-doc-status.py --check` passes over `docs/` and `guides/`.
+This repository is not a factory project and is not migrated: its own documents keep their current frontmatter. The migration guide (T13a) is for consumer repositories only.
+
 - **T19 — Beads rule.** Target: `~/.omp/agent/AGENTS.md`, outside the repository.
   - Change: remove the rule that limits Beads to explicit requests, keeping the `bd where` and `bd prime` discovery steps.
   - Done when the file no longer forbids agents from recording issues in Beads.

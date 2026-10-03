@@ -10,6 +10,10 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from doc_approvals import (ApprovalError, approval_status, body_bytes, document_type,
+                           gate_for_type, load_approvals, _unique_object, _validate_approvals)
 from git_environment import clean_git_environment
 
 
@@ -35,22 +39,6 @@ RESTATEMENT = re.compile(
 )
 
 
-def document_type(path: Path) -> Optional[str]:
-    parts = path.parts
-    if len(parts) >= 2 and parts[-2:] == ("templates", "roadmap.md"):
-        return "roadmap"
-    if len(parts) >= 2 and parts[-2] == "guides" and path.suffix == ".md":
-        return "guide"
-    if len(parts) >= 2 and parts[-2] == "docs":
-        return {"product-vision.md": "vision", "architecture.md": "architecture",
-                "roadmap.md": "roadmap"}.get(parts[-1])
-    if len(parts) >= 4 and parts[-4] == "docs" and parts[-3] == "features" and parts[-2]:
-        return {"prd.md": "prd", "system-design.md": "system-design",
-                "tdd.md": "tdd", "implementation-plan.md": "implementation-plan"}.get(parts[-1])
-    if (len(parts) >= 6 and parts[-6] == "docs" and parts[-5] == "features"
-            and parts[-4] and parts[-3] == "slices" and parts[-2]):
-        return {"tdd.md": "tdd", "implementation-plan.md": "implementation-plan"}.get(parts[-1])
-    return None
 
 
 def visible_lines(lines: List[str], start: int) -> List[Tuple[int, str]]:
@@ -102,6 +90,9 @@ def check_document(path: Path, kind: str, text: str) -> Tuple[Optional[dict], Li
             if key not in ("state", "revision", "approved"):
                 fail(index + 1, "unknown frontmatter key: " + key)
                 continue
+            if key == "approved" and kind != "guide":
+                fail(index + 1, "approved frontmatter is forbidden for product documents; "
+                     "see guides/migrations/0.1.0-to-1.0.0.md")
             if key in fields:
                 fail(index + 1, "duplicate frontmatter key: " + key)
                 continue
@@ -148,21 +139,23 @@ def check_document(path: Path, kind: str, text: str) -> Tuple[Optional[dict], Li
             fail(positions["revision"], "invalid revision; expected " + PREFIX[kind] + "-r<N>")
     elif revision is not None:
         fail(positions["revision"], "revision is forbidden for " + kind)
-    if state in ("active", "done"):
-        if approved is None:
-            fail(1, "missing approved; add approved: YYYY-MM-DD for " + state)
-    elif approved is not None:
-        fail(positions["approved"], "approved is forbidden unless state is active or done")
-    if approved is not None:
-        if not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", approved):
-            fail(positions["approved"], "invalid approved date; expected YYYY-MM-DD")
-        else:
-            try:
-                datetime.date.fromisoformat(approved)
-            except ValueError:
-                fail(positions["approved"], "invalid approved date; expected a real calendar date")
+    if kind == "guide":
+        if state in ("active", "done"):
+            if approved is None:
+                fail(1, "missing approved; add approved: YYYY-MM-DD for " + state)
+        elif approved is not None:
+            fail(positions["approved"], "approved is forbidden unless state is active or done")
+        if approved is not None:
+            if not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", approved):
+                fail(positions["approved"], "invalid approved date; expected YYYY-MM-DD")
+            else:
+                try:
+                    datetime.date.fromisoformat(approved)
+                except ValueError:
+                    fail(positions["approved"], "invalid approved date; expected a real calendar date")
     return {"path": str(path), "type": kind, "state": state,
-            "revision": revision, "approved": approved}, errors
+            "revision": revision, "approval": {"gate": gate_for_type(kind),
+                                               "by": None, "date": None, "valid": False}}, errors
 
 
 class GitFailure(Exception):
@@ -214,18 +207,39 @@ def checked_snapshot(name: str, kind: str, content: bytes, commit: str) -> Tuple
                                    f"{problem['message']}" for problem in problems))
     if row is None:
         raise GitFailure(f"{name}: {commit}: missing document status")
-    lines = content.splitlines(keepends=True)
-    closing = next((index for index, line in enumerate(lines[1:], 1)
-                    if line.rstrip(b"\r\n") == b"---"), None)
-    if closing is None:
-        raise GitFailure(f"{name}: {commit}: missing closing frontmatter")
-    return row, b"".join(lines[closing + 1:])
+    return row, body_bytes(content, kind)
+
+
+def approvals_at(repo: Path, commit: str) -> dict:
+    paths = git_bytes(repo, "ls-tree", "--name-only", commit, "--", "docs/approvals.json")
+    if not paths.strip():
+        return {"version": 1, "approvals": {}}
+    try:
+        data = json.loads(document_at(repo, commit, "docs/approvals.json"),
+                          object_pairs_hook=_unique_object)
+        _validate_approvals(data)
+        return data
+    except (ValueError, TypeError, UnicodeError) as error:
+        raise GitFailure(f"{commit}: docs/approvals.json: {error}") from error
+
+
+def repository_for(path: Path) -> Path:
+    """Discover from the document, never from the checker's installation."""
+    directory = path.resolve().parent
+    try:
+        return Path(os.fsdecode(git_bytes(directory, "rev-parse", "--show-toplevel")).strip())
+    except GitFailure:
+        for ancestor in (directory, *directory.parents):
+            if (ancestor / "docs").is_dir():
+                return ancestor
+    raise ApprovalError("cannot find repository root; use --repo or an ancestor containing docs/")
 
 
 def check_frozen_diff(repo: Path, base: str, head: str) -> int:
     try:
         base_id, head_id = commit_id(repo, base), commit_id(repo, head)
         base_paths, head_paths = tree_paths(repo, base_id), tree_paths(repo, head_id)
+        head_approvals = approvals_at(repo, head_id)
         changes = git_bytes(repo, "diff", "--no-ext-diff", "--no-textconv", "--no-renames",
                             "--name-only", "-z", base_id, head_id, "--", "docs/features/")
         names = {os.fsdecode(name) for name in changes.split(b"\0") if name}
@@ -250,9 +264,9 @@ def check_frozen_diff(repo: Path, base: str, head: str) -> int:
                         before is None or base_row["state"] != "active"
                         or base_body != head_body
                         or base_row["revision"] != head_row["revision"]
-                        or base_row["approved"] != head_row["approved"]):
+                        ):
                     raise GitFailure(f"{name}: transition to done requires an active {kind} "
-                                     "with unchanged body, revision, and approved date")
+                                     "with unchanged body and revision")
             if kind == "system-design" and before is not None and before != after:
                 if after is None:
                     raise GitFailure(f"{name}: system-design deletion or rename requires "
@@ -261,21 +275,24 @@ def check_frozen_diff(repo: Path, base: str, head: str) -> int:
                 new_revision = head_row["revision"][4:]
                 same_revision = base_row["revision"] == head_row["revision"]
                 same_body = base_body == head_body
-                acceptance = (base_row["state"] == "draft"
-                              and head_row["state"] == "active"
-                              and base_row["approved"] is None
-                              and head_row["approved"] is not None)
-                completion = (base_row["state"] == "active"
-                              and head_row["state"] == "done"
-                              and base_row["approved"] == head_row["approved"])
+                acceptance = base_row["state"] == "draft" and head_row["state"] == "active"
+                completion = base_row["state"] == "active" and head_row["state"] == "done"
                 if same_revision and same_body and (acceptance or completion):
                     continue
                 if (len(new_revision), new_revision) <= (len(old_revision), old_revision):
                     raise GitFailure(f"{name}: system-design change requires revision "
                                      f"greater than sd-r{old_revision}; got sd-r{new_revision}")
-                if head_row["state"] != "draft" or head_row["approved"] is not None:
+                if head_row["state"] != "draft":
                     raise GitFailure(f"{name}: new system-design revision sd-r{new_revision} "
-                                     "must be draft without approved date")
+                                     "must be draft")
+        # Inspect every delivered document, including approvals-only commits.
+        for name in sorted(head_paths):
+            kind = document_type(Path(name))
+            if kind not in ("prd", "tdd", "implementation-plan", "system-design"):
+                continue
+            row, _ = checked_snapshot(name, kind, document_at(repo, head_id, name), head_id)
+            if row["state"] == "done" and name not in head_approvals["approvals"]:
+                raise GitFailure(f"{name}: done {kind} approval entry must remain in docs/approvals.json")
     except GitFailure as error:
         print(f"frozen-diff: {error}", file=sys.stderr)
         return 1
@@ -289,7 +306,9 @@ def main(arguments: Optional[Sequence[str]] = None) -> int:
     mode.add_argument("--json", action="store_true", help="emit JSON status records and errors")
     mode.add_argument("--frozen-diff", action="store_true",
                       help="check frozen documents and system-design revisions between commits")
-    parser.add_argument("--repo", type=Path, help="Git repository for --frozen-diff")
+    parser.add_argument("--repo", type=Path, help="repository root; required for --frozen-diff. "
+                        "For --check/--json, defaults to git rev-parse --show-toplevel from "
+                        "each document's parent, then the nearest ancestor containing docs/")
     parser.add_argument("--base", help="base commit for --frozen-diff")
     parser.add_argument("--head", help="head commit for --frozen-diff")
     parser.add_argument("paths", nargs="*", type=Path, help="document paths")
@@ -298,8 +317,8 @@ def main(arguments: Optional[Sequence[str]] = None) -> int:
         if args.paths or args.repo is None or args.base is None or args.head is None:
             parser.error("--frozen-diff requires --repo, --base, --head and no file paths")
         return check_frozen_diff(args.repo, args.base, args.head)
-    if not args.paths or any(value is not None for value in (args.repo, args.base, args.head)):
-        parser.error("--check/--json require file paths and do not accept --repo/--base/--head")
+    if not args.paths or any(value is not None for value in (args.base, args.head)):
+        parser.error("--check/--json require file paths and do not accept --base/--head")
     rows: List[dict] = []
     errors: List[dict] = []
     for path in args.paths:
@@ -313,6 +332,21 @@ def main(arguments: Optional[Sequence[str]] = None) -> int:
             errors.append({"path": str(path), "line": 1, "message": "cannot read document: " + str(error)})
             continue
         row, problems = check_document(path, kind, text)
+        if row is not None and gate_for_type(kind) != "none" and not problems:
+            try:
+                repo = args.repo.resolve() if args.repo else repository_for(path)
+                approvals = load_approvals(repo)
+                status = approval_status(repo, path.resolve(), approvals)
+                name = path.resolve().relative_to(repo).as_posix()
+                entry = approvals["approvals"].get(name)
+                row["approval"].update(by=status["by"], date=entry["date"] if entry else None,
+                                       valid=status["approved"])
+                if row["state"] in ("active", "done") and not status["approved"]:
+                    problems.append({"path": str(path), "line": 1,
+                                     "message": "valid approval required in docs/approvals.json: "
+                                                + str(status["reason"])})
+            except (ApprovalError, OSError, ValueError) as error:
+                problems.append({"path": str(path), "line": 1, "message": str(error)})
         if row is not None:
             rows.append(row)
         errors.extend(problems)

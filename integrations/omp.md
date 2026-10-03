@@ -7,8 +7,12 @@ Enabling this repository as an OMP extension package exposes:
 - `agents/` — one agent per task, naming the model, tool boundary, and the skill it autoloads.
 - `skills/` — the generated skill directories (`SKILL.md` plus `references/` files read through `skill://<name>/references/<file>`) those agents load.
 - `check_implementation_plan` — a read-only tool for plan syntax, the task DAG, and protected diffs. For assigned tasks, protected-diff also checks the recorded worktree under `<repo-root>/.worktrees`, branch, clean candidate tip, and Git ignore rule; it cannot prove where commits originated. It runs the bundled Python validator, so `python3` and Git must be on `PATH`.
+- `check_doc_status` — a read-only tool for document status checks, metadata as JSON, and frozen diffs that reject edits to delivered documents or unversioned system-design changes.
+- `run_check` — runs a foreground project command with Bash pipefail, a timeout, and a full combined-output log outside the repository. It reports `passed`, `failed`, `timed-out`, or `unavailable`; project commands may write project files. See the [runner details](../README.md#changing-the-playbook).
 - `request_developer` — validates a version-1 developer-request object against `guides/developer-request.schema.json` and returns Markdown. Request fields are the tool arguments themselves, not a nested `request` property. The call arguments are the machine-readable observer contract; consumers observe those arguments rather than parse Markdown or depend on OMP's presentation. The tool does not contact the developer or collect an answer.
 - `collect_agent_runs` — a read-only tool that finds one Playbook agent's runs in OMP session transcripts within a time window and returns JSON pointers: transcript paths and 1-based line numbers for each run's task, skill read, final report, the parent session's dispatch and result delivery, and the developer's next message, plus `Friction:` lines from final reports. It reads `~/.omp/agent/sessions` unless given another sessions directory, such as one kept by a separate OMP profile, and needs `python3` and Git on `PATH`.
+- `doc_approval` — wraps `scripts/doc-approval.py` with `init`, `status`, `revoke`, and `accept` modes. It initializes or updates the consuming repository's `docs/approvals.json`, reports approval validity, and records agent acceptance with evidence. It refuses agent acceptance of developer-gated documents.
+- `factory_status` — wraps `scripts/factory-status.py` to report the current feature and slice, document states and approvals, open gates, the next document-derived step, and ambiguity between unfinished features.
 
 The checkers invoke Git with `--no-optional-locks`, including protected-diff and frozen-diff checks, so inspection does not refresh or write the consuming repository's index. For protected-diff, a null or empty `worktreeRoot` is treated as absent; an assigned candidate still requires the recorded worktree root. An explicitly empty `task` is rejected rather than treated as absent.
 
@@ -37,7 +41,7 @@ Restart OMP. A new extension root is read at startup; `/reload-plugins` refreshe
 
 `/agents` lists the playbook agents. Dispatch one by name, or describe the task and let OMP select by description. The draft, review, and orchestration implementation-plan agents each include `check_implementation_plan` in their task-agent tool list, and `review-friction-agent` includes `collect_agent_runs`.
 
-The generated skills are marked `hide: true`, so they deliberately do not appear in the global skill menu. Each surfaces only through the agent that autoloads it. An empty skill menu is expected, not a failed install.
+The generated skills are marked `hide: true`, so they deliberately do not appear in the global skill menu. Hidden skills remain reachable through `skill://<name>` and `/skill:<name>` when `skills.enableSkillCommands` is enabled. Agents autoload their own skills; load the factory skill explicitly as described below. An empty skill menu is expected, not a failed install.
 
 The `review-code-*` agents list `ast_grep` and `lsp` in their tools, but OMP withholds both from spawned agents by default. Set these in the same configuration file, or run `omp config set astGrep.enabled true` and `omp config set task.enableLsp true`:
 
@@ -49,6 +53,34 @@ task:
 ```
 
 `task.enableLsp` gives spawned agents LSP; agents with a `tools` list receive only its read-only actions. It costs extra tokens for every agent that lists `lsp`. `lsp` also needs each project's language server on `PATH`, for example `rust-analyzer` (`rustup component add rust-analyzer` for every toolchain the project uses), `typescript-language-server`, or `basedpyright-langserver` (or `pyright-langserver`) for Python. Restart OMP after changing these settings. If a project uses mise shims for language servers, follow the [project tooling guide's trust instructions](../guides/project-tooling.md#trust-configuration-outside-ci).
+
+## Software factory
+
+In the consuming project's main interactive OMP session, enter:
+
+```text
+/skill:orchestrate-factory
+```
+
+This loads the factory procedure into the session that talks to the developer; there is no `orchestrate-factory-agent`. The main session drives the next step and dispatches drafting, review, implementation, and fix agents. The skill initializes `docs/approvals.json` for a new project. To opt an existing consumer project in, use `doc_approval` with mode `init`; migrate its legacy product-document approvals using the [consumer migration guide](../guides/migrations/0.1.0-to-1.0.0.md).
+
+The presence of `docs/approvals.json` opts that repository into enforcement. Every factory hook is inert when the file is absent. The [process guide's approvals section](../guides/product-documentation-process.md#approvals) owns approval rules, and the [code-review cycle](../guides/code-review.md#review-cycle) owns implementation and fix review rules.
+
+The extension registers these hooks:
+
+| Hook | Runtime effect in an opted-in repository |
+| --- | --- |
+| Approvals-file guard (`tool_call`, all sessions) | Blocks direct `edit`, `write`, and `ast_edit` paths or globs targeting `docs/approvals.json`; blocks shell/eval text that names the file with a write pattern, or invokes `--developer-approve`. Reads remain allowed. Agents use `doc_approval` instead. |
+| Creation guard (`tool_call`, all sessions) | Blocks creation of a downstream document while a prerequisite approval gate is open. Edits to existing documents remain allowed. The refusal names the open gate and expected next step. |
+| Implementation gate (`before_subagent_spawn`) | Blocks `orchestrate-implementation-plan-agent` until the current slice's TDD and plan have valid approvals and its upstream developer gates are approved. Worker, reviewer, and fix-agent spawns are not gated. |
+| Revision limit (`before_subagent_spawn` and creation guard) | Counts `draft-*` revisions in memory for the main session's agent tree; creating a new document is a first draft, not a revision. The sixth revision is refused with an instruction to stop and summarize for the developer. A main-session developer message, explicit `ask` answer, recorded acceptance, or developer approval resets the count; timeouts, cancellation, and chat redirects do not. A session restart loses the count. |
+| Status line (`before_agent_start`, main session only) | Appends document-derived factory status, the revision count, and a pointer to `skill://orchestrate-factory` without replacing the base prompt. Execution phase and review round remain with the skill; ask it for full status. |
+
+When unfinished work spans multiple features, order and implementation hooks do not block; status reports the ambiguity instead.
+
+To record a developer approval, enter `/playbook-approve <path>` in the interactive session, using a repository-relative document path. The command presents the document type's attestation through OMP's confirmation UI, then records approval only after the developer confirms. It refuses without a UI or when confirmation is declined; agents cannot substitute a shell invocation.
+
+These checks target forgotten or skipped steps, not deliberate circumvention. The factory needs only OMP and the Playbook; it is not a security sandbox.
 
 ## Developer requests and OMP's built-in ask
 
@@ -64,7 +96,7 @@ Runtime evidence: OMP's local `docs/tools/ask.md`, sections `Inputs`, `Flow`, an
 
 ## Templates
 
-OMP discovers `agents/` and `skills/` as capability directories; the extension factory registers the tool. Templates are plain files you copy by hand: to start a project's roadmap, copy `templates/roadmap.md` from this checkout to `docs/roadmap.md` in the project.
+OMP discovers `agents/` and `skills/` as capability directories; the extension factory registers the tools, hooks, and developer command. Templates are plain files you copy by hand: to start a project's roadmap, copy `templates/roadmap.md` from this checkout to `docs/roadmap.md` in the project.
 
 ## Model roles
 

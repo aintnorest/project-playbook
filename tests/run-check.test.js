@@ -7,7 +7,7 @@ import { join } from "node:path";
 import projectPlaybook from "../omp-extension.ts";
 
 let tool;
-projectPlaybook({ zod, registerTool: definition => { if (definition.name === "run_check") tool = definition; } });
+projectPlaybook({ zod, registerTool: definition => { if (definition.name === "run_check") tool = definition; }, on() {}, registerCommand() {} });
 
 for (const scenario of ["abort", "outer deadline"]) {
   test(`run_check kills the command process group on ${scenario}`, async () => {

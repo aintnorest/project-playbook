@@ -1,6 +1,6 @@
 ---
 state: draft
-revision: arch-r8
+revision: arch-r9
 ---
 
 # System architecture: Project Playbook
@@ -18,7 +18,7 @@ The vision's [product-wide boundaries](product-vision.md#product-wide-boundaries
 - **OMP.** Owns discovery of agent and skill capability directories, extension loading, the extension API and the schema builder that tools are declared with, agent dispatch and models, sessions and provider calls, and interactive questions. The Playbook integrates as an extension package declared in `package.json` [EXISTS]; installation, update, and OMP runtime facts live in `integrations/omp.md` [EXISTS].
 - **`python3` on `PATH`.** Owns execution of every checker, renderer, gate runner, and the build; the Playbook reaches it only as a child process.
 - **Git.** Owns history, revisions, branches, worktrees, and release tags; checkers read it only through the `git` command. How a consumer obtains and pins a checkout is owned by [install](../integrations/omp.md#install).
-- **Consuming project repositories.** Each owns its own documents, commands, toolchain, and exceptions; the Playbook reads them only through agents and checker arguments.
+- **Consuming project repositories.** Each owns its own documents, commands, toolchain, and exceptions; the Playbook reads them through agents and checker arguments, and writes approval records only through the exception below.
 
 ## Technology decisions
 
@@ -32,6 +32,7 @@ The vision's [product-wide boundaries](product-vision.md#product-wide-boundaries
 The repository separates authored rules, authored task procedures, generated per-task artifacts, deterministic programs, and extension code, so each rule and each check has exactly one home. Top-level layout (every `[EXISTS]` path in this document was verified by listing the repository root and the named directories):
 
 - `guides/` [EXISTS] — shared rules, each stated once, plus machine-readable contracts such as `guides/developer-request.schema.json` [EXISTS].
+- `guides/migrations/` [PROPOSED] — guided migrations for releases that change consumer contracts.
 - `skill-sources/` [EXISTS] — one authored task procedure per skill, selecting guide sections by link.
 - `skills/` [EXISTS] — generated per-task skills (`SKILL.md` plus `references/`); committed so consumers never build.
 - `agents/` [EXISTS] — one OMP agent per skill, plus `agents/routing-cases.json` [EXISTS] and build-check exceptions in `agents/checks.json` [EXISTS].
@@ -43,7 +44,7 @@ The repository separates authored rules, authored task procedures, generated per
 - `research/` [EXISTS] — evidence notes that inform guidance and never govern it.
 - `docs/` [EXISTS] — the Playbook's own product documents.
 - `.beads/` [EXISTS] — the maintainer's issue-tracker state; never loaded by consumers.
-- Root files: `omp-extension.ts` [EXISTS] (contract tools), `package.json` [EXISTS] and `bun.lock` [EXISTS] (extension manifest and locked development dependency), `VERSION` [EXISTS], `lefthook.yml` [EXISTS] (Git hooks), `mise.toml` [EXISTS] and `mise.lock` [EXISTS] (maintainer tool pins and tasks), `.rumdl.toml` [EXISTS] (Markdown check configuration), `README.md` [EXISTS].
+- Root files: `omp-extension.ts` [EXISTS] (contract tools, contract hooks, and developer commands), `package.json` [EXISTS] and `bun.lock` [EXISTS] (extension manifest and locked development dependency), `VERSION` [EXISTS], `lefthook.yml` [EXISTS] (Git hooks), `mise.toml` [EXISTS] and `mise.lock` [EXISTS] (maintainer tool pins and tasks), `.rumdl.toml` [EXISTS] (Markdown check configuration), `README.md` [EXISTS].
 
 ## Content flow
 
@@ -54,15 +55,21 @@ The repository separates authored rules, authored task procedures, generated per
 ## Boundaries and dependency rules
 
 - **Contract tools.** A tool that enforces or renders a Playbook contract is registered in `omp-extension.ts`. Domain validation and rendering live in a `scripts/` program; the tool owns only transport: declaring its arguments, rejecting argument combinations a mode does not accept, running the program as a bounded child process, and checking the result envelope — exit status, unexpected output, and JSON shape — before returning it. The program's command-line mode is the fallback when the tool is not loaded, not a portability promise.
+- **Contract hooks.** Hooks that enforce Playbook contracts live in `omp-extension.ts`, next to contract tools, and act through OMP's extension API. They protect the approval-writing boundary and enforce document order, implementation gates, and the revision limit using the contract programs. They are inert in consumer repositories without `docs/approvals.json` [PROPOSED]. Enforcement prevents forgotten or skipped steps; it is not a sandbox against deliberate circumvention.
 - **Way-of-working extensions.** An OMP extension that supports the way of working without enforcing a Playbook contract — for example, a prompt-cache keep-alive, should one ever be built — is its own module under `extensions/`, declared in the extension list in `package.json`, and acts only through OMP's extension API. Contract tools never depend on such a module, so each one can be removed alone.
-- **Trust boundary.** Contract tools and checkers only read files and Git state named by their arguments, never use the network, and never contact the developer. The explicit exception is `run_check`: it executes the project's own command in the given directory; any writes by that command belong to the project. The Playbook itself writes only the runner's full-output log outside the repo. The agent-run collector's sessions default, OMP's `~/.omp/agent/sessions`, is read-only. Scripts resolve their own files relative to their location, never the caller's workspace, so the Playbook works as a read-only copy pinned to a release tag.
-- **No persistence or service.** Except for gate-runner evidence logs in the system temp directory, the Playbook keeps no state of its own; every durable governing fact is a file under Git, in this repository or the consuming project.
+- **Trust boundary.** Contract tools and checkers only read files and Git state named by their arguments, never use the network, and never contact the developer. Two explicit exceptions apply. `run_check` executes the project's own command in the given directory; any writes by that command belong to the project, and the Playbook writes only the runner's full-output log outside the repo. `doc_approval` uses `scripts/doc-approval.py` [PROPOSED] to initialize, revoke, or record agent acceptance in `docs/approvals.json` [PROPOSED] in the consumer repository named by `--repo`. Only the developer command `/playbook-approve` can invoke the program's developer-approval mode; contract hooks refuse agent attempts to record developer approval or bypass the agent tool. Approval writes never target the Playbook install. The agent-run collector's sessions default, OMP's `~/.omp/agent/sessions`, is read-only. Scripts resolve their own files relative to their location, never the caller's workspace, so the Playbook works as a read-only copy pinned to a release tag; importers of `scripts/doc_approvals.py` [PROPOSED] disable bytecode writes before importing it.
+- **No persistence or service.** Except for gate-runner evidence logs in the system temp directory, the Playbook keeps no durable state of its own; every durable governing fact is a file under Git, in this repository or the consuming project. Contract hooks keep the draft-revision counter in memory, scoped to the main session's agent tree; it is not persisted and is lost when the session restarts.
 
 ## Consumer contracts and versioning
 
 A consumer contract is any format, grammar, mode, output, or schema that consuming projects' documents, agents, or callers depend on. Each has one owner; change it there. Each entry also names who reads it today, and any reader that is planned but not yet reading. A field, section, or mode with no reader does not belong in a contract; when a reader goes away, apply the [removal rule](../README.md#changing-the-playbook) to whatever served only that reader.
 
-- Document formats and frontmatter: [document contracts](../guides/product-documentation-process.md#document-contracts), checked by `scripts/check-doc-status.py` [EXISTS]. Read by the draft and review-doc agents through `check_doc_status`, and by the implementation-plan orchestrator, which requires `active` documents with `approved` dates before dispatch.
+- Document formats and frontmatter: [document contracts](../guides/product-documentation-process.md#document-contracts), checked by `scripts/check-doc-status.py` [EXISTS]. Read by the draft and review-doc agents through `check_doc_status`, and by the `orchestrate-factory` skill and implementation and fix orchestrators. Consumer product-document frontmatter carries lifecycle state and revision; approval comes from the separate approvals contract. Playbook guides are internal guidance outside that scheme and retain their existing frontmatter contract.
+- Approval records: `docs/approvals.json` [PROPOSED] in each opted-in consumer repository. The [approvals contract](../guides/product-documentation-process.md#approvals) owns gate types and content-bound validity; `scripts/doc_approvals.py` [PROPOSED] owns the shared JSON parsing and hashing used by the programs. Read by `check_doc_status`, approval and status programs, and contract hooks; the `orchestrate-factory` skill, drafters, and implementation and fix orchestrators read approval state through the tools.
+- Agent approval operations: `scripts/doc-approval.py` [PROPOSED] owns command-line modes and JSON results; `doc_approval` in `omp-extension.ts` owns tool arguments and transport. The [approvals contract](../guides/product-documentation-process.md#approvals) owns when to initialize, revoke, or accept. Called by the `orchestrate-factory` skill, document-writing drafters, and implementation and fix orchestrators; its validity is also read by `check_doc_status` through the shared approval module. Review agents remain read-only.
+- Factory status: `scripts/factory-status.py` [PROPOSED] owns document-derived feature, slice, gate, ambiguity, and next-step output; `factory_status` in `omp-extension.ts` owns tool arguments and transport. Read by the `orchestrate-factory` skill and contract hooks; drafters and implementation and fix orchestrators use it when they need the expected document step. Approval validity uses the same shared module as `check_doc_status`. Execution phase and review round remain with the main-session skill, not in the status program.
+- Contract-hook decisions and refusal results: `omp-extension.ts` owns hook registration, opt-in detection, session-scoped revision counting, and the shared refusal text. The governing rules live in [approvals](../guides/product-documentation-process.md#approvals), [full-feature workflow](../guides/product-documentation-process.md#full-feature-workflow), [implementation execution](../guides/product-documentation-process.md#implementation-execution), and the [review loop](../guides/document-review.md#review-loop). OMP reads hook decisions; the `orchestrate-factory` skill, drafters, and implementation and fix orchestrators read refusals for their attempted calls. Hooks read approval and factory-status program output; `check_doc_status` shares approval validity rather than reading hook state.
+- Developer approval command: `/playbook-approve <path>` in `omp-extension.ts` owns the interactive command and invokes only the developer-approval mode of `scripts/doc-approval.py` [PROPOSED]. The [gate requests](../guides/communication-policy.md#gate-requests) and [approvals](../guides/product-documentation-process.md#approvals) sections own attestations and approval rules. The developer reads the command's confirmation; the `orchestrate-factory` skill, drafters, implementation and fix orchestrators, and `check_doc_status` read its resulting approval record through the approval tools or shared module.
 - Implementation-plan grammar: [implementation plan](../guides/product-documentation-process.md#implementation-plan), checked by `scripts/check-implementation-plans.py` [EXISTS]. Read by the plan drafter, plan reviewer, and orchestrator through `check_implementation_plan`. Planned: a supervising tool reporting task progress ([roadmap](roadmap.md), plan progress reporting).
 - Checker command-line modes and JSON output: each program in `scripts/`, described in the guide section it checks. Read by the contract tools in `omp-extension.ts`, which check the exit status and JSON shape; no skill calls a JSON mode directly.
 - Tool arguments: the tool declarations in `omp-extension.ts`. Read by the agents that list each tool in their frontmatter `tools`.
@@ -76,7 +83,7 @@ Rules shared by every contract:
 - **Program output.** A checker is deterministic for the same files and revisions. It reports diagnostics on standard error with a nonzero exit, and writes standard output only in its machine-readable modes; tools treat any other output as a failure.
 - **Optional arguments.** A null or empty optional tool argument means absent, except where a mode requires a supplied argument to be non-empty; each such exception is declared with the tool in `omp-extension.ts`.
 - **Releases.** `VERSION` owns the release number, and each release is the Git tag `v<version>`; the `package.json` version is not a release identifier. Numbers follow [Semantic Versioning](https://semver.org/): a change that makes a previously valid document, plan, tool call, or report consumer invalid, or changes the meaning of existing output, bumps the major number; an additive contract change bumps the minor number; a release with no contract change bumps the patch number.
-- **Migrations.** Each release that changes a contract ships its guided migration as `guides/migrations/<from>-to-<to>.md` [PROPOSED], named by the two release numbers; releases with no contract change have none.
+- **Migrations.** Each release that changes a consumer contract ships its guided migration for consumer repositories as `guides/migrations/<from>-to-<to>.md` [PROPOSED], named by the two release numbers; releases with no contract change have none.
 
 ## Build, checks, and gates
 
@@ -107,6 +114,13 @@ Rules shared by every contract:
 | Way-of-working extensions | Decided | Developer, 2026-09-29 | [Boundaries and dependency rules](#boundaries-and-dependency-rules) |
 | Read-only runtime and pinned copy | Decided | Developer, repository at `96ae784` | [Boundaries and dependency rules](#boundaries-and-dependency-rules) |
 | Project-command gate runner and external log exception | Decided | Developer, 2026-09-30 | [Boundaries and dependency rules](#boundaries-and-dependency-rules) |
+| Consumer approval-write exception | Proposed | Developer, pending approval | [Boundaries and dependency rules](#boundaries-and-dependency-rules) |
+| Contract hooks beside contract tools | Proposed | Developer, pending approval | [Boundaries and dependency rules](#boundaries-and-dependency-rules) |
+| Session-scoped, non-persisted revision counter | Proposed | Developer, pending approval | [Boundaries and dependency rules](#boundaries-and-dependency-rules) |
+| Content-bound approvals in consumer JSON | Proposed | Developer, pending approval | [Consumer contracts and versioning](#consumer-contracts-and-versioning) |
+| Agent approval tool and shared approval module | Proposed | Developer, pending approval | [Consumer contracts and versioning](#consumer-contracts-and-versioning) |
+| Document-derived factory status | Proposed | Developer, pending approval | [Consumer contracts and versioning](#consumer-contracts-and-versioning) |
+| Developer-only approval command | Proposed | Developer, pending approval | [Consumer contracts and versioning](#consumer-contracts-and-versioning) |
 | No persistence or service | Decided | Developer, repository at `96ae784` | [Boundaries and dependency rules](#boundaries-and-dependency-rules) |
 | Consumer contract owners | Decided | Developer, 2026-09-30 | [Consumer contracts and versioning](#consumer-contracts-and-versioning) |
 | Program output contract | Decided | Developer, repository at `96ae784` | [Consumer contracts and versioning](#consumer-contracts-and-versioning) |

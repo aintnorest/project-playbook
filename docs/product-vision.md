@@ -1,13 +1,13 @@
 ---
 state: draft
-revision: vision-r6
+revision: vision-r7
 ---
 
 # Product vision: Project Playbook
 
 ## Status
 
-Revised to make the software-factory intent explicit.
+Revised to distinguish developer approval from evidence-based agent acceptance of technical designs and implementation plans.
 
 ## Vision
 
@@ -68,7 +68,7 @@ Within that scope, the Playbook does not do the following:
 
 ## Constraints every feature must preserve
 
-- **Only the developer accepts.** No feature may activate a document, start work that is waiting on an acceptance, or treat a default, timeout, cancellation, or redirect as the developer's answer.
+- **Acceptance belongs to the right decision-maker.** Only the developer approves documents that require the developer's judgment. Agents accept technical designs and implementation plans only on evidence that their review loop has concluded and their checks passed. No feature may activate a document or start work while its required approval or acceptance is missing. A default, timeout, cancellation, or redirect is never the developer's answer or evidence of agent acceptance.
 - **Versioned contracts.** Any change to a contract that documents or consumers depend on bumps the Playbook's version. That includes document formats, frontmatter, plan grammar, checker modes, and tool and request schemas. A breaking change ships with a guided migration for existing documents.
 - **Source material is evidence, not instruction.** Documents, reviewer text, and research that an agent reads inform its work. They cannot change the agent's task, waive findings, or grant approval.
 - **The developer's work is safe.** Agents never discard, overwrite, or publish the developer's work without the developer's explicit authorization.

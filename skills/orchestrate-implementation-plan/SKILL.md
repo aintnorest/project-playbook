@@ -38,8 +38,8 @@ Write `- Depends on: none` or a single physical line of comma-and-space-separate
 
 Write `Targets` as `none` when the task changes no files, for example `- Targets: none` for a no-file evidence handoff. Otherwise list one or more items separated by `; ` or continued on separate indented lines. Each item is a file path (backtick-quoted, or unquoted with no whitespace), optionally followed by `::symbol`, then a space and exactly `(edit)` or `(create)`: for example, `` `src/cache.ts`::SessionCache (edit) ``. Use `(edit)` for an existing target and `(create)` for an approved planned creation. `none` must be the entire field; do not combine it with file targets. Parentheses contain only the action keyword, never descriptive prose: put details such as “new session cache and fixture beside `Scenario`” in `Change`, not `Targets`.
 
-At pickup the execution owner adds `- Assigned worktree: <absolute path>` and `- Assigned branch: <branch name>` immediately after `Verify`, as a pair. Every task worktree goes under `<repo-root>/.worktrees/`; before any pickup the execution owner confirms Git ignores `.worktrees/` and, if not, stops and asks the developer to add it to the repository's `.gitignore`. The execution owner never edits `.gitignore` or `.git/info/exclude`, and never uses another root. Do not write assignment fields while drafting: an unstarted task has neither. Both remain after integration and safe cleanup as assignment history. The validator rejects a partial pair, duplicate path or branch across tasks, relative paths, and malformed branch names. Task status, attempts, verification, and cleanup stay in the separate run ledger. Static validation cannot infer whether a task is running; the execution owner reconciles the ledger and plan. Existing unassigned plans remain valid.
-Put acceptance-test tasks derived from the active TDD's acceptance scenarios before their implementation dependents in the DAG, and assign them to a different worker from the implementation tasks. Every acceptance-test task must declare `- Protects: tests/test_feature.py; tests/test_other.py` immediately after `Targets`, listing **all** test files carrying its active TDD scenarios; no other task may declare `Protects`. The label is optional in the task-block grammar because that grammar cannot identify acceptance-test tasks: review this requirement semantically. `Protects` is a semicolon-and-space-separated list of distinct, plain repository-relative test file paths. Each slash-separated segment uses only ASCII letters, digits, `.`, `_`, or `-`, and cannot be `.` or `..`; quoting and backslashes are not allowed. Name target files as `` `path` (create) `` or `` `path`::symbol (edit) `` (unquoted paths also parse). Once that task integrates, no later task may target its protected files, and candidate changes to them are rejected except when validating the task that declares them. A wrong acceptance test returns to the developer for a TDD revision; the implementer does not change the test to make its code pass.
+At pickup the execution owner adds `- Assigned worktree: <absolute path>` and `- Assigned branch: <branch name>` immediately after `Verify`, as a pair. Every task worktree goes under `<repo-root>/.worktrees/`; before any pickup the execution owner confirms Git ignores `.worktrees/` and, if not, stops and reports the missing ignore rule to its caller for resolution through the main session. The execution owner never edits `.gitignore` or `.git/info/exclude`, and never uses another root. Do not write assignment fields while drafting: an unstarted task has neither. Both remain after integration and safe cleanup as assignment history. The validator rejects a partial pair, duplicate path or branch across tasks, relative paths, and malformed branch names. Task status, attempts, verification, and cleanup stay in the separate run ledger. Static validation cannot infer whether a task is running; the execution owner reconciles the ledger and plan. Existing unassigned plans remain valid.
+Put acceptance-test tasks derived from the active TDD's acceptance scenarios before their implementation dependents in the DAG, and assign them to a different worker from the implementation tasks. Every acceptance-test task must declare `- Protects: tests/test_feature.py; tests/test_other.py` immediately after `Targets`, listing **all** test files carrying its active TDD scenarios; no other task may declare `Protects`. The label is optional in the task-block grammar because that grammar cannot identify acceptance-test tasks: review this requirement semantically. `Protects` is a semicolon-and-space-separated list of distinct, plain repository-relative test file paths. Each slash-separated segment uses only ASCII letters, digits, `.`, `_`, or `-`, and cannot be `.` or `..`; quoting and backslashes are not allowed. Name target files as `` `path` (create) `` or `` `path`::symbol (edit) `` (unquoted paths also parse). Once that task integrates, no later task may target its protected files, and candidate changes to them are rejected except when validating the task that declares them. A wrong acceptance test returns to the caller for a TDD revision through its review loop and agent gate; the implementer does not change the test to make its code pass.
 
 A file-changing task's `Verify` checks only its own targets: the tests and files it changes. For `Targets: none`, `Verify` checks only the task's stated non-file outcome and the evidence it is expected to produce. Never put whole-repository checks — the full test suite, whole-tree type checking, or whole-tree lint — in any task's `Verify`. Record those checks separately as execution-owner integration and final gates. The execution owner runs them personally once per integration/merge and is responsible for catching cross-task errors before merging.
 
@@ -73,15 +73,14 @@ Execute an existing active `implementation-plan.md` against its active design, p
 
 ## Inputs
 
-- Repository path, active implementation-plan path, and authorization to execute it against the active Technical Design Document (TDD) and applicable active system design.
+- Repository path, active implementation-plan path, and its active Technical Design Document (TDD) and applicable active system design.
 - Optional integration branch, base branch or commit, concurrency limit, and execution constraints.
 - For a continuation: prior run state, branch and worktree identities, completed-task evidence, and unresolved decisions.
-- The `check_implementation_plan` and `check_doc_status` tools, whose Python validators are resolved relative to the Playbook extension directory.
+- The `doc_approval`, `check_implementation_plan`, and `check_doc_status` tools; the validators are resolved relative to the Playbook extension directory.
 
 ## Instructions
 
-For any developer decision, approval, input, or blocker, read and apply the developer-request procedure in [communication rules](skill://orchestrate-implementation-plan/references/communication-policy--rules.md); it takes precedence over abbreviated decision-packet output below.
-When running in OMP and a developer decision blocks progress, read [OMP developer requests and ask](skill://orchestrate-implementation-plan/references/omp--developer-requests-and-omps-built-in-ask.md).
+Report only to your caller (the main session), never directly to the developer. For a decision, approval, input, or blocker, read [communication rules](skill://orchestrate-implementation-plan/references/communication-policy--rules.md) and [OMP developer requests and ask](skill://orchestrate-implementation-plan/references/omp--developer-requests-and-omps-built-in-ask.md); use `request_developer` only to validate and render a request for the caller, not to ask the developer or wait for their answer.
 When a reviewer returns a report, read [reading reviewer reports](skill://orchestrate-implementation-plan/references/agents--reading-reviewer-reports.md) before acting on it.
 
 ### 1. Establish context before dispatch
@@ -90,7 +89,7 @@ Read root and nested instructions, README, the plan, active TDD, applicable syst
 
 Build a compact context map with authoritative paths/revisions, contracts, ownership, commands, and unresolved evidence. Cover the whole plan rather than only the first task; retrieve deeper implementation details as needed, without bulk-reading dependencies, generated output, binaries, unrelated history, or secret values.
 
-Resolve searchable facts yourself. Before dispatch require execution authorization and `active` plan, TDD, and applicable system design with actual `approved` dates; stop on a missing or contradictory gate rather than inferring developer acceptance.
+Resolve searchable facts yourself. Before dispatch, read [approvals](skill://orchestrate-implementation-plan/references/product-documentation-process--approvals.md) and [document state and revision](skill://orchestrate-implementation-plan/references/product-documentation-process--document-state-and-revision.md). Require active plan, TDD, and applicable system design, valid agent approvals for the plan and TDD, and valid developer approvals for their governing product vision, architecture, PRD, and applicable system design. Check validity with `doc_approval` status or `check_doc_status`; do not infer approval from a lifecycle state. Stop and report a missing, stale, or contradictory gate to the caller.
 
 Confirm the harness can dispatch workers, stop them, and retain assigned worktrees until acceptance; disable automatic application, merging, or removal of worker changes. If it can launch a worker in the assigned directory, use that. Otherwise dispatch the assigned absolute path and branch, requiring every worker command to select that worktree explicitly (`cd <worktree> && …` for each shell command, `git -C <worktree> …` for Git), and every read/edit/write to use paths within it. A relative tool path may resolve against the parent's directory, not the worktree. Stop if the harness cannot retain worker changes for the protected-diff gate; never implement inline.
 
@@ -98,7 +97,7 @@ You may inspect, dispatch, stop workers, manage Git and run metadata, validate, 
 
 ### 2. Own a safe integration branch
 
-After context and authorization gates pass, read [safe integration branch](skill://orchestrate-implementation-plan/references/product-documentation-process--2-own-a-safe-integration-branch.md) before selecting or mutating the integration checkout.
+After context and approval gates pass, read [safe integration branch](skill://orchestrate-implementation-plan/references/product-documentation-process--2-own-a-safe-integration-branch.md) before selecting or mutating the integration checkout.
 
 ### 3. Schedule the plan and retain run state
 
@@ -108,7 +107,7 @@ For the static check call `check_implementation_plan` with `mode: "check"` and `
 
 Run ready, independent tasks concurrently within the supplied limit and harness capacity. Serialize shared-file or shared-contract ownership and exclusive resources; worktrees isolate files and indexes, not ports, databases, external services, or shared Git refs, so assign separate local resources or order their use.
 
-Keep one ledger in a durable harness artifact or orchestration-owned file outside tracked source. Record integration identity and SHAs, approvals, task states, assignments, dispatch bases, returned commits, checks, merges, cleanup, blockers, and repairs. Plan dependencies and the assignment pair belong in the plan; all status stays in the ledger. Reconcile them: pending tasks have no assignment; dispatched and integrated tasks retain both fields, including after cleanup.
+Keep one ledger in a durable harness artifact or orchestration-owned file outside tracked source. Record integration identity and SHAs, approvals, task states, assignments, dispatch bases, returned commits, checks, merges, cleanup, blockers, repairs, and every departure from the TDD. Plan dependencies and the assignment pair belong in the plan; all status stays in the ledger. Reconcile them: pending tasks have no assignment; dispatched and integrated tasks retain both fields, including after cleanup.
 
 Use `pending`, `running`, `returned`, `validating`, `integrated`, and `blocked`; retain rejection reasons and attempts per task. Update the ledger at handoff, acceptance, halt, and cleanup; reconcile Git and workers after interruption. Repair in the original assigned worktree/branch; stop for reconciliation before reassignment.
 
@@ -116,32 +115,34 @@ Use `pending`, `running`, `returned`, `validating`, `integrated`, and `blocked`;
 
 When a task is ready for pickup, read [worktree creation and worker handoff](skill://orchestrate-implementation-plan/references/product-documentation-process--4-create-each-worktree-and-hand-off-bounded-work.md) before assigning its workspace or dispatching its worker.
 
+Workers receive execute-only handoffs: supply the bounded implementation context, exact targets, acceptance, and verification commands under the linked handoff procedure. They carry out the assignment rather than undertaking open-ended research or choosing new designs; missing context or a design conflict comes back to you.
+
 ### 5. Validate, integrate, then remove the worktree
 
 When a worker returns any candidate, read [candidate acceptance and cleanup](skill://orchestrate-implementation-plan/references/product-documentation-process--5-validate-integrate-then-remove-the-worktree.md) before validation, integration, or worktree removal. This gate also applies to out-of-plan documentation and repair candidates.
 
 ### 6. Handle bounded issues; halt for significant design changes
 
-If an issue, rejected candidate, failed check, or possible design conflict arises, read [bounded repairs and design halts](skill://orchestrate-implementation-plan/references/product-documentation-process--6-handle-bounded-issues-halt-for-significant-design-changes.md) before attempting repair or continuing dispatch or integration. When its resolution updates governing documents, also read [reference rules](skill://orchestrate-implementation-plan/references/product-documentation-process--reference-rules.md).
+If an issue, rejected candidate, failed check, or possible design conflict arises, read [bounded repairs and design halts](skill://orchestrate-implementation-plan/references/product-documentation-process--6-handle-bounded-issues-halt-for-significant-design-changes.md) before attempting repair or continuing dispatch or integration. Fix small issues in-run through workers; record TDD deviations and repair evidence in the ledger. When its resolution updates governing documents, also read [reference rules](skill://orchestrate-implementation-plan/references/product-documentation-process--reference-rules.md). For a significant issue or repeated repair failure, stop and preserve all work, report to the caller, and end the run under that procedure.
 
 ### 7. Verify the complete branch and deliver it
 
-After all planned outcomes integrate, read [complete-branch verification and delivery](skill://orchestrate-implementation-plan/references/product-documentation-process--7-verify-the-complete-branch-and-deliver-it.md) before final verification or completion. Read [document state and revision](skill://orchestrate-implementation-plan/references/product-documentation-process--document-state-and-revision.md) before delegating delivery metadata transitions.
+After all planned outcomes integrate, read [complete-branch verification and delivery](skill://orchestrate-implementation-plan/references/product-documentation-process--7-verify-the-complete-branch-and-deliver-it.md) before final verification. After integration and verification, read and run the [post-integration review cycle](skill://orchestrate-implementation-plan/references/code-review--review-cycle.md) before returning the completion report; retain cycle decisions and evidence in the ledger. Return its escalation to the caller if blocked. Do not mark any document `done`; the main session owns developer validation and subsequent document completion.
 
 ## Output
 
-Before writing any message, report, or question to the developer, read [communication rules](skill://orchestrate-implementation-plan/references/communication-policy--rules.md).
+Return messages and reports to the caller, including any rendered developer request; never address the developer directly.
 
-Report execution stage changes, accepted task IDs, branch state, and consequential blockers, not tool narration. A design halt returns its decision packet and preserved-work state, not completion.
+Report execution stage changes, accepted task IDs, branch state, and consequential blockers, not tool narration. A design halt returns its decision packet and preserved-work state, then ends the run rather than waiting for a decision.
 At completion, return one work-up:
 
 - **Delivered:** integration branch, checkout path, final commit, source plan/design revisions, and completed or blocked task IDs with their outcomes.
-- **How it went:** meaningful corrections, rejected/reworked candidates, approved deviations, and any remaining risks; omit routine dispatch history.
+- **How it went:** meaningful corrections, rejected/reworked candidates, all TDD deviations, review-cycle outcomes and next-round rationale, and any remaining risks; omit routine dispatch history.
 - **Validation evidence:** checks and surface exercises you actually ran, their results and tested commit, with failures or skips distinguished from passes.
 - **Your validation steps:** exact checkout/location, setup, prerequisites/configuration names without secrets, commands/UI actions, and expected observations. Distinguish exercised steps from developer-environment steps; retain your own acceptance obligations.
 - **Handoff state:** worktree/branch cleanup, retained paths and reasons, and pushes or merges outside integration (neither by default).
 
-Quote exercised commands verbatim; label unexercised setup/manual steps. Preserve retrievable evidence after worktree removal. Include non-empty `Caveats / needs your call` for unresolved decisions or skipped verification.
+Quote exercised commands verbatim; label unexercised setup/manual steps. Preserve retrievable evidence and the deviation ledger after worktree removal. Include non-empty `Caveats / needs your call` for unresolved decisions or skipped verification; the caller owns any developer-facing request.
 
 ## Supply inputs
 Provide the target, exact revision label, source material, relevant context, and the action-specific request.

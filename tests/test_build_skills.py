@@ -589,6 +589,7 @@ class BuildSkillsTests(unittest.TestCase):
             "draft-system-design",
             "draft-technical-design",
             "orchestrate-implementation-plan",
+            "orchestrate-fix",
         )
         integration = self.root / "integrations" / "omp.md"
         lines = integration.read_text(encoding="utf-8").splitlines(keepends=True)
@@ -617,14 +618,13 @@ class BuildSkillsTests(unittest.TestCase):
                     bundle.output.parent / "references"
                     / "omp--developer-requests-and-omps-built-in-ask.md"
                 )
+                self.assertIn(reference, bundle.files)
                 guidance = bundle.files[reference].decode("utf-8")
                 self.assertIn(sentinel, guidance)
                 self.assertNotIn("## Templates", guidance)
                 task = bundle.files[bundle.output].decode("utf-8")
                 self.assertIn(
-                    "When running in OMP and a developer decision blocks progress, read "
-                    "[OMP developer requests and ask](skill://" + name
-                    + "/references/" + reference.name + ").",
+                    "(skill://" + name + "/references/" + reference.name + ")",
                     task,
                 )
                 self.assertNotIn(sentinel, task)

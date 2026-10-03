@@ -2,6 +2,8 @@
 import git_test_environment  # Scrub inherited Git hook state before fixture creation.
 
 import json
+import os
+import hashlib
 import subprocess
 import sys
 import tempfile
@@ -23,6 +25,26 @@ class CheckDocStatusTests(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(body, encoding="utf-8")
         return path
+
+    def approve(self, path, repo=None, date="2024-02-29"):
+        repo = repo or self.root
+        manifest = repo / "docs/approvals.json"
+        data = json.loads(manifest.read_text()) if manifest.exists() else {"version": 1, "approvals": {}}
+        fields, body = path.read_bytes().split(b"---\n", 2)[1:]
+        revision = next(line[10:] for line in fields.decode().splitlines()
+                        if line.startswith("revision: "))
+        kind = path.name
+        agent = kind in ("tdd.md", "implementation-plan.md")
+        entry = {"revision": revision, "bodySha256": hashlib.sha256(body).hexdigest(),
+                 "by": "agent" if agent else "developer", "date": date}
+        if agent:
+            entry["evidence"] = "Review loop concluded and checks passed."
+        else:
+            entry["attestation"] = ("explain-and-defend" if kind in ("architecture.md", "system-design.md")
+                                    else "read-in-full")
+        data["approvals"][path.relative_to(repo).as_posix()] = entry
+        manifest.write_text(json.dumps(data))
+
 
     def run_checker(self, mode, *paths):
         return subprocess.run([sys.executable, str(CHECKER), mode, *(str(path) for path in paths)],
@@ -46,9 +68,11 @@ class CheckDocStatusTests(unittest.TestCase):
         ]
         paths = []
         for relative, kind, prefix, state in samples:
-            date = "approved: 2024-02-29\n" if state in ("active", "done") else ""
-            paths.append(self.path(relative, f"---\nstate: {state}\nrevision: {prefix}-r12\n{date}---\n"
-                                   "# Document\n\n## Status\n\nDetails about the document.\n"))
+            path = self.path(relative, f"---\nstate: {state}\nrevision: {prefix}-r12\n---\n"
+                             "# Document\n\n## Status\n\nDetails about the document.\n")
+            paths.append(path)
+            if state in ("active", "done"):
+                self.approve(path)
         paths.extend([
             self.path("docs/roadmap.md", "---\nstate: draft\n---\n# Roadmap\n"),
             self.path("templates/roadmap.md", "---\nstate: draft\n---\n# Roadmap\n"),
@@ -63,8 +87,12 @@ class CheckDocStatusTests(unittest.TestCase):
         self.assertEqual([row["type"] for row in rows],
                          [s[1] for s in samples] + ["roadmap", "roadmap", "guide"])
         self.assertEqual(rows[5], {"path": str(paths[5]), "type": "implementation-plan",
-                                   "state": "done", "revision": "plan-r12", "approved": "2024-02-29"})
+                                   "state": "done", "revision": "plan-r12",
+                                   "approval": {"gate": "agent", "by": "agent",
+                                                "date": "2024-02-29", "valid": True}})
         self.assertIsNone(rows[-1]["revision"])
+        self.assertEqual(rows[-1]["approval"],
+                         {"gate": "none", "by": None, "date": None, "valid": False})
 
     def test_missing_state_unknown_state_and_missing_revision(self):
         self.assert_error("docs/product-vision.md", "---\nrevision: vision-r1\n---\n", "missing state")
@@ -74,14 +102,41 @@ class CheckDocStatusTests(unittest.TestCase):
 
     def test_approval_date_state_rules_and_calendar(self):
         self.assert_error("docs/features/a/tdd.md", "---\nstate: draft\nrevision: tdd-r1\n"
-                          "approved: 2024-01-01\n---\n", "approved is forbidden")
+                          "approved: 2024-01-01\n---\n", "guides/migrations/0.1.0-to-1.0.0.md")
         self.assert_error("docs/features/a/implementation-plan.md", "---\nstate: done\n"
-                          "revision: plan-r1\n---\n", "missing approved")
+                          "revision: plan-r1\n---\n", "valid approval required")
         self.assert_error("docs/product-vision.md", "---\nstate: approved\n"
                           "revision: vision-r1\n---\n", "invalid state for vision")
         self.assert_error("guides/help.md", "---\nstate: active\napproved: 2023-02-29\n---\n"
                           "## Status\nDetails.\n", "real calendar date")
-        self.assert_error("docs/roadmap.md", "---\nstate: active\n---\n", "missing approved")
+        roadmap = self.path("docs/roadmap.md", "---\nstate: active\n---\n")
+        self.assertEqual(self.run_checker("--check", roadmap).returncode, 0)
+        guide = self.path("guides/process.md", "---\nstate: active\napproved: 2025-01-01\n---\n"
+                          "## Status\nProcess details.\n")
+        self.assertEqual(self.run_checker("--check", guide).returncode, 0)
+
+    def test_migrated_active_prd_requires_current_body_approval(self):
+        path = self.path("docs/features/a/prd.md", "---\nstate: active\nrevision: prd-r1\n---\n"
+                         "# PRD\nApproved content.\n")
+        self.approve(path)
+        self.assertEqual(self.run_checker("--check", path).returncode, 0)
+        path.write_bytes(path.read_bytes() + b"Editorial change.\n")
+        result = self.run_checker("--check", path)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("hash mismatch", result.stderr)
+        path.write_text(path.read_text().replace("prd-r1", "prd-r2"))
+        result = self.run_checker("--check", path)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("revision mismatch", result.stderr)
+
+    def test_malformed_approval_manifest_is_a_json_diagnostic(self):
+        path = self.path("docs/features/a/prd.md", "---\nstate: active\nrevision: prd-r1\n---\nBody.\n")
+        (self.root / "docs/approvals.json").write_text('{"version": 1, "approvals":')
+        result = self.run_checker("--json", path)
+        self.assertEqual(result.returncode, 1)
+        payload = json.loads(result.stdout)
+        self.assertFalse(payload["rows"][0]["approval"]["valid"])
+        self.assertIn("malformed approvals JSON", payload["errors"][0]["message"])
 
     def test_revision_and_path_boundaries(self):
         self.assert_error("docs/features/a/slices/b/prd.md", "---\nstate: draft\nrevision: prd-r1\n---\n",
@@ -162,9 +217,9 @@ class CheckDocStatusTests(unittest.TestCase):
                  approved="2025-01-01"):
         file = repo / relative
         file.parent.mkdir(parents=True, exist_ok=True)
-        date = f"approved: {approved}\n" if state in ("active", "done") else ""
-        file.write_text(f"---\nstate: {state}\nrevision: {revision}\n{date}---\n{body}",
-                        encoding="utf-8")
+        file.write_text(f"---\nstate: {state}\nrevision: {revision}\n---\n{body}", encoding="utf-8")
+        if state in ("active", "done"):
+            self.approve(file, repo, approved)
         return file
 
     def frozen(self, repo, base, head, *extra):
@@ -208,7 +263,7 @@ class CheckDocStatusTests(unittest.TestCase):
                 invalid = self.frozen(repo, base, self.commit(repo))
                 self.assertEqual(invalid.returncode, 1, invalid.stderr)
                 self.assertIn(relative, invalid.stderr)
-                self.assertIn("unchanged body, revision, and approved date", invalid.stderr)
+                self.assertIn("unchanged body and revision", invalid.stderr)
                 self.snapshot(repo, relative, "done", revision)
                 self.assertEqual(self.frozen(repo, base, self.commit(repo)).returncode, 0)
 
@@ -235,7 +290,7 @@ class CheckDocStatusTests(unittest.TestCase):
         stale_acceptance = self.commit(repo)
         result = self.frozen(repo, base, stale_acceptance)
         self.assertEqual(result.returncode, 1)
-        self.assertIn("must be draft without approved date", result.stderr)
+        self.assertIn("must be draft", result.stderr)
         self.snapshot(repo, relative, "draft", "sd-r3", "Changed body.\n")
         revised = self.commit(repo)
         self.assertEqual(self.frozen(repo, base, revised).returncode, 0)
@@ -270,7 +325,7 @@ class CheckDocStatusTests(unittest.TestCase):
         self.assertIn("revision greater than sd-r7", result.stderr)
         self.snapshot(repo, relative, "done", "sd-r7", approved="2025-02-01")
         changed_date = self.commit(repo)
-        self.assertEqual(self.frozen(repo, base, changed_date).returncode, 1)
+        self.assertEqual(self.frozen(repo, base, changed_date).returncode, 0)
 
     def test_system_design_deletion_and_rename_fail_closed(self):
         for operation in ("delete", "rename"):
@@ -308,6 +363,40 @@ class CheckDocStatusTests(unittest.TestCase):
         self.assertEqual(self.frozen(repo, head, head).returncode, 0)
         self.assertNotEqual(self.frozen(repo, base, "nonexistent-revision").returncode, 0)
         self.assertNotEqual(self.frozen(repo, base, head, "docs/features/x/prd.md").returncode, 0)
+
+    def test_frozen_approvals_only_changes_and_removed_done_entry(self):
+        repo = self.repository("approvals-only")
+        path = self.snapshot(repo, "docs/features/x/prd.md", "done", "prd-r1")
+        base = self.commit(repo)
+        self.approve(path, repo, "2025-03-01")
+        head = self.commit(repo)
+        self.assertEqual(self.frozen(repo, base, head).returncode, 0)
+        manifest = repo / "docs/approvals.json"
+        manifest.write_text(json.dumps({"version": 1, "approvals": {}}))
+        removed = self.frozen(repo, head, self.commit(repo))
+        self.assertEqual(removed.returncode, 1)
+        self.assertIn("approval entry must remain", removed.stderr)
+
+    def test_bare_relative_paths_and_explicit_repository(self):
+        repo = self.repository("root-discovery")
+        path = self.snapshot(repo, "docs/features/x/prd.md", "active", "prd-r1")
+        relative = path.relative_to(repo)
+        for args in ([], ["--repo", str(repo)]):
+            result = subprocess.run([sys.executable, str(CHECKER), "--json", *args, str(relative)],
+                                    cwd=repo, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(json.loads(result.stdout)[0]["approval"]["valid"])
+
+    def test_repository_discovery_ignores_inherited_git_state(self):
+        repo = self.repository("clean-discovery")
+        victim = self.repository("unrelated-victim")
+        path = self.snapshot(repo, "docs/features/x/prd.md", "active", "prd-r1")
+        poisoned = {**os.environ, "GIT_DIR": str(victim / ".git"),
+                    "GIT_WORK_TREE": str(victim), "GIT_INDEX_FILE": str(victim / ".git/index")}
+        result = subprocess.run([sys.executable, str(CHECKER), "--check", str(path)],
+                                env=poisoned, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
 
     def test_frozen_rejects_binary_changed_document(self):
         repo = self.repository("binary")

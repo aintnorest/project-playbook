@@ -53,11 +53,13 @@ The skill owns everything else: the procedure, every conditional instruction, th
 
 ### Developer communication and escalation
 
-Before any top-level developer-facing message or escalation, read and apply the [communication rules](communication-policy.md#rules), including their developer-request procedure. Drafting and orchestration skills use that shared procedure rather than local question templates. A caller receiving a review report owns escalation: resolve repository-answerable questions itself, then validate and render any remaining developer request under the shared policy. Review agents return questions in their report; they never contact the developer directly.
+Before any top-level developer-facing message or escalation, read and apply the [communication rules](communication-policy.md#rules), including their developer-request procedure. Drafting and orchestration skills use that shared procedure rather than local question templates. A caller receiving a review report owns escalation: in the factory workflow, this is the main-session orchestrator, not the drafter or reviewer. Resolve repository-answerable questions before validating and rendering any remaining developer request under the shared policy. Document-review decisions follow [Review loop](document-review.md#review-loop). Review agents return questions in their report; they never contact the developer directly.
 
 ## Reading reviewer reports
 
 This rule governs callers receiving a review, not their own final-answer format. Reviewers return Markdown; read its Findings section by stable finding ID, and its Questions and Coverage limits sections before deciding a response. The preview caps at 5,000 characters; `agent://<id>` holds the full report. If truncated, retrieve it with `read` before acting on findings, counts, questions, or coverage. Omit reviewer `outputSchema` and dispatch from a schema-free caller session to avoid inherited validation.
+
+For document reviews, the caller's triage and the drafter's application of accepted findings follow [Review loop](document-review.md#review-loop).
 
 ## Review report delivery
 

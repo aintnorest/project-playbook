@@ -1,6 +1,8 @@
 """All checker modes preserve project files and stale Git metadata."""
 import git_test_environment  # Scrub inherited Git hook state before fixture creation.
 import os
+import hashlib
+import json
 from pathlib import Path
 import subprocess
 import sys
@@ -27,7 +29,14 @@ class CheckerNoWriteTests(unittest.TestCase):
             docs = repo / 'docs'
             docs.mkdir()
             doc = docs / 'product-vision.md'
-            doc.write_text('---\nstate: draft\nrevision: vision-r1\n---\n# Vision\n')
+            body = b'# Vision\n'
+            doc.write_bytes(b'---\nstate: active\nrevision: vision-r1\n---\n' + body)
+            (docs / 'approvals.json').write_text(json.dumps({
+                'version': 1, 'approvals': {'docs/product-vision.md': {
+                    'revision': 'vision-r1', 'bodySha256': hashlib.sha256(body).hexdigest(),
+                    'by': 'developer', 'attestation': 'read-in-full', 'date': '2026-10-02',
+                }},
+            }))
             worktree = repo / '.worktrees' / 'T01'
             plan = repo / 'implementation-plan.md'
             plan.write_text('### T01 — Verify\n- Depends on: none\n- Targets: none\n'

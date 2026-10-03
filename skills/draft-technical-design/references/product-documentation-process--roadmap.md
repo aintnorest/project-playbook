@@ -13,6 +13,7 @@ Source: guides/product-documentation-process.md#roadmap
 - **Next:** ideas likely to come next. Any level of detail.
 - **Later:** ideas worth keeping. A single line is enough.
 - **Done:** finished features, each with its name, start date, and finish date.
+- **Known issues:** problems found after delivery that are waiting for a fix when the repository has no `.beads/` tracker.
 
 **Rules:**
 
@@ -20,6 +21,7 @@ Source: guides/product-documentation-process.md#roadmap
 - Items in Next and Later are deliberately loose. They may hold partial ideas, problem statements, and early requirements.
 - When a feature's documents are created, the ideas that belong in them move out of the roadmap and into those documents. Drafting agents read the matching Now item as source material but do not edit the roadmap; the developer or the orchestrator trims it. Once the feature's documents exist, its Now entry keeps only a short summary, its start date, and the link to its feature directory.
 - A dropped idea is deleted. A deferred one moves back to Later.
+- The roadmap is ungated. Recording known issues, trimming ideas, and moving entries do not require approval or reopen a gate.
 
 **Excludes:**
 

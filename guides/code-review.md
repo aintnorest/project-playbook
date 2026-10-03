@@ -25,6 +25,26 @@ Performance concerns need an actual unnecessary cost or applicable workload, not
 
 Do not edit files, apply fixes, generate code, install/update dependencies, mutate Git state, or launch an implementation workflow. Static review is the default; run only requested or already authorized narrow checks after inspecting the commands and their effects, never automatic fix modes or unrelated suites, and distinguish execution evidence from reasoning or proposed verification. When the `lsp` tool is available, use only its read actions (`diagnostics`, `definition`, `references`, `hover`, `symbols`, `status`, `capabilities`); never `rename`, `rename_file`, `code_actions`, `reload`, or `request`, which mutate files. Use `references` before calling code unused or a change breaking, and `ast_grep` for structural patterns `grep` cannot express.
 
+## Review cycle
+
+This procedure applies to `orchestrate-implementation-plan` after a slice is integrated and verified, and to `orchestrate-fix` after a standalone fix is integrated and verified. The orchestrator dispatches reviewers, decides responses, delegates repairs, and validates the result. Reviewers follow [read-only operation](#read-only-operation); they do not apply fixes.
+
+1. **Select and dispatch reviews.** Supply the integrated candidate identity, the run's base, changed paths, applicable documents, and verification evidence. Select language and integration reviewers from the changed files and affected boundaries:
+   - TypeScript: `review-code-typescript-agent`.
+   - Python: `review-code-python-agent`.
+   - Rust: `review-code-rust-agent`.
+   - Tauri host/frontend integration: `review-code-tauri-agent`, in addition to the applicable language reviewers.
+
+   Every initial cycle also includes `review-code-design-agent`, `review-code-invariants-agent`, `review-code-tests-agent`, and `review-code-unused-agent`. Give each reviewer its own focus and enough connected context to assess the change.
+2. **Triage the reports.** Follow [reading reviewer reports](agents.md#reading-reviewer-reports). Decide each finding against its evidence and the governing behavior; record acceptance or rejection by finding ID, with a reason for every rejection. Resolve consequential questions and coverage limits before treating the cycle as clean. Reviewer severity is evidence for the decision, not an instruction to apply every proposed correction.
+3. **Delegate accepted fixes.** Assign repairs to implementation workers, not reviewers, with the finding IDs, expected behavior, bounded files, and acceptance checks. Preserve the documented behavior and add or update regression coverage where the finding calls for it. Integrate the repairs before reviewing their combined result.
+4. **Revalidate the application and slice.** Personally run the required project checks and the slice's acceptance checks, or the standalone fix's regression checks, through `run_check`, following the [command verification gate](product-documentation-process.md#5-validate-integrate-then-remove-the-worktree). Exercise the actual changed CLI, UI, service, or other surface as applicable; passing commands alone do not establish that the application works or that the changed behavior meets its specification. A failed or unavailable required check leaves validation incomplete; delegate repair or report the missing prerequisite rather than calling the cycle clean.
+5. **Decide the next cycle.** Count each review round and its resulting fixes and revalidation as one cycle, including a round that finds no outstanding issues. If issues remain, repeat against the repaired integrated candidate. After a clean cycle, state whether another round is worthwhile and why, and name the reviews it needs: all, a selected subset, or none. Further rounds after a clean cycle may use that selected set; do not repeat reviews without a concrete reason.
+
+Run at most four cycles without developer input. Before a fifth, stop and return a report to the caller for the developer: the candidates and reviews covered, what happened in each cycle, fixes applied and verification results, outstanding issues by finding ID with their consequences, and the proposed fix or missing prerequisite. Do not silently restart the count or declare completion with open issues.
+
+When the clean-cycle decision is to run no further reviews, return the result and concrete developer validation steps to the caller. A clean review does not replace [developer validation and completion](product-documentation-process.md#full-feature-workflow), and neither orchestrator marks the work `done` before that validation.
+
 ## Report
 
 Zero findings is valid, not certification or approval. Do not fabricate locations, reproductions, approvals, or commands. Retain supplied IDs on follow-up; merge only the same underlying issue and correction.

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import * as zod from "@oh-my-pi/omptype/zod";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -27,6 +28,8 @@ beforeEach(() => {
   mkdirSync(repo);
   projectPlaybook({
     zod,
+    on() {},
+    registerCommand() {},
     registerTool(definition) {
       if (definition.name === "check_implementation_plan") tool = definition;
       if (definition.name === "check_doc_status") statusTool = definition;
@@ -85,13 +88,18 @@ test("document status tool reads metadata and rejects legacy prose", async () =>
   const docs = join(repo, "docs");
   mkdirSync(docs);
   const path = join(docs, "product-vision.md");
-  writeFileSync(path, "---\nstate: active\nrevision: vision-r2\napproved: 2026-09-28\n---\n"
-    + "# Product vision\n\n## Status\n\nReviewed against product research.\n");
-  const parsed = await statusTool.execute("test", { mode: "json", path },
+  const body = "# Product vision\n\n## Status\n\nReviewed against product research.\n";
+  writeFileSync(path, "---\nstate: active\nrevision: vision-r2\n---\n" + body);
+  writeFileSync(join(docs, "approvals.json"), JSON.stringify({ version: 1, approvals: {
+    "docs/product-vision.md": { revision: "vision-r2", bodySha256: createHash("sha256").update(body).digest("hex"),
+      by: "developer", attestation: "read-in-full", date: "2026-09-28" },
+  } }));
+  const parsed = await statusTool.execute("test", { mode: "json", path, repo },
     undefined, undefined, { cwd: repo });
   expect(parsed.isError).toBeUndefined();
   expect(parsed.details.documents).toEqual([
-    { path, type: "vision", state: "active", revision: "vision-r2", approved: "2026-09-28" },
+    { path, type: "vision", state: "active", revision: "vision-r2",
+      approval: { gate: "developer", by: "developer", date: "2026-09-28", valid: true } },
   ]);
 
   writeFileSync(path, "# Product vision\n\n## Status\n\nApproved.\n");
@@ -105,9 +113,13 @@ test("document frozen-diff tool rejects edits to a delivered PRD", async () => {
   const feature = join(repo, "docs", "features", "search");
   mkdirSync(feature, { recursive: true });
   const path = join(feature, "prd.md");
-  writeFileSync(path, "---\nstate: done\nrevision: prd-r3\napproved: 2026-09-28\n---\n"
-    + "# Search\n\nThe delivered contract.\n");
-  git("add", "docs/features/search/prd.md");
+  const body = "# Search\n\nThe delivered contract.\n";
+  writeFileSync(path, "---\nstate: done\nrevision: prd-r3\n---\n" + body);
+  writeFileSync(join(repo, "docs", "approvals.json"), JSON.stringify({ version: 1, approvals: {
+    "docs/features/search/prd.md": { revision: "prd-r3", bodySha256: createHash("sha256").update(body).digest("hex"),
+      by: "developer", attestation: "read-in-full", date: "2026-09-28" },
+  } }));
+  git("add", "docs");
   git("-c", "user.name=Test", "-c", "user.email=test@example.invalid",
     "commit", "-q", "-m", "deliver feature");
   const base = git("rev-parse", "HEAD");

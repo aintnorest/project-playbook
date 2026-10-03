@@ -27,7 +27,7 @@ test("all registered tools treat every schema-optional empty argument as absent"
   process.env.HOME = directory;
   mkdirSync(join(directory, ".omp", "agent", "sessions"), { recursive: true });
   const tools = [];
-  projectPlaybook({ zod, registerTool: definition => tools.push(definition) });
+  projectPlaybook({ zod, registerTool: definition => tools.push(definition), on() {}, registerCommand() {} });
   const plan = join(directory, "plan.md");
   mkdirSync(join(directory, "docs"));
   const doc = join(directory, "docs", "product-vision.md");
@@ -46,6 +46,7 @@ test("all registered tools treat every schema-optional empty argument as absent"
     for (const tool of tools) {
       const props = tool.parameters.ir.props;
       const required = Object.fromEntries(props.filter(p => !p.opt).map(p => [p.key, values[p.key] ?? seed(p.val)]));
+      if (tool.name === "doc_approval") required.mode = "status";
       for (const [key, value] of Object.entries({ path: doc, needed: "Choose the input.", productBasisUnavailableReason: "No product document exists." })) {
         if (props.some(p => p.key === key)) required[key] = value;
       }

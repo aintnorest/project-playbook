@@ -84,7 +84,20 @@
     ],
     "negative": [
       {"request": "Draft an implementation plan from the active EXPORT TDD", "expected": "draft-implementation-plan-agent"},
-      {"request": "Review the task DAG before implementation begins", "expected": "review-doc-implementation-plan-agent"}
+      {"request": "Review the task DAG before implementation begins", "expected": "review-doc-implementation-plan-agent"},
+      {"request": "Fix the known EXPORT regression to match the documented behavior and give me validation steps", "expected": "orchestrate-fix-agent"}
+    ]
+  },
+  "orchestrate-fix-agent": {
+    "positive": [
+      "Fix the known document export issue to restore the behavior our documents already specify",
+      "Repair this EXPORT regression, add a test that catches it, and run the code review cycle",
+      "Take this known export bug through isolated workers and return a reviewed branch with validation steps"
+    ],
+    "negative": [
+      {"request": "Execute the active EXPORT implementation plan and validate its completed tasks", "expected": "orchestrate-implementation-plan-agent"},
+      {"request": "Design a new EXPORT slice because the documented behavior is wrong", "expected": "draft-technical-design-agent"},
+      {"request": "Draft the implementation task DAG for the accepted EXPORT TDD", "expected": "draft-implementation-plan-agent"}
     ]
   },
   "review-code-design-agent": {
